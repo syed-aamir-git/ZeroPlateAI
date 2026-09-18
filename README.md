@@ -2,9 +2,9 @@
 
 ### Intelligent Food Waste Reduction & Sustainable Redistribution Ecosystem
 
-[![React](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-blue?logo=react)](https://reactjs.org/)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2015%20%2B%20TypeScript-blue?logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20%2B%20Python-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20CSS-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Atlas-47A248?logo=mongodb)](https://www.mongodb.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![UN SDGs](https://img.shields.io/badge/UN%20SDGs-2%20%7C%2012%20%7C%2013-brightgreen)](https://sdgs.un.org/)
 
@@ -20,3 +20,36 @@
 * **Coordination Gaps**: Local night shelters, orphanages, and community fridges experience severe meal shortages just kilometers away from dining halls discarding hundreds of fresh portions.
 * **Absence of a Learning Loop**: Kitchens repeat identical batch sizing errors because yesterday's wasted trays are never fed back into tomorrow's raw ration purchase ledger.
 
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ or 20+
+- Python 3.10+ (for forecasting microservice)
+- MongoDB Atlas cluster URI or local MongoDB instance
+
+### 1. Installation
+```bash
+# Clone the repository
+git clone https://github.com/syed-aamir-git/ZeroPlateAI.git
+cd ZeroPlateAI
+
+# Install Node dependencies
+npm install
+```
+
+### 2. Environment Setup
+Copy the example environment file and configure your credentials:
+```bash
+cp .env.example .env.local
+```
+Add your `MONGODB_URI`, `BETTER_AUTH_SECRET`, and optional `GOOGLE_CLIENT_ID` in `.env.local`.
+
+### 3. Run Development Servers
+Start the Next.js application:
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
