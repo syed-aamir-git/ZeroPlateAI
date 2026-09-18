@@ -1,4 +1,5 @@
 # 🍽️ ZeroPlate AI
+
 ### Intelligent Food Waste Reduction & Sustainable Redistribution Ecosystem
 
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-blue?logo=react)](https://reactjs.org/)
