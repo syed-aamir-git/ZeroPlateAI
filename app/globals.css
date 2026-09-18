@@ -1,1 +1,201 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-fraunces);
+  --font-serif: var(--font-fraunces);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+
+  --color-ledger-paper: var(--ledger-paper);
+  --color-basil: var(--basil);
+  --color-saffron: var(--saffron);
+  --color-clay-rust: var(--clay-rust);
+  --color-plum: var(--plum);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-ink-rust: var(--ink-rust);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+:root {
+  /* Direct Palette Tokens (Design PRD Section 3) */
+  --ledger-paper: #F3EEE2;
+  --basil: #2F4B3A;
+  --saffron: #D9A441;
+  --clay-rust: #B85C38;
+  --plum: #4A2E44;
+  --ink: #24211C;
+  --ink-soft: #5A5548;
+  --line: #DCD3BE;
+  --ink-rust: #8A4331;
+
+  /* HSL Component Mapping (Design PRD Section 6) */
+  --background: hsl(42 38% 91%);        /* --ledger-paper #F3EEE2 */
+  --foreground: hsl(40 12% 13%);        /* --ink #24211C */
+  --card: hsl(42 38% 91%);
+  --card-foreground: hsl(40 12% 13%);
+  --popover: hsl(42 38% 93%);
+  --popover-foreground: hsl(40 12% 13%);
+  --primary: hsl(147 24% 24%);          /* --basil #2F4B3A */
+  --primary-foreground: hsl(42 38% 91%);
+  --secondary: hsl(38 61% 55%);         /* --saffron #D9A441 */
+  --secondary-foreground: hsl(40 12% 13%);
+  --accent: hsl(17 47% 45%);            /* --clay-rust #B85C38 */
+  --accent-foreground: hsl(42 38% 91%);
+  --destructive: hsl(12 40% 35%);       /* muted ink-rust #8A4331 */
+  --destructive-foreground: hsl(42 38% 91%);
+  --muted: hsl(42 24% 85%);
+  --muted-foreground: hsl(39 10% 36%);  /* --ink-soft */
+  --border: hsl(43 28% 79%);            /* --line #DCD3BE */
+  --input: hsl(43 28% 79%);
+  --ring: hsl(147 24% 24%);             /* basil */
+  --radius: 0.375rem;                   /* 6px */
+}
+
+.dark {
+  --background: hsl(40 12% 13%);        /* --ink #24211C as surface */
+  --foreground: hsl(42 30% 88%);        /* ledger paper text */
+  --card: hsl(40 12% 13%);
+  --card-foreground: hsl(42 30% 88%);
+  --popover: hsl(40 12% 16%);
+  --popover-foreground: hsl(42 30% 88%);
+  --primary: hsl(147 20% 55%);          /* desaturated basil */
+  --primary-foreground: hsl(40 12% 13%);
+  --secondary: hsl(38 50% 58%);         /* desaturated saffron */
+  --secondary-foreground: hsl(40 12% 13%);
+  --accent: hsl(17 40% 55%);            /* desaturated clay-rust */
+  --accent-foreground: hsl(40 12% 13%);
+  --destructive: hsl(12 35% 45%);
+  --destructive-foreground: hsl(42 30% 88%);
+  --muted: hsl(40 10% 20%);
+  --muted-foreground: hsl(42 15% 65%);
+  --border: hsl(40 10% 24%);
+  --input: hsl(40 10% 24%);
+  --ring: hsl(147 20% 55%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  *:focus-visible {
+    outline: 2px solid var(--ring) !important;
+    outline-offset: 2px !important;
+  }
+  body {
+    background-color: var(--ledger-paper);
+    color: var(--ink);
+    font-family: var(--font-plex-sans), -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+}
+
+/* Custom Ledger Utility Classes */
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
+
+.font-data {
+  font-family: var(--font-plex-sans), sans-serif;
+}
+
+.font-ledger-mono {
+  font-family: var(--font-plex-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ticket notch: CSS clip-path notch on top-right corner, evoking a torn ticket stub */
+.ticket-notch {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% 100%,
+    0 100%
+  );
+}
+
+/* Warm overlay shadow for true overlays only */
+.shadow-warm-overlay {
+  box-shadow: 0 16px 36px -6px rgba(36, 33, 28, 0.08), 0 6px 14px -3px rgba(36, 33, 28, 0.04);
+}
+
+/* Orchestrated Ticket Strip Drift (Design PRD Section 7) */
+@keyframes ticket-drift {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticket-drift {
+  animation: ticket-drift 38s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-ticket-drift {
+    animation: none !important;
+  }
+  .animate-stamp-thunk {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Delivery Status Advance Stamp Thunk (Design PRD Section 7) */
+@keyframes stamp-thunk {
+  0% {
+    transform: scale(1.8) rotate(-6deg);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(0.95) rotate(1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-stamp-thunk {
+  animation: stamp-thunk 180ms cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}

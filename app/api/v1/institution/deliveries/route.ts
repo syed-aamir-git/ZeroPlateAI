@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/mongodb";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { ObjectId } from "mongodb";
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in." },
+        { status: 401 }
+      );
+    }
+
+    const db = await getDb();
+    const userId = session.user.id;
+    const userObjectId = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
+    const role = (session.user as { role?: string }).role;
+
+    const institution = await db
+      .collection("institutions")
+      .findOne({ userId: userObjectId as any });
+
+    if (!institution && role !== "platform_admin") {
+      return NextResponse.json(
+        { error: "Institution profile not found." },
+        { status: 404 }
+      );
+    }
+
+    const institutionId = institution ? institution._id : null;
+
+    // Query assignments for this institution
+    const query = institutionId ? { institutionId } : {};
+    const assignments = await db
+      .collection("deliveryAssignments")
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    // Enrich with listing, driver, and NGO details
+    const listingIds = assignments.map((a) => a.surplusListingId).filter(Boolean);
+    const driverIds = assignments.map((a) => a.assignedToDeliveryPartnerId).filter(Boolean);
+    const ngoIds = assignments.map((a) => a.claimedByNgoId).filter(Boolean);
+
+    const [listings, drivers, ngos] = await Promise.all([
+      db.collection("surplusListings").find({ _id: { $in: listingIds } }).toArray(),
+      db.collection("deliveryPartners").find({ _id: { $in: driverIds } }).toArray(),
+      db.collection("ngos").find({ _id: { $in: ngoIds } }).toArray(),
+    ]);
+
+    const listingMap = new Map(listings.map((l) => [String(l._id), l]));
+    const driverMap = new Map(drivers.map((d) => [String(d._id), d]));
+    const ngoMap = new Map(ngos.map((n) => [String(n._id), n]));
+
+    const enriched = assignments.map((a) => {
+      const listing = listingMap.get(String(a.surplusListingId));
+      const driver = driverMap.get(String(a.assignedToDeliveryPartnerId));
+      const ngo = ngoMap.get(String(a.claimedByNgoId));
+
+      return {
+        _id: a._id,
+        status: a.status,
+        createdAt: a.createdAt,
+        acceptedAt: a.acceptedAt,
+        pickedUpAt: a.pickedUpAt,
+        deliveredAt: a.deliveredAt,
+        confirmedAt: a.confirmedAt,
+        item: {
+          name: listing?.itemName || "Surplus Batch",
+          category: listing?.category || "cooked_food",
+          quantity: listing?.quantity || 0,
+          unit: listing?.unit || "kg",
+        },
+        recipient: {
+          name: ngo?.orgName || listing?.claimedByNgoName || "Verified NGO Recipient",
+          serviceArea: ngo?.serviceArea || "Recipient Center",
+          contactPhone: ngo?.contactPhone || "",
+        },
+        courier: driver
+          ? {
+              vehicleType: driver.vehicleType,
+              phone: driver.phone,
+              serviceArea: driver.serviceArea,
+            }
+          : null,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      deliveries: enriched,
+      count: enriched.length,
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching institution deliveries:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch deliveries." },
+      { status: 500 }
+    );
+  }
+}
