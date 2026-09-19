@@ -65,7 +65,7 @@ export default function ForInstitutionsPage() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/pricing">View pricing & plans</Link>
+              <Link href="/how-it-works">See how it works</Link>
             </Button>
           </div>
         </div>

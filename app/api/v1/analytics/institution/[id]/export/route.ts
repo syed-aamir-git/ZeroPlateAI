@@ -57,33 +57,7 @@ export async function GET(
       );
     }
 
-    // FREEMIUM GATING (Functional PRD Sections 12.7 & 23)
-    // Only institutions on plan: "premium" can export ESG & sustainability reports.
-    // Free plan accounts receive an informative upsell error explaining the premium tier.
-    if (institution.plan !== "premium") {
-      return NextResponse.json(
-        {
-          error: "Premium subscription required.",
-          code: "PLAN_UPGRADE_REQUIRED",
-          currentPlan: institution.plan || "free",
-          requiredPlan: "premium",
-          message:
-            "ESG & Sustainability Compliance Reporting (Audited PDF and CSV export) is an enterprise feature available exclusively on the Premium Plan. Upgrade your institution profile to unlock full audit logs, Scope 3 carbon offsets certification, and board-ready executive summaries.",
-          upsellDetails: {
-            features: [
-              "GHG Protocol Scope 3 Category 5 waste accounting export",
-              "FSSAI-aligned chain-of-custody surplus redistribution logs",
-              "Automated CSV & printable PDF executive audit summaries",
-              "Priority NGO recipient matching and logistics routing",
-            ],
-            upgradeUrl: "/app/institution/settings",
-          },
-        },
-        { status: 403 }
-      );
-    }
-
-    // Plan is Premium: Generate Real Audited ESG Report
+    // Generate Audited ESG Report (100% Free Open Platform)
     const url = new URL(request.url);
     const format = url.searchParams.get("format") || "csv";
 

@@ -105,7 +105,7 @@ export default function InstitutionOverviewPage() {
               {institution?.type ? institution.type.replace("_", " ") : "Institutional"} Kitchen
             </span>
             <span className="text-[10px] uppercase font-mono-numeral px-2 py-0.2 rounded-full border border-line bg-ledger-paper text-ink-soft">
-              {institution?.plan === "premium" ? "Premium Tier" : "Standard Free"}
+              100% Free Platform
             </span>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-normal text-ink mt-0.5">
@@ -161,7 +161,7 @@ export default function InstitutionOverviewPage() {
             title: "Review ESG compliance audit reports",
             description: "Explore Scope 3 carbon offsets and audited redistribution logs",
             href: "/app/institution/reports",
-            isCompleted: institution?.plan === "premium" && m.wastePreventedKg > 0,
+            isCompleted: m.wastePreventedKg > 0,
           },
         ]}
       />

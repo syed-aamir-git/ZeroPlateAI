@@ -30,12 +30,6 @@ export function PublicNav() {
             <Link href="/ngos" className="hover:text-basil transition-colors">
               For NGOs
             </Link>
-            <Link
-              href="/pricing"
-              className="hover:text-basil transition-colors"
-            >
-              Pricing
-            </Link>
             <Link href="/impact" className="hover:text-basil transition-colors">
               Impact
             </Link>

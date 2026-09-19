@@ -87,10 +87,10 @@ const FAQS: FAQItem[] = [
   },
   {
     category: "Sustainability & Reports",
-    question: "What is included in the Premium ESG audit report export?",
+    question: "What is included in the free ESG audit report export?",
     answer:
-      "Premium institutions receive complete Scope 3 Category 5 GHG accounting reports, downloadable CSV transaction logs, FSSAI-compliant chain-of-custody timestamps, and certified documentation for CSR tax deductions.",
-    tags: ["esg", "reports", "export", "csv", "premium", "scope-3"],
+      "All registered institutions receive complete Scope 3 Category 5 GHG accounting reports, downloadable CSV transaction logs, FSSAI-compliant chain-of-custody timestamps, and certified documentation for CSR tax deductions at zero cost.",
+    tags: ["esg", "reports", "export", "csv", "free", "scope-3"],
   },
 ];
 

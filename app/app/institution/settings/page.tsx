@@ -159,118 +159,59 @@ export default function InstitutionSettingsPage() {
         </div>
       )}
 
-      {/* Plan Tier Section (Ledger Strip Style) */}
+      {/* Plan Tier Section (100% Free Open Platform) */}
       <div className="border border-line bg-[#FAF6EE] rounded-[6px] p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4">
           <div>
             <div className="text-xs font-mono-numeral uppercase tracking-wider text-ink-soft">
-              Active Subscription Tier
+              Platform Licensing & Access
             </div>
             <div className="flex items-center gap-3 mt-1">
-              <span className="font-display text-2xl text-ink capitalize">
-                {plan === "premium" ? "Enterprise Premium Tier" : "Community Free Tier"}
+              <span className="font-display text-2xl text-ink">
+                Community Open Access
               </span>
               <StatusBadge
-                variant={plan === "premium" ? "premium" : "confirmed"}
-                label={plan === "premium" ? "Enterprise Plan" : "Standard Plan"}
+                variant="confirmed"
+                label="100% Free Forever"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {plan === "free" ? (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => handleTogglePlan("premium")}
-                disabled={saving}
-              >
-                Upgrade to Premium Tier
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleTogglePlan("free")}
-                disabled={saving}
-              >
-                Downgrade to Free Tier
-              </Button>
-            )}
+            <span className="text-xs font-mono-numeral text-basil font-semibold px-3 py-1.5 rounded-[4px] bg-basil/10 border border-basil/20">
+              ₹0 / month · All Features Unlocked
+            </span>
           </div>
         </div>
 
-        {/* Ledger Comparison Table of Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          {/* Free Tier Details */}
-          <div
-            className={`border rounded-[6px] p-4 space-y-3 ${
-              plan === "free"
-                ? "border-basil bg-ledger-paper"
-                : "border-line bg-ledger-paper/60 opacity-85"
-            }`}
-          >
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-ink text-sm">Free Community Tier</span>
-              <span className="font-mono-numeral text-ink-soft">₹0 / month</span>
-            </div>
-            <p className="text-ink-soft text-[11px] leading-relaxed">
-              Full inventory ledger, automated FSSAI safety gating, and direct redistribution matching with verified recipient NGOs.
-            </p>
-            <ul className="space-y-1.5 text-ink-soft">
-              <li className="flex items-center gap-2">
-                <span className="text-basil">✓</span> Real-time kitchen inventory ledger
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-basil">✓</span> Server-side fail-closed safety gating
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-basil">✓</span> Redistribution matching with KYC-verified NGOs
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-basil">✓</span> Immutable MongoDB audit trail
-              </li>
-              <li className="flex items-center gap-2 text-ink-soft/60 line-through">
-                <span>✕</span> AI demand & surplus forecasting
-              </li>
-              <li className="flex items-center gap-2 text-ink-soft/60 line-through">
-                <span>✕</span> Downloadable ESG & sustainability reports
-              </li>
-            </ul>
+        {/* Free Platform Feature Grid */}
+        <div className="border border-basil/30 bg-ledger-paper rounded-[6px] p-5 space-y-4 text-xs">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold text-ink text-sm">Full Institutional Operating System</span>
+            <span className="font-mono-numeral text-basil font-medium">Free for all verified partners</span>
           </div>
-
-          {/* Premium Tier Details */}
-          <div
-            className={`border rounded-[6px] p-4 space-y-3 ${
-              plan === "premium"
-                ? "border-basil bg-ledger-paper"
-                : "border-line bg-ledger-paper/60"
-            }`}
-          >
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-ink text-sm">Premium Enterprise</span>
-              <span className="font-mono-numeral text-basil font-medium">₹12,500 / month</span>
+          <p className="text-ink-soft text-xs leading-relaxed">
+            ZeroPlate operates as a public benefit platform. All features are fully unlocked for every registered kitchen, hospital, college, NGO, and delivery partner with zero subscription costs.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div className="flex items-center gap-2 text-ink">
+              <span className="text-basil font-bold">✓</span> Real-time daily kitchen inventory ledger
             </div>
-            <p className="text-ink-soft text-[11px] leading-relaxed">
-              Predictive kitchen management, automated overproduction forecasting, priority dispatch matching, and auditor-ready ESG exports.
-            </p>
-            <ul className="space-y-1.5 text-ink">
-              <li className="flex items-center gap-2">
-                <span className="text-basil">✓</span> Everything in Free Community tier
-              </li>
-              <li className="flex items-center gap-2 font-medium text-basil">
-                <span className="text-basil">✓</span> AI Demand & Overproduction Forecasting
-              </li>
-              <li className="flex items-center gap-2 font-medium text-basil">
-                <span className="text-basil">✓</span> Certified ESG & CO2e reporting exports
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-basil">✓</span> Dedicated logistics dispatch routing
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-basil">✓</span> Multi-kitchen centralized visibility
-              </li>
-            </ul>
+            <div className="flex items-center gap-2 text-ink">
+              <span className="text-basil font-bold">✓</span> AI demand & surplus forecasting
+            </div>
+            <div className="flex items-center gap-2 text-ink">
+              <span className="text-basil font-bold">✓</span> Server-side fail-closed food safety gating
+            </div>
+            <div className="flex items-center gap-2 text-ink">
+              <span className="text-basil font-bold">✓</span> Verified NGO recipient matching & claim engine
+            </div>
+            <div className="flex items-center gap-2 text-ink">
+              <span className="text-basil font-bold">✓</span> Live logistics coordination & delivery assignment
+            </div>
+            <div className="flex items-center gap-2 text-ink">
+              <span className="text-basil font-bold">✓</span> Downloadable ESG & Scope 3 carbon audit reports (CSV/PDF)
+            </div>
           </div>
         </div>
       </div>

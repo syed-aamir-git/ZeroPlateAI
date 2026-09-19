@@ -30,11 +30,6 @@ export function PublicFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/pricing" className="hover:text-[#F3EEE2] transition-colors">
-                Pricing & Plans
-              </Link>
-            </li>
-            <li>
               <Link href="/impact" className="hover:text-[#F3EEE2] transition-colors">
                 Public Impact Ledger
               </Link>

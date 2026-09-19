@@ -123,14 +123,8 @@ export default function InstitutionReportsPage() {
               <span className="font-mono text-xs uppercase tracking-wider text-ink-soft">
                 GHG Protocol Scope 3 · Category 5 Accounting
               </span>
-              <span
-                className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full border ${
-                  institution?.plan === "premium"
-                    ? "bg-basil/15 border-basil/40 text-basil font-semibold"
-                    : "bg-ledger-paper border-line text-ink-soft"
-                }`}
-              >
-                {institution?.plan === "premium" ? "Enterprise Premium" : "Standard Free"}
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full border bg-basil/15 border-basil/40 text-basil font-semibold">
+                Open Access · 100% Free
               </span>
             </div>
             <h1 className="font-serif text-2xl sm:text-3xl text-ink font-bold mt-1">
@@ -139,125 +133,21 @@ export default function InstitutionReportsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {institution?.plan === "premium" ? (
-              <button
-                onClick={handleDownloadCsv}
-                className="px-4 py-2 rounded bg-basil hover:bg-basil/90 text-[#FAF7F2] font-medium text-xs flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
-              >
-                <LedgerTabIcon size={14} />
-                <span>Export Audit Ledger (CSV)</span>
-              </button>
-            ) : null}
+            <button
+              onClick={handleDownloadCsv}
+              className="px-4 py-2 rounded bg-basil hover:bg-basil/90 text-[#FAF7F2] font-medium text-xs flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
+            >
+              <LedgerTabIcon size={14} />
+              <span>Export Audit Ledger (CSV)</span>
+            </button>
           </div>
         </div>
 
         {isLoading ? (
           <div className="py-20 text-center font-mono text-xs text-ink-soft">
-            Verifying plan entitlements and computing ESG carbon metrics...
-          </div>
-        ) : institution?.plan !== "premium" ? (
-          /* ========================================================================= */
-          /* REAL UPSELL STATE (Functional PRD Section 23 & Design PRD Section 5.2)     */
-          /* ========================================================================= */
-          <div className="space-y-6">
-            <div className="border border-line bg-ledger-surface p-6 sm:p-8 rounded-lg shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-line pb-6">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded text-[11px] font-mono bg-saffron/20 text-[#8C6D1F] font-bold uppercase tracking-wider">
-                      Premium Plan Feature
-                    </span>
-                    <span className="text-xs text-ink-soft">
-                      Current: Free Tier
-                    </span>
-                  </div>
-                  <h2 className="font-serif text-xl sm:text-2xl font-bold text-ink mt-2">
-                    Unlock Enterprise ESG Auditing & Carbon Certifications
-                  </h2>
-                  <p className="text-xs sm:text-sm text-ink-soft mt-1 max-w-2xl leading-relaxed">
-                    {upsellMessage ||
-                      "Audited sustainability exports, board-ready GHG Scope 3 reports, and FSSAI chain-of-custody transfer logs are reserved for Premium institutions."}
-                  </p>
-                </div>
-
-                <div className="shrink-0">
-                  <button
-                    onClick={() => handleTogglePlan("premium")}
-                    disabled={isUpgrading}
-                    className="px-5 py-2.5 rounded bg-basil hover:bg-basil/90 text-[#FAF7F2] font-semibold text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
-                  >
-                    {isUpgrading ? "Activating..." : "Upgrade to Premium Plan (Instant Demo)"}
-                  </button>
-                </div>
-              </div>
-
-              {/* Feature Comparison Ledger Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                <div className="border border-line bg-ledger-paper p-5 rounded-md space-y-3">
-                  <div className="text-xs font-mono text-ink-soft uppercase tracking-wider">
-                    Standard Free Tier (Current)
-                  </div>
-                  <ul className="space-y-2 text-xs text-ink-soft">
-                    <li className="flex items-center gap-2">
-                      <CheckIcon size={14} className="text-basil" />
-                      <span>Daily kitchen inventory tracking & shelf-life logging</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckIcon size={14} className="text-basil" />
-                      <span>Surplus batch listing & safety gating rules</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckIcon size={14} className="text-basil" />
-                      <span>Verified NGO recipient matching & delivery routing</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-ink-soft/50 line-through">
-                      <span>Automated CSV / PDF ESG compliance report export</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-ink-soft/50 line-through">
-                      <span>GHG Protocol Scope 3 Category 5 carbon offset verification</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="border-2 border-basil/40 bg-basil/5 p-5 rounded-md space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-basil font-bold uppercase tracking-wider">
-                      Enterprise Premium Plan
-                    </span>
-                    <span className="text-xs font-serif font-bold text-basil">
-                      ₹4,999 / mo
-                    </span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-ink">
-                    <li className="flex items-center gap-2">
-                      <CheckIcon size={14} className="text-basil" />
-                      <span>Full audited CSV & printable PDF executive summaries</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckIcon size={14} className="text-basil" />
-                      <span>Chain-of-custody transfer logs with digital recipient signatures</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckIcon size={14} className="text-basil" />
-                      <span>UNEP / IPCC validated carbon emissions avoidance certifications</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckIcon size={14} className="text-basil" />
-                      <span>Priority matching engine allocation for rapid surplus dispatch</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckIcon size={14} className="text-basil" />
-                      <span>Dedicated sustainability liaison & audit documentation support</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+            Computing ESG carbon metrics and loading audited records...
           </div>
         ) : (
-          /* ========================================================================= */
-          /* PREMIUM ACTIVE STATE (Functional PRD Section 12.7 & Design PRD 5.2)       */
-          /* ========================================================================= */
           <div className="space-y-8">
             {/* Active Status Strip */}
             <div className="border border-basil/30 bg-basil/5 p-4 rounded-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -267,23 +157,12 @@ export default function InstitutionReportsPage() {
                 </div>
                 <div>
                   <div className="text-xs font-bold text-basil uppercase tracking-wider">
-                    Enterprise Audit Certification Active
+                    Full ESG Audit Certification Active (100% Free)
                   </div>
                   <p className="text-xs text-ink-soft mt-0.5">
-                    Continuous compliance with FSSAI Food Waste Rules & GHG Protocol Scope 3 Category 5.
+                    Continuous compliance with FSSAI Food Waste Rules & GHG Protocol Scope 3 Category 5 at zero platform cost.
                   </p>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleTogglePlan("free")}
-                  disabled={isUpgrading}
-                  className="text-xs font-mono text-ink-soft hover:text-ink underline cursor-pointer"
-                  title="Switch to free tier to verify freemium gating"
-                >
-                  {isUpgrading ? "Updating..." : "Downgrade to Free (Demo Test)"}
-                </button>
               </div>
             </div>
 
