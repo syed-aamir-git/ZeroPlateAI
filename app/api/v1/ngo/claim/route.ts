@@ -3,7 +3,6 @@ import { getDb } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { ObjectId } from "mongodb";
-import { assignNearestDeliveryPartner } from "@/lib/logistics";
 import { createNotification } from "@/lib/notifications";
 
 export async function POST(request: NextRequest) {
@@ -90,30 +89,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Assign Nearest Available Delivery Partner (Functional PRD Section 12.5)
-    let assignedPartner = null;
-    try {
-      const assignmentDecision = await assignNearestDeliveryPartner(
-        db,
-        updatedListing.pickupLocation || { lat: 28.6139, lng: 77.209 }
-      );
-      assignedPartner = assignmentDecision.partner;
-    } catch (assignErr) {
-      console.error("Error finding nearest delivery partner:", assignErr);
-    }
-
-    // 2. Create DeliveryAssignment record (Functional PRD Section 12.5)
+    // 1. Create DeliveryAssignment open for all registered delivery partners
     const deliveryAssignmentDoc = {
       surplusListingId: listingObjectId,
       claimedByNgoId: ngo._id,
       institutionId: updatedListing.institutionId,
-      assignedToDeliveryPartnerId: assignedPartner ? assignedPartner._id : undefined,
+      assignedToDeliveryPartnerId: null, // Broadcast to all registered partners; locks on first acceptance
       status: "assigned", // assigned -> accepted -> picked_up -> delivered -> confirmed
       createdAt: now,
+      updatedAt: now,
     };
-    await db.collection("deliveryAssignments").insertOne(deliveryAssignmentDoc);
+    const insertAssignmentResult = await db.collection("deliveryAssignments").insertOne(deliveryAssignmentDoc);
+    const assignmentId = insertAssignmentResult.insertedId;
 
-    // 3. Update Match records if exists (Functional PRD Section 12.4)
+    // 2. Update Match records if exists (Functional PRD Section 12.4)
     await db.collection("matches").updateOne(
       { surplusListingId: listingObjectId, ngoId: ngo._id },
       { $set: { status: "claimed", updatedAt: now } }
@@ -123,7 +112,7 @@ export async function POST(request: NextRequest) {
       { $set: { status: "rejected", updatedAt: now } }
     );
 
-    // 4. Update parent inventory item status if linked
+    // 3. Update parent inventory item status if linked
     if (updatedListing.inventoryItemId) {
       await db.collection("inventoryItems").updateOne(
         { _id: updatedListing.inventoryItemId },
@@ -131,7 +120,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Dispatch Real Notifications (Functional PRD Section 12.6)
+    // 4. Dispatch Real Notifications (Functional PRD Section 12.6)
     // Notify Institution Admin
     const institution = await db
       .collection("institutions")
@@ -143,8 +132,8 @@ export async function POST(request: NextRequest) {
         role: "institution_admin",
         type: "listing_claimed",
         title: "Surplus Listing Claimed",
-        message: `${ngo.orgName} has claimed ${updatedListing.quantity} ${updatedListing.unit} of ${updatedListing.itemName}. A delivery partner is being coordinated for pickup.`,
-        link: "/app/institution/surplus-listings",
+        message: `${ngo.orgName} has claimed ${updatedListing.quantity} ${updatedListing.unit} of ${updatedListing.itemName}. Delivery partner assigning soon...`,
+        link: "/app/institution/deliveries",
         metadata: {
           listingId: listingObjectId,
           ngoName: ngo.orgName,
@@ -153,21 +142,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Notify Assigned Delivery Partner (if available)
-    if (assignedPartner && assignedPartner.userId) {
-      await createNotification(db, {
-        userId: assignedPartner.userId,
-        role: "delivery_partner",
-        type: "delivery_assigned",
-        title: "New Dispatch Run Assigned",
-        message: `Pickup ${updatedListing.quantity} ${updatedListing.unit} of ${updatedListing.itemName} from ${updatedListing.institutionName || institution?.name} for delivery to ${ngo.orgName}.`,
-        link: "/app/delivery/assignments",
-        metadata: {
-          listingId: listingObjectId,
-          pickupAddress: updatedListing.pickupLocation?.address || institution?.address,
-          dropAddress: ngo.serviceArea,
-        },
-      });
+    // 5. Broadcast to ALL registered delivery partners
+    const allDeliveryPartners = await db
+      .collection("deliveryPartners")
+      .find({ active: { $ne: false } })
+      .toArray();
+
+    for (const partner of allDeliveryPartners) {
+      if (partner.userId) {
+        await createNotification(db, {
+          userId: partner.userId,
+          role: "delivery_partner",
+          type: "delivery_assigned",
+          title: "New Delivery Allotted — Available for Acceptance",
+          message: `New dispatch available: Pickup ${updatedListing.quantity} ${updatedListing.unit} of ${updatedListing.itemName} from ${updatedListing.institutionName || institution?.name || "Kitchen"} for delivery to ${ngo.orgName}. First to accept will be assigned.`,
+          link: "/app/delivery/assignments",
+          metadata: {
+            assignmentId,
+            listingId: listingObjectId,
+            pickupAddress: updatedListing.pickupLocation?.address || institution?.address,
+            dropAddress: ngo.serviceArea,
+          },
+        });
+      }
     }
 
     // 6. Log claim decision to immutable audit trail
@@ -184,7 +181,8 @@ export async function POST(request: NextRequest) {
         itemName: updatedListing.itemName,
         quantity: updatedListing.quantity,
         unit: updatedListing.unit,
-        assignedDeliveryPartnerId: assignedPartner ? assignedPartner._id : null,
+        assignedDeliveryPartnerId: null,
+        deliveryAssignmentId: assignmentId,
       },
       createdAt: now,
     });
@@ -192,9 +190,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Surplus listing locked and claimed successfully.",
+        message: "Surplus listing locked and claimed successfully. Broadcast dispatched to registered delivery partners.",
         listing: updatedListing,
-        deliveryAssignedTo: assignedPartner ? assignedPartner._id : null,
+        deliveryAssignmentId: assignmentId,
+        deliveryAssignedTo: null,
       },
       { status: 200 }
     );

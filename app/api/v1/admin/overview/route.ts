@@ -65,6 +65,64 @@ export async function GET() {
       db.collection("auditLogs").find({}).sort({ createdAt: -1 }).limit(10).toArray(),
     ]);
 
+    // 4. Live Delivery Dispatches
+    const dispatches = await db
+      .collection("deliveryAssignments")
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .toArray();
+
+    const dispatchListingIds = dispatches.map((d) => d.surplusListingId).filter(Boolean);
+    const dispatchDriverIds = dispatches.map((d) => d.assignedToDeliveryPartnerId).filter(Boolean);
+    const dispatchNgoIds = dispatches.map((d) => d.claimedByNgoId).filter(Boolean);
+    const dispatchInstIds = dispatches.map((d) => d.institutionId).filter(Boolean);
+
+    const [dListings, dDrivers, dNgos, dInsts] = await Promise.all([
+      db.collection("surplusListings").find({ _id: { $in: dispatchListingIds } }).toArray(),
+      db.collection("deliveryPartners").find({ _id: { $in: dispatchDriverIds } }).toArray(),
+      db.collection("ngos").find({ _id: { $in: dispatchNgoIds } }).toArray(),
+      db.collection("institutions").find({ _id: { $in: dispatchInstIds } }).toArray(),
+    ]);
+
+    const dDriverUserIds = dDrivers.map((d) => d.userId).filter(Boolean);
+    const dDriverUsers = await db.collection("user").find({ _id: { $in: dDriverUserIds } }).toArray();
+    const dDriverUserMap = new Map(dDriverUsers.map((u) => [String(u._id), u]));
+
+    const dListingMap = new Map(dListings.map((l) => [String(l._id), l]));
+    const dDriverMap = new Map(dDrivers.map((d) => [String(d._id), d]));
+    const dNgoMap = new Map(dNgos.map((n) => [String(n._id), n]));
+    const dInstMap = new Map(dInsts.map((i) => [String(i._id), i]));
+
+    const enrichedDispatches = dispatches.map((d) => {
+      const listing = dListingMap.get(String(d.surplusListingId));
+      const driver = d.assignedToDeliveryPartnerId ? dDriverMap.get(String(d.assignedToDeliveryPartnerId)) : null;
+      const driverUser = driver?.userId ? dDriverUserMap.get(String(driver.userId)) : null;
+      const ngo = dNgoMap.get(String(d.claimedByNgoId));
+      const inst = dInstMap.get(String(d.institutionId));
+
+      return {
+        _id: d._id,
+        status: d.status,
+        createdAt: d.createdAt,
+        acceptedAt: d.acceptedAt,
+        pickedUpAt: d.pickedUpAt,
+        deliveredAt: d.deliveredAt,
+        itemName: listing?.itemName || "Surplus Batch",
+        quantity: listing?.quantity || 0,
+        unit: listing?.unit || "kg",
+        institutionName: inst?.name || listing?.institutionName || "Donor Kitchen",
+        ngoName: ngo?.orgName || "Verified NGO",
+        courier: driver
+          ? {
+              name: driverUser?.name || "Delivery Partner",
+              phone: driver.phone,
+              vehicleType: driver.vehicleType,
+            }
+          : null,
+      };
+    });
+
     return NextResponse.json({
       success: true,
       metrics: {
@@ -83,6 +141,7 @@ export async function GET() {
         auditLogCount,
       },
       recentLogs,
+      dispatches: enrichedDispatches,
     });
   } catch (error: unknown) {
     console.error("Error loading admin overview metrics:", error);

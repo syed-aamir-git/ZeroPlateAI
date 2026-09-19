@@ -59,6 +59,8 @@ export default function NgoMyClaimsPage() {
 
   React.useEffect(() => {
     fetchClaims();
+    const interval = setInterval(fetchClaims, 5000);
+    return () => clearInterval(interval);
   }, [fetchClaims]);
 
   const handleConfirmReceipt = async (claimId: string) => {
@@ -252,7 +254,7 @@ export default function NgoMyClaimsPage() {
                                 ? "In Transit"
                                 : claim.deliveryStatus === "accepted"
                                 ? "Driver Assigned"
-                                : "Awaiting Dispatch"
+                                : "Delivery partner assigning soon..."
                             }
                           />
                           <div className="text-[10px] text-ink-soft font-mono-numeral">

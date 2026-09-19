@@ -68,16 +68,39 @@ export async function PATCH(
       updatedAt: now,
     };
 
+    let updatedAssignment: any = null;
+
     // Validate lifecycle progression (Functional PRD Section 12.5)
     if (nextStatus === "accepted") {
-      if (currentAssignment.status !== "assigned") {
+      // Race-condition safe atomic lock: First partner to accept claims the dispatch
+      const result = await db.collection("deliveryAssignments").findOneAndUpdate(
+        {
+          _id: assignmentId,
+          status: "assigned",
+          $or: [
+            { assignedToDeliveryPartnerId: null },
+            { assignedToDeliveryPartnerId: { $exists: false } },
+            { assignedToDeliveryPartnerId: partner._id },
+          ],
+        },
+        {
+          $set: {
+            status: "accepted",
+            assignedToDeliveryPartnerId: partner._id,
+            acceptedAt: now,
+            updatedAt: now,
+          },
+        },
+        { returnDocument: "after" }
+      );
+
+      if (!result) {
         return NextResponse.json(
-          { error: `Cannot accept assignment from current status: ${currentAssignment.status}.` },
-          { status: 400 }
+          { error: "This delivery order has already been accepted by another delivery partner or is no longer open." },
+          { status: 409 }
         );
       }
-      updates.assignedToDeliveryPartnerId = partner._id;
-      updates.acceptedAt = now;
+      updatedAssignment = result;
     } else if (nextStatus === "picked_up") {
       if (currentAssignment.status !== "accepted") {
         return NextResponse.json(
@@ -91,7 +114,11 @@ export async function PATCH(
           { status: 403 }
         );
       }
-      updates.pickedUpAt = now;
+      await db.collection("deliveryAssignments").updateOne(
+        { _id: assignmentId },
+        { $set: { status: "picked_up", pickedUpAt: now, updatedAt: now } }
+      );
+      updatedAssignment = await db.collection("deliveryAssignments").findOne({ _id: assignmentId });
     } else if (nextStatus === "delivered") {
       if (currentAssignment.status !== "picked_up") {
         return NextResponse.json(
@@ -105,7 +132,10 @@ export async function PATCH(
           { status: 403 }
         );
       }
-      updates.deliveredAt = now;
+      await db.collection("deliveryAssignments").updateOne(
+        { _id: assignmentId },
+        { $set: { status: "delivered", deliveredAt: now, updatedAt: now } }
+      );
 
       // Also update linked SurplusListing
       if (currentAssignment.surplusListingId) {
@@ -114,14 +144,8 @@ export async function PATCH(
           { $set: { status: "delivered", deliveredAt: now, updatedAt: now } }
         );
       }
+      updatedAssignment = await db.collection("deliveryAssignments").findOne({ _id: assignmentId });
     }
-
-    await db.collection("deliveryAssignments").updateOne(
-      { _id: assignmentId },
-      { $set: updates }
-    );
-
-    const updatedAssignment = await db.collection("deliveryAssignments").findOne({ _id: assignmentId });
 
     // Dispatch Real Notifications (Functional PRD Section 12.6)
     try {
@@ -138,35 +162,101 @@ export async function PATCH(
         : null;
 
       const itemName = listing?.itemName || "Surplus Batch";
-      const statusLabels: Record<string, string> = {
-        accepted: "Driver Assigned & En Route to Kitchen",
-        picked_up: "Picked Up & In Transit",
-        delivered: "Delivered to Recipient Site",
-      };
+      const driverUser = await db.collection("user").findOne({ _id: partner.userId as any });
+      const driverName = driverUser?.name || "Delivery Partner";
+      const vehicleDesc = (partner.vehicleType || "two_wheeler").replace("_", " ");
 
-      if (institution?.userId) {
-        await createNotification(db, {
-          userId: institution.userId,
-          role: "institution_admin",
-          type: "delivery_status_change",
-          title: `Delivery Update: ${statusLabels[nextStatus] || nextStatus}`,
-          message: `Delivery status for ${itemName} has been updated to "${nextStatus}".`,
-          link: "/app/institution/surplus-listings",
-        });
-      }
+      if (nextStatus === "accepted") {
+        // 1. Notify Platform Admins that delivery partner has accepted and is now assigned
+        const platformAdmins = await db
+          .collection("user")
+          .find({ role: "platform_admin" })
+          .toArray();
 
-      if (ngo?.userId) {
-        await createNotification(db, {
-          userId: ngo.userId,
-          role: "ngo",
-          type: "delivery_status_change",
-          title: `Dispatch Update: ${statusLabels[nextStatus] || nextStatus}`,
-          message:
-            nextStatus === "delivered"
-              ? `Delivery partner has arrived and delivered ${itemName}. Please confirm receipt on your claims page to finalize the impact credit.`
-              : `Your claimed batch of ${itemName} is now ${statusLabels[nextStatus] || nextStatus}.`,
-          link: "/app/ngo/my-claims",
-        });
+        for (const admin of platformAdmins) {
+          await createNotification(db, {
+            userId: admin._id,
+            role: "platform_admin",
+            type: "delivery_assigned",
+            title: "Delivery Partner Assigned",
+            message: `Order for ${itemName} has been assigned to delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}).`,
+            link: "/app/admin/overview",
+            metadata: {
+              assignmentId,
+              partnerId: partner._id,
+              driverName,
+              phone: partner.phone,
+              vehicleType: partner.vehicleType,
+              itemName,
+            },
+          });
+        }
+
+        // 2. Notify Institution Admin that driver is assigned and en route
+        if (institution?.userId) {
+          await createNotification(db, {
+            userId: institution.userId,
+            role: "institution_admin",
+            type: "delivery_status_change",
+            title: `Delivery Partner Assigned: ${driverName}`,
+            message: `Order for ${itemName} is assigned to delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}). Driver is en route to pick up.`,
+            link: "/app/institution/deliveries",
+            metadata: {
+              assignmentId,
+              partnerId: partner._id,
+              driverName,
+              phone: partner.phone,
+              vehicleType: partner.vehicleType,
+            },
+          });
+        }
+
+        // 3. Notify NGO that driver has accepted dispatch
+        if (ngo?.userId) {
+          await createNotification(db, {
+            userId: ngo.userId,
+            role: "ngo",
+            type: "delivery_status_change",
+            title: `Delivery Partner Assigned: ${driverName}`,
+            message: `Delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}) has accepted dispatch for ${itemName} and will deliver to your center.`,
+            link: "/app/ngo/my-claims",
+            metadata: {
+              assignmentId,
+              partnerId: partner._id,
+              driverName,
+            },
+          });
+        }
+      } else {
+        const statusLabels: Record<string, string> = {
+          picked_up: "Picked Up & In Transit",
+          delivered: "Delivered to Recipient Site",
+        };
+
+        if (institution?.userId) {
+          await createNotification(db, {
+            userId: institution.userId,
+            role: "institution_admin",
+            type: "delivery_status_change",
+            title: `Delivery Update: ${statusLabels[nextStatus] || nextStatus}`,
+            message: `Delivery status for ${itemName} has been updated to "${nextStatus}" by driver ${driverName}.`,
+            link: "/app/institution/deliveries",
+          });
+        }
+
+        if (ngo?.userId) {
+          await createNotification(db, {
+            userId: ngo.userId,
+            role: "ngo",
+            type: "delivery_status_change",
+            title: `Dispatch Update: ${statusLabels[nextStatus] || nextStatus}`,
+            message:
+              nextStatus === "delivered"
+                ? `Delivery partner ${driverName} has arrived and delivered ${itemName}. Please confirm receipt on your claims page to finalize the impact credit.`
+                : `Your claimed batch of ${itemName} is now ${statusLabels[nextStatus] || nextStatus}.`,
+            link: "/app/ngo/my-claims",
+          });
+        }
       }
     } catch (notifErr) {
       console.error("Error dispatching delivery status notifications:", notifErr);

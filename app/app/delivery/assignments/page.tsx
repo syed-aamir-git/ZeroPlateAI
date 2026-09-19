@@ -18,6 +18,7 @@ interface Assignment {
   deliveredAt?: string;
   confirmedAt?: string;
   isAssignedToMe: boolean;
+  isOpenBroadcast?: boolean;
   item: {
     name: string;
     category: string;
@@ -83,6 +84,8 @@ export default function DeliveryAssignmentsPage() {
 
   React.useEffect(() => {
     fetchAssignments();
+    const interval = setInterval(fetchAssignments, 5000);
+    return () => clearInterval(interval);
   }, [fetchAssignments]);
 
   const handleAdvanceStatus = async (
@@ -213,6 +216,21 @@ export default function DeliveryAssignmentsPage() {
                     <h3 className="font-display text-base font-semibold text-[#F3EEE2] leading-snug">
                       {assignment.item.name}
                     </h3>
+                    {assignment.status === "assigned" ? (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-mono-numeral font-bold bg-[#D9A441]/20 text-[#D9A441] border border-[#D9A441]/40">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D9A441] animate-pulse" />
+                          BROADCAST TO ALL PARTNERS · OPEN TO ACCEPT
+                        </span>
+                        <span className="text-[10px] text-[#9E9587]">First to tap Accept secures order</span>
+                      </div>
+                    ) : assignment.isAssignedToMe ? (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono-numeral font-semibold bg-[#2F4B3A]/40 text-[#86C29B] border border-[#2F4B3A]">
+                          ✓ Assigned to You
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
                   <div className="font-mono-numeral text-xl font-bold text-[#D9A441]">
                     {assignment.item.quantity}{" "}
@@ -315,9 +333,9 @@ export default function DeliveryAssignmentsPage() {
                     <button
                       onClick={() => handleAdvanceStatus(assignment._id, "accepted")}
                       disabled={isUpdating}
-                      className="w-full min-h-[48px] py-3 px-4 rounded-[6px] bg-[#2F4B3A] hover:bg-[#3D614B] text-[#F3EEE2] font-semibold text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full min-h-[48px] py-3 px-4 rounded-[6px] bg-[#2F4B3A] hover:bg-[#3D614B] text-[#F3EEE2] font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99]"
                     >
-                      <span>✓ Accept Dispatch Assignment</span>
+                      <span>✓ Accept Delivery Order</span>
                     </button>
                   )}
 

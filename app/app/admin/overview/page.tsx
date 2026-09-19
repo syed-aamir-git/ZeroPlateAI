@@ -24,6 +24,23 @@ interface AdminMetrics {
   auditLogCount: number;
 }
 
+interface DispatchItem {
+  _id: string;
+  status: string;
+  createdAt: string;
+  acceptedAt?: string;
+  itemName: string;
+  quantity: number;
+  unit: string;
+  institutionName: string;
+  ngoName: string;
+  courier: {
+    name: string;
+    phone: string;
+    vehicleType: string;
+  } | null;
+}
+
 interface AuditEvent {
   _id: string;
   entityType: string;
@@ -37,6 +54,7 @@ interface AuditEvent {
 export default function AdminOverviewPage() {
   const [metrics, setMetrics] = React.useState<AdminMetrics | null>(null);
   const [recentLogs, setRecentLogs] = React.useState<AuditEvent[]>([]);
+  const [dispatches, setDispatches] = React.useState<DispatchItem[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   const fetchOverview = React.useCallback(async () => {
@@ -46,6 +64,7 @@ export default function AdminOverviewPage() {
       if (res.ok) {
         setMetrics(json.metrics);
         setRecentLogs(json.recentLogs || []);
+        setDispatches(json.dispatches || []);
       }
     } catch (err) {
       console.error("Failed to load admin overview:", err);
@@ -56,6 +75,8 @@ export default function AdminOverviewPage() {
 
   React.useEffect(() => {
     fetchOverview();
+    const interval = setInterval(fetchOverview, 5000);
+    return () => clearInterval(interval);
   }, [fetchOverview]);
 
   if (loading) {
@@ -186,6 +207,104 @@ export default function AdminOverviewPage() {
             <div className="text-[11px] text-[#C9B9C7] mt-0.5">landfill gas avoided</div>
           </div>
         </div>
+      </div>
+
+      {/* Live Delivery Partner Dispatch Coordination */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#5A3653] pb-2">
+          <div>
+            <h2 className="font-display text-xl font-bold text-[#F3EEE2] flex items-center gap-2">
+              <RouteIcon size={20} className="text-[#D9A441]" />
+              Live Delivery Partner Dispatch Coordination
+            </h2>
+            <p className="text-xs text-[#C9B9C7]">
+              Real-time dispatch tracking: Allotted deliveries broadcast to all registered partners; Admin notified once accepted.
+            </p>
+          </div>
+          <span className="font-mono-numeral text-[11px] text-[#D9A441] flex items-center gap-1.5 bg-[#4A2E44] px-2.5 py-1 rounded border border-[#5A3653] w-fit">
+            <span className="w-2 h-2 rounded-full bg-[#86C29B] animate-pulse" />
+            Live Network Coordination
+          </span>
+        </div>
+
+        {dispatches.length === 0 ? (
+          <div className="border border-[#5A3653] bg-[#3D2538] rounded-[6px] p-8 text-center text-xs text-[#C9B9C7] space-y-1">
+            <RouteIcon size={24} className="mx-auto text-[#C9B9C7]/60" />
+            <div className="font-medium text-[#F3EEE2]">No Active Delivery Dispatches</div>
+            <p className="text-[11px] text-[#C9B9C7]">When recipient NGOs claim surplus listings, allotted runs will stream here live.</p>
+          </div>
+        ) : (
+          <div className="border border-[#5A3653] bg-[#3D2538] rounded-[6px] overflow-hidden">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#4A2E44] border-b border-[#5A3653] text-[#F3EEE2] uppercase font-mono-numeral text-[11px]">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Listing Item</th>
+                  <th className="px-4 py-3 font-semibold">Origin & Recipient</th>
+                  <th className="px-4 py-3 font-semibold">Delivery Partner Status</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Allotted At</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#5A3653] text-[#D4CBBF]">
+                {dispatches.map((d) => (
+                  <tr key={d._id} className="hover:bg-[#4A2E44]/50 transition-colors">
+                    <td className="px-4 py-3 font-mono-numeral font-medium text-[#F3EEE2]">
+                      <div>{d.itemName}</div>
+                      <div className="text-[11px] text-[#D9A441]">
+                        {d.quantity} {d.unit}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-[11px]">
+                      <div>
+                        From: <span className="text-[#F3EEE2] font-medium">{d.institutionName}</span>
+                      </div>
+                      <div>
+                        To: <span className="text-[#86C29B] font-medium">{d.ngoName}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {d.courier ? (
+                        <div className="font-mono-numeral space-y-0.5">
+                          <div className="font-semibold text-[#F3EEE2] flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#86C29B]" />
+                            {d.courier.name}
+                          </div>
+                          <div className="text-[11px] text-[#C9B9C7] capitalize">
+                            {d.courier.vehicleType?.replace("_", " ")} · {d.courier.phone}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono-numeral font-medium bg-[#D9A441]/20 text-[#D9A441] border border-[#D9A441]/40">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D9A441] animate-pulse" />
+                          Delivery partner assigning soon...
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono-numeral uppercase ${
+                          d.status === "confirmed" || d.status === "delivered"
+                            ? "bg-[#2F4B3A] text-[#86C29B] border border-[#2F4B3A]"
+                            : d.status === "accepted" || d.status === "picked_up"
+                            ? "bg-[#4A2E44] text-[#D9A441] border border-[#D9A441]/50"
+                            : "bg-[#D9A441]/20 text-[#D9A441] border border-[#D9A441]/40"
+                        }`}
+                      >
+                        {d.status === "assigned" && !d.courier ? "Assigning Soon" : d.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-mono-numeral text-[#C9B9C7]">
+                      {new Date(d.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Recent Audit Trail Feed */}

@@ -29,10 +29,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Find active assignments assigned to this partner, OR unassigned assignments waiting for a driver
+    // Find active assignments:
+    // 1. Broadcast assignments open to all registered delivery partners (unassigned)
+    // 2. Active assignments claimed/assigned to this partner
     const query = {
       $or: [
-        { assignedToDeliveryPartnerId: partner._id, status: { $in: ["assigned", "accepted", "picked_up"] } },
+        { assignedToDeliveryPartnerId: partner._id, status: { $in: ["assigned", "accepted", "picked_up", "delivered"] } },
+        { status: "assigned", assignedToDeliveryPartnerId: null },
+        { status: "assigned", assignedToDeliveryPartnerId: { $in: [null, undefined] } },
         { status: "assigned", assignedToDeliveryPartnerId: { $exists: false } },
       ],
     };
@@ -92,6 +96,7 @@ export async function GET(request: NextRequest) {
         deliveredAt: a.deliveredAt,
         confirmedAt: a.confirmedAt,
         isAssignedToMe: String(a.assignedToDeliveryPartnerId) === String(partner._id),
+        isOpenBroadcast: !a.assignedToDeliveryPartnerId && a.status === "assigned",
         item: {
           name: listing?.itemName || "Surplus Batch",
           category: listing?.category || "cooked_food",

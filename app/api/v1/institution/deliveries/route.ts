@@ -54,13 +54,18 @@ export async function GET(request: NextRequest) {
       db.collection("ngos").find({ _id: { $in: ngoIds } }).toArray(),
     ]);
 
+    const driverUserIds = drivers.map((d) => d.userId).filter(Boolean);
+    const driverUsers = await db.collection("user").find({ _id: { $in: driverUserIds } }).toArray();
+    const driverUserMap = new Map(driverUsers.map((u) => [String(u._id), u]));
+
     const listingMap = new Map(listings.map((l) => [String(l._id), l]));
     const driverMap = new Map(drivers.map((d) => [String(d._id), d]));
     const ngoMap = new Map(ngos.map((n) => [String(n._id), n]));
 
     const enriched = assignments.map((a) => {
       const listing = listingMap.get(String(a.surplusListingId));
-      const driver = driverMap.get(String(a.assignedToDeliveryPartnerId));
+      const driver = a.assignedToDeliveryPartnerId ? driverMap.get(String(a.assignedToDeliveryPartnerId)) : null;
+      const driverUser = driver?.userId ? driverUserMap.get(String(driver.userId)) : null;
       const ngo = ngoMap.get(String(a.claimedByNgoId));
 
       return {
@@ -84,6 +89,7 @@ export async function GET(request: NextRequest) {
         },
         courier: driver
           ? {
+              name: driverUser?.name || "Delivery Partner",
               vehicleType: driver.vehicleType,
               phone: driver.phone,
               serviceArea: driver.serviceArea,

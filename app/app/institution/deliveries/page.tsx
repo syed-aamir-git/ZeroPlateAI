@@ -25,6 +25,7 @@ interface DeliveryItem {
     contactPhone: string;
   };
   courier: {
+    name?: string;
     vehicleType: string;
     phone: string;
     serviceArea: string;
@@ -32,8 +33,8 @@ interface DeliveryItem {
 }
 
 const STEPS = [
-  { key: "assigned", label: "Assigned", desc: "Driver dispatched" },
-  { key: "accepted", label: "Accepted", desc: "Driver en route" },
+  { key: "assigned", label: "Allotted", desc: "Broadcast to network" },
+  { key: "accepted", label: "Accepted", desc: "Driver assigned" },
   { key: "picked_up", label: "Picked Up", desc: "Food in transit" },
   { key: "delivered", label: "Delivered", desc: "Arrived at site" },
   { key: "confirmed", label: "Confirmed", desc: "Recipient verified" },
@@ -47,7 +48,6 @@ export default function InstitutionDeliveriesPage() {
   useEffect(() => {
     async function loadDeliveries() {
       try {
-        setIsLoading(true);
         const res = await fetch("/api/v1/institution/deliveries");
         if (res.ok) {
           const data = await res.json();
@@ -61,6 +61,8 @@ export default function InstitutionDeliveriesPage() {
     }
 
     loadDeliveries();
+    const interval = setInterval(loadDeliveries, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const getStepIndex = (status: string) => {
@@ -183,21 +185,29 @@ export default function InstitutionDeliveriesPage() {
 
                     <div className="text-right text-xs">
                       {d.courier ? (
-                        <div className="p-2 rounded bg-ledger-paper border border-line text-left">
-                          <span className="text-[10px] uppercase font-mono text-ink-soft block">
-                            Assigned Driver
+                        <div className="p-2.5 rounded bg-ledger-paper border border-line text-left space-y-0.5">
+                          <span className="text-[10px] uppercase font-mono text-basil font-semibold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-basil" />
+                            Assigned Partner
                           </span>
-                          <span className="font-semibold text-ink block capitalize">
+                          <span className="font-semibold text-ink block text-xs">
+                            {d.courier.name || "Delivery Partner"}
+                          </span>
+                          <span className="text-[11px] text-ink-soft block capitalize">
                             {d.courier.vehicleType.replace("_", " ")}
                           </span>
-                          <span className="font-mono text-ink-soft text-[11px]">
-                            {d.courier.phone}
-                          </span>
+                          <a
+                            href={`tel:${d.courier.phone}`}
+                            className="font-mono text-basil hover:underline text-[11px] font-medium block"
+                          >
+                            📞 {d.courier.phone}
+                          </a>
                         </div>
                       ) : (
-                        <span className="px-2.5 py-1 rounded text-[11px] font-mono bg-saffron/20 text-[#8C6D1F]">
-                          Awaiting Driver Acceptance
-                        </span>
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded text-[11px] font-mono bg-saffron/20 text-[#8C6D1F] border border-saffron/30">
+                          <span className="w-2 h-2 rounded-full bg-[#8C6D1F] animate-pulse" />
+                          Delivery partner assigning soon...
+                        </div>
                       )}
                     </div>
                   </div>
