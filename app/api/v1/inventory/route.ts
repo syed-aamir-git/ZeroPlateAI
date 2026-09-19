@@ -77,7 +77,7 @@ export async function GET() {
     const expiryStatus = computeExpiryStatus(item.category, item.expiryEstimateAt);
     const linkedListing = listingByItemId.get(String(item._id));
 
-    let effectiveStatus = item.status;
+    let effectiveStatus = item.status || "in_stock";
 
     if (item.status === "delivered" || linkedListing?.status === "delivered") {
       effectiveStatus = "delivered";
@@ -85,20 +85,22 @@ export async function GET() {
       item.status === "in_progress" ||
       item.status === "claimed" ||
       item.status === "listed" ||
-      item.status === "surplus" ||
       linkedListing?.status === "claimed" ||
       linkedListing?.status === "matched" ||
       linkedListing?.status === "pending"
     ) {
       effectiveStatus = "in_progress";
-    } else if (effectiveStatus === "expired" || expiryStatus.isExpired || linkedListing?.status === "expired") {
+    } else if (item.status === "expired" || expiryStatus.isExpired) {
       effectiveStatus = "expired";
+    } else if (item.status === "surplus") {
+      effectiveStatus = "surplus";
     } else {
       effectiveStatus = "in_stock";
     }
 
     return {
       ...item,
+      rawStatus: item.status,
       status: effectiveStatus,
       expiryStatus,
       linkedListing: linkedListing

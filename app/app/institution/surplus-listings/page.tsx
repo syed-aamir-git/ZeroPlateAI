@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { TicketIcon, ShieldCheckIcon, AlertTriangleIcon } from "@/components/icons/ledger-icons";
+import { TicketIcon, ShieldCheckIcon, AlertTriangleIcon, CrateIcon } from "@/components/icons/ledger-icons";
 
 interface SurplusListing {
   _id: string;
@@ -37,10 +38,14 @@ interface InventoryItem {
   unit: string;
   preparedOrReceivedAt: string;
   expiryEstimateAt: string;
-  status: "in_stock" | "surplus" | "listed" | "expired";
+  status: "in_stock" | "surplus" | "listed" | "expired" | "delivered" | "in_progress";
+  rawStatus?: string;
 }
 
-export default function InstitutionSurplusListingsPage() {
+function SurplusListingsContent() {
+  const searchParams = useSearchParams();
+  const preselectedItemId = searchParams.get("itemId");
+
   const [listings, setListings] = React.useState<SurplusListing[]>([]);
   const [inventoryItems, setInventoryItems] = React.useState<InventoryItem[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -48,12 +53,20 @@ export default function InstitutionSurplusListingsPage() {
 
   // Create Listing Modal
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [modalMode, setModalMode] = React.useState<"select" | "quick_add">("select");
   const [selectedItemId, setSelectedItemId] = React.useState<string>("");
   const [listingQty, setListingQty] = React.useState<string>("");
   const [windowStartHours, setWindowStartHours] = React.useState<string>("0"); // hours from now
   const [windowDurationHours, setWindowDurationHours] = React.useState<string>("2"); // duration
   const [pickupAddress, setPickupAddress] = React.useState<string>("");
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Quick Add Form state
+  const [quickName, setQuickName] = React.useState("");
+  const [quickCategory, setQuickCategory] = React.useState("cooked_food");
+  const [quickQuantity, setQuickQuantity] = React.useState("");
+  const [quickUnit, setQuickUnit] = React.useState("kg");
+  const [quickPrepAgoHours, setQuickPrepAgoHours] = React.useState("0");
 
   // Safety Gating Alert state
   const [gatingResult, setGatingResult] = React.useState<{
@@ -93,12 +106,51 @@ export default function InstitutionSurplusListingsPage() {
     fetchInventory();
   }, [fetchListings, fetchInventory]);
 
-  // When selected inventory item changes, auto-fill quantity and institution address
+  // Handle URL deep-link with itemId
+  React.useEffect(() => {
+    if (preselectedItemId && inventoryItems.length > 0) {
+      const target = inventoryItems.find((i) => i._id === preselectedItemId);
+      if (target) {
+        setSelectedItemId(target._id);
+        setListingQty(String(target.quantity));
+        setIsCreateOpen(true);
+        setModalMode("select");
+      }
+    }
+  }, [preselectedItemId, inventoryItems]);
+
+  // Compute items that are eligible for surplus listing
+  const availableItems = React.useMemo(() => {
+    return inventoryItems.filter((i) => {
+      if (i.status === "delivered" || i.status === "expired") return false;
+      if (Number(i.quantity) <= 0) return false;
+      return (
+        i.status === "in_stock" ||
+        i.status === "surplus" ||
+        i.rawStatus === "surplus" ||
+        i.rawStatus === "in_stock" ||
+        !i.status
+      );
+    });
+  }, [inventoryItems]);
+
+  // When selected inventory item changes, auto-fill quantity
   const handleItemSelect = (itemId: string) => {
     setSelectedItemId(itemId);
     const item = inventoryItems.find((i) => i._id === itemId);
     if (item) {
       setListingQty(String(item.quantity));
+    }
+  };
+
+  const handleQuickCategoryChange = (newCat: string) => {
+    setQuickCategory(newCat);
+    if (newCat === "cooked_food" || newCat === "raw_produce") {
+      setQuickUnit("kg");
+    } else if (newCat === "dairy") {
+      setQuickUnit("L");
+    } else if (newCat === "packaged" || newCat === "bakery") {
+      setQuickUnit("pcs");
     }
   };
 
@@ -111,6 +163,79 @@ export default function InstitutionSurplusListingsPage() {
 
     try {
       const now = new Date();
+      let targetItemId = selectedItemId;
+      let finalQty = Number(listingQty);
+
+      // If in Quick Add mode, first create the inventory item
+      if (modalMode === "quick_add") {
+        if (!quickName.trim()) {
+          setGatingResult({
+            type: "error",
+            message: "Product / dish name is required.",
+          });
+          setSubmitting(false);
+          return;
+        }
+
+        const qtyNum = Number(quickQuantity);
+        if (!qtyNum || qtyNum <= 0) {
+          setGatingResult({
+            type: "error",
+            message: "Please enter a valid quantity greater than zero.",
+          });
+          setSubmitting(false);
+          return;
+        }
+
+        const prepHoursAgo = Number(quickPrepAgoHours) || 0;
+        const prepDate = new Date(now.getTime() - prepHoursAgo * 60 * 60 * 1000);
+        // Default shelf life: cooked_food = 4 hours, dairy = 12 hours, bakery = 12 hours, raw_produce = 24 hours, packaged = 48 hours
+        const shelfLifeHours =
+          quickCategory === "cooked_food"
+            ? 4
+            : quickCategory === "dairy" || quickCategory === "bakery"
+            ? 12
+            : quickCategory === "raw_produce"
+            ? 24
+            : 48;
+        const expiryDate = new Date(prepDate.getTime() + shelfLifeHours * 60 * 60 * 1000);
+
+        const invRes = await fetch("/api/v1/inventory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: quickName.trim(),
+            category: quickCategory,
+            quantity: qtyNum,
+            unit: quickUnit,
+            preparedOrReceivedAt: prepDate.toISOString(),
+            expiryEstimateAt: expiryDate.toISOString(),
+          }),
+        });
+
+        const invData = await invRes.json();
+        if (!invRes.ok || !invData.item?._id) {
+          setGatingResult({
+            type: "error",
+            message: invData.error || "Failed to log new inventory item before listing.",
+          });
+          setSubmitting(false);
+          return;
+        }
+
+        targetItemId = invData.item._id;
+        finalQty = qtyNum;
+      }
+
+      if (!targetItemId) {
+        setGatingResult({
+          type: "error",
+          message: "Please select or enter an inventory item to list.",
+        });
+        setSubmitting(false);
+        return;
+      }
+
       const startTime = new Date(now.getTime() + Number(windowStartHours) * 60 * 60 * 1000);
       const endTime = new Date(startTime.getTime() + Number(windowDurationHours) * 60 * 60 * 1000);
 
@@ -118,8 +243,8 @@ export default function InstitutionSurplusListingsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          inventoryItemId: selectedItemId,
-          quantity: Number(listingQty),
+          inventoryItemId: targetItemId,
+          quantity: finalQty,
           pickupWindow: {
             start: startTime.toISOString(),
             end: endTime.toISOString(),
@@ -162,6 +287,8 @@ export default function InstitutionSurplusListingsPage() {
       // Reset form and reload
       setSelectedItemId("");
       setListingQty("");
+      setQuickName("");
+      setQuickQuantity("");
       fetchListings();
       fetchInventory();
     } catch (err: unknown) {
@@ -439,7 +566,7 @@ export default function InstitutionSurplusListingsPage() {
       {/* Create Surplus Listing Modal / Drawer */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-ledger-paper border border-line rounded-[6px] max-w-lg w-full p-6 space-y-5 text-ink shadow-lg">
+          <div className="bg-ledger-paper border border-line rounded-[6px] max-w-lg w-full p-6 space-y-5 text-ink shadow-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
                 <span className="font-mono-numeral text-xs uppercase tracking-wider text-ink-soft">
@@ -450,10 +577,45 @@ export default function InstitutionSurplusListingsPage() {
                 </h3>
               </div>
               <button
-                onClick={() => setIsCreateOpen(false)}
+                onClick={() => {
+                  setIsCreateOpen(false);
+                  setGatingResult(null);
+                }}
                 className="text-ink-soft hover:text-ink text-sm font-mono-numeral cursor-pointer"
               >
                 [ESC]
+              </button>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div className="flex border border-line rounded-[4px] p-0.5 bg-[#FAF6EE]">
+              <button
+                type="button"
+                onClick={() => {
+                  setModalMode("select");
+                  setGatingResult(null);
+                }}
+                className={`flex-1 py-1.5 px-3 text-xs font-medium rounded-[3px] transition-colors cursor-pointer ${
+                  modalMode === "select"
+                    ? "bg-basil text-ledger-paper"
+                    : "text-ink-soft hover:text-ink"
+                }`}
+              >
+                Choose from Ledger ({availableItems.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalMode("quick_add");
+                  setGatingResult(null);
+                }}
+                className={`flex-1 py-1.5 px-3 text-xs font-medium rounded-[3px] transition-colors cursor-pointer ${
+                  modalMode === "quick_add"
+                    ? "bg-basil text-ledger-paper"
+                    : "text-ink-soft hover:text-ink"
+                }`}
+              >
+                + Quick Add New Batch
               </button>
             </div>
 
@@ -483,85 +645,217 @@ export default function InstitutionSurplusListingsPage() {
                     Rule triggered: {gatingResult.ruleApplied} (Logged to MongoDB auditLogs)
                   </div>
                 )}
+                {gatingResult.type === "success" && (
+                  <div className="pt-2">
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        setIsCreateOpen(false);
+                        setGatingResult(null);
+                      }}
+                    >
+                      Done & View Listings
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
             <form onSubmit={handleCreateListing} className="space-y-4">
-              <div>
-                <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
-                  Select In-Stock Inventory Item *
-                </label>
-                {inventoryItems.length === 0 ? (
-                  <div className="text-xs text-clay-rust border border-line bg-[#FAF6EE] p-3 rounded-[4px]">
-                    No inventory items logged yet. Please add items in the{" "}
-                    <Link href="/app/institution/inventory" className="underline font-medium">
-                      Inventory Ledger
-                    </Link>{" "}
-                    first.
+              {/* Select Mode */}
+              {modalMode === "select" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                      Select In-Stock Inventory Item *
+                    </label>
+                    {availableItems.length === 0 ? (
+                      <div className="text-xs border border-line bg-[#FAF6EE] p-3.5 rounded-[4px] space-y-2">
+                        <div className="font-medium text-ink flex items-center gap-1.5">
+                          <CrateIcon size={14} />
+                          <span>No available ledger items found</span>
+                        </div>
+                        <p className="text-ink-soft">
+                          All logged kitchen items have either expired or been dispatched.
+                        </p>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setModalMode("quick_add")}
+                            className="px-2.5 py-1 text-xs bg-basil text-ledger-paper rounded-[4px] font-medium cursor-pointer"
+                          >
+                            + Quick Add Batch Now
+                          </button>
+                          <Link
+                            href="/app/institution/inventory"
+                            className="px-2.5 py-1 text-xs border border-line rounded-[4px] text-ink hover:bg-black/5 font-medium"
+                          >
+                            Go to Inventory Ledger
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedItemId}
+                        onChange={(e) => handleItemSelect(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none cursor-pointer"
+                      >
+                        <option value="">-- Choose item from ledger ({availableItems.length} available) --</option>
+                        {availableItems.map((item) => {
+                          const isSurplus = item.status === "surplus" || item.rawStatus === "surplus";
+                          return (
+                            <option key={item._id} value={item._id}>
+                              {item.name} ({item.quantity} {item.unit} available) — {item.category.replace("_", " ")}
+                              {isSurplus ? " ★ FLAGGED SURPLUS" : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    )}
                   </div>
-                ) : (
-                  <select
-                    value={selectedItemId}
-                    onChange={(e) => handleItemSelect(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
-                  >
-                    <option value="">-- Choose item from ledger --</option>
-                    {inventoryItems
-                      .filter((i) => i.status === "in_stock" || i.status === "surplus")
-                      .map((item) => (
-                        <option key={item._id} value={item._id}>
-                          {item.name} ({item.quantity} {item.unit} available) — {item.category.replace("_", " ")}
-                        </option>
-                      ))}
-                  </select>
-                )}
-              </div>
 
-              {selectedItem && (
-                <div className="bg-[#FAF6EE] border border-line p-3 rounded-[4px] text-xs space-y-1 font-mono-numeral">
-                  <div className="flex justify-between text-ink-soft">
-                    <span>Preparation / Logged:</span>
-                    <span className="text-ink">
-                      {new Date(selectedItem.preparedOrReceivedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-ink-soft">
-                    <span>Expiry Estimate:</span>
-                    <span className="text-ink">
-                      {new Date(selectedItem.expiryEstimateAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  {selectedItem.category === "cooked_food" && (
-                    <div className="text-saffron text-[11px] pt-1">
-                      ⚠️ Cooked food 4-hour window strictly enforced server-side.
+                  {selectedItem && (
+                    <div className="bg-[#FAF6EE] border border-line p-3 rounded-[4px] text-xs space-y-1 font-mono-numeral">
+                      <div className="flex justify-between text-ink-soft">
+                        <span>Preparation / Logged:</span>
+                        <span className="text-ink">
+                          {new Date(selectedItem.preparedOrReceivedAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-ink-soft">
+                        <span>Expiry Estimate:</span>
+                        <span className="text-ink">
+                          {new Date(selectedItem.expiryEstimateAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                      {selectedItem.category === "cooked_food" && (
+                        <div className="text-saffron text-[11px] pt-1">
+                          ⚠️ Cooked food 4-hour window strictly enforced server-side.
+                        </div>
+                      )}
                     </div>
                   )}
+
+                  <div>
+                    <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                      Surplus Quantity *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={listingQty}
+                      onChange={(e) => setListingQty(e.target.value)}
+                      placeholder="e.g. 25"
+                      required
+                      max={selectedItem ? selectedItem.quantity : undefined}
+                      className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink font-mono-numeral focus:ring-1 focus:ring-basil outline-none"
+                    />
+                    {selectedItem && (
+                      <span className="text-[10px] text-ink-soft font-mono-numeral">
+                        Max available: {selectedItem.quantity} {selectedItem.unit}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
-                    Surplus Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={listingQty}
-                    onChange={(e) => setListingQty(e.target.value)}
-                    placeholder="e.g. 25"
-                    required
-                    max={selectedItem ? selectedItem.quantity : undefined}
-                    className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink font-mono-numeral focus:ring-1 focus:ring-basil outline-none"
-                  />
-                  {selectedItem && (
-                    <span className="text-[10px] text-ink-soft font-mono-numeral">
-                      Max available: {selectedItem.quantity} {selectedItem.unit}
-                    </span>
-                  )}
-                </div>
+              {/* Quick Add Mode */}
+              {modalMode === "quick_add" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                      Item / Dish Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={quickName}
+                      onChange={(e) => setQuickName(e.target.value)}
+                      placeholder="e.g. Fresh Palak Paneer & Rice"
+                      required
+                      className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                    />
+                  </div>
 
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                        Category *
+                      </label>
+                      <select
+                        value={quickCategory}
+                        onChange={(e) => handleQuickCategoryChange(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                      >
+                        <option value="cooked_food">Cooked Food (Hot Meals)</option>
+                        <option value="dairy">Dairy & Milk</option>
+                        <option value="bakery">Bakery & Bread</option>
+                        <option value="raw_produce">Raw Produce / Fruits</option>
+                        <option value="packaged">Packaged Goods</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                        Cooked / Prepared Time
+                      </label>
+                      <select
+                        value={quickPrepAgoHours}
+                        onChange={(e) => setQuickPrepAgoHours(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                      >
+                        <option value="0">Just now (Fresh batch)</option>
+                        <option value="0.5">30 minutes ago</option>
+                        <option value="1">1 hour ago</option>
+                        <option value="2">2 hours ago</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                        Surplus Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={quickQuantity}
+                        onChange={(e) => setQuickQuantity(e.target.value)}
+                        placeholder="e.g. 25"
+                        required
+                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink font-mono-numeral focus:ring-1 focus:ring-basil outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                        Unit *
+                      </label>
+                      <select
+                        value={quickUnit}
+                        onChange={(e) => setQuickUnit(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                      >
+                        <option value="kg">kg (Kilograms)</option>
+                        <option value="pcs">pcs (Pieces / Portions)</option>
+                        <option value="L">L (Litres)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Shared Dispatch Window Fields */}
+              <div className="grid grid-cols-2 gap-3 pt-1 border-t border-line">
                 <div>
                   <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
                     Pickup Start *
@@ -577,9 +871,7 @@ export default function InstitutionSurplusListingsPage() {
                     <option value="2">In 2 hours</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
                     Pickup Window Duration *
@@ -595,19 +887,19 @@ export default function InstitutionSurplusListingsPage() {
                     <option value="4">4 hours window</option>
                   </select>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
-                    Dispatch Point / Gate
-                  </label>
-                  <input
-                    type="text"
-                    value={pickupAddress}
-                    onChange={(e) => setPickupAddress(e.target.value)}
-                    placeholder="e.g. Loading Dock B"
-                    className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                  Dispatch Point / Gate
+                </label>
+                <input
+                  type="text"
+                  value={pickupAddress}
+                  onChange={(e) => setPickupAddress(e.target.value)}
+                  placeholder="e.g. Loading Dock B, Main Kitchen Gate"
+                  className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-line">
@@ -615,7 +907,10 @@ export default function InstitutionSurplusListingsPage() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsCreateOpen(false)}
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    setGatingResult(null);
+                  }}
                 >
                   Cancel
                 </Button>
@@ -623,7 +918,11 @@ export default function InstitutionSurplusListingsPage() {
                   type="submit"
                   variant="default"
                   size="sm"
-                  disabled={submitting || !selectedItemId || !listingQty}
+                  disabled={
+                    submitting ||
+                    (modalMode === "select" && (!selectedItemId || !listingQty)) ||
+                    (modalMode === "quick_add" && (!quickName.trim() || !quickQuantity))
+                  }
                 >
                   {submitting ? "Evaluating Safety Rules..." : "Run Safety Gating & Publish"}
                 </Button>
@@ -633,5 +932,19 @@ export default function InstitutionSurplusListingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function InstitutionSurplusListingsPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="max-w-6xl mx-auto p-8 text-xs font-mono-numeral text-ink-soft">
+          Loading surplus redistribution ledger...
+        </div>
+      }
+    >
+      <SurplusListingsContent />
+    </React.Suspense>
   );
 }
