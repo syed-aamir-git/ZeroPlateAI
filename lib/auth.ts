@@ -2,22 +2,25 @@ import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
 
+const DEFAULT_MONGODB_URI =
+  "mongodb+srv://rajjasani08_db_user:SBCIcDaPAqk1DUtj@cluster0.chrxzvr.mongodb.net/ZeroPlate_ai_MVP?retryWrites=true&w=majority";
+
 function sanitizeDbName(name?: string): string {
-  if (!name) return "zeroplate";
+  if (!name) return "ZeroPlate_ai_MVP";
   const clean = name.replace(/[/\\. "$*<>:|?]/g, "_").trim();
-  return clean || "zeroplate";
+  return clean || "ZeroPlate_ai_MVP";
 }
 
 function getMongoUri(): string {
   const envUri = process.env.MONGODB_URI || "";
   if (!envUri || envUri.includes("<db_password>") || envUri.includes("<password>")) {
-    return "mongodb://127.0.0.1:27017/zeroplate";
+    return DEFAULT_MONGODB_URI;
   }
   return envUri;
 }
 
 const uri = getMongoUri();
-const dbName = sanitizeDbName(process.env.MONGODB_DB_NAME || "zeroplate");
+const dbName = sanitizeDbName(process.env.MONGODB_DB_NAME || "ZeroPlate_ai_MVP");
 
 declare global {
   // eslint-disable-next-line no-var
