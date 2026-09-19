@@ -159,8 +159,10 @@ export function TicketIcon({ size = 20, strokeWidth = 1.5, className = "", ...pr
       className={className}
       {...props}
     >
-      <path d="M2 9a3 3 0 0 1 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
-      <line x1="12" y1="5" x2="12" y2="19" strokeDasharray="3 3" />
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+      <path d="M13 5v2" />
+      <path d="M13 11v2" />
+      <path d="M13 17v2" />
     </svg>
   );
 }
