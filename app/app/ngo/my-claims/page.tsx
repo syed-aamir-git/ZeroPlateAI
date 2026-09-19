@@ -115,7 +115,7 @@ export default function NgoMyClaimsPage() {
         </div>
 
         <Button asChild variant="default" size="sm">
-          <Link href="/app/ngo/browse">
+          <Link href="/app/ngo/browse" className="inline-flex items-center gap-2">
             <TicketIcon size={14} />
             <span>+ Browse new surplus</span>
           </Link>
