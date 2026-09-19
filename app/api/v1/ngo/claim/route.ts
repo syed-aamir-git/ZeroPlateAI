@@ -89,18 +89,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Create DeliveryAssignment open for all registered delivery partners
-    const deliveryAssignmentDoc = {
+    // 1. Link or Create DeliveryAssignment open for all registered delivery partners
+    let assignmentId;
+    const existingAssignment = await db.collection("deliveryAssignments").findOne({
       surplusListingId: listingObjectId,
-      claimedByNgoId: ngo._id,
-      institutionId: updatedListing.institutionId,
-      assignedToDeliveryPartnerId: null, // Broadcast to all registered partners; locks on first acceptance
-      status: "assigned", // assigned -> accepted -> picked_up -> delivered -> confirmed
-      createdAt: now,
-      updatedAt: now,
-    };
-    const insertAssignmentResult = await db.collection("deliveryAssignments").insertOne(deliveryAssignmentDoc);
-    const assignmentId = insertAssignmentResult.insertedId;
+    });
+
+    if (existingAssignment) {
+      await db.collection("deliveryAssignments").updateOne(
+        { _id: existingAssignment._id },
+        { $set: { claimedByNgoId: ngo._id, updatedAt: now } }
+      );
+      assignmentId = existingAssignment._id;
+    } else {
+      const deliveryAssignmentDoc = {
+        surplusListingId: listingObjectId,
+        claimedByNgoId: ngo._id,
+        institutionId: updatedListing.institutionId,
+        assignedToDeliveryPartnerId: null, // Broadcast to all registered partners; locks on first acceptance
+        status: "assigned", // assigned -> accepted -> picked_up -> delivered -> confirmed
+        createdAt: now,
+        updatedAt: now,
+      };
+      const insertAssignmentResult = await db.collection("deliveryAssignments").insertOne(deliveryAssignmentDoc);
+      assignmentId = insertAssignmentResult.insertedId;
+    }
 
     // 2. Update Match records if exists (Functional PRD Section 12.4)
     await db.collection("matches").updateOne(

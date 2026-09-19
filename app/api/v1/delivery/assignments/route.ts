@@ -29,15 +29,42 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Auto-sync: Ensure any active surplus listing (verified_safe, pending/matched/claimed) has an open delivery assignment
+    const now = new Date();
+    const activeListings = await db.collection("surplusListings").find({
+      safetyStatus: "verified_safe",
+      status: { $in: ["matched", "pending", "claimed"] },
+      "pickupWindow.end": { $gt: now },
+    }).toArray();
+
+    for (const l of activeListings) {
+      const existing = await db.collection("deliveryAssignments").findOne({
+        $or: [{ surplusListingId: l._id }, { listingId: l._id }],
+      });
+      if (!existing) {
+        const topMatch = await db.collection("matches").findOne({ surplusListingId: l._id });
+        await db.collection("deliveryAssignments").insertOne({
+          surplusListingId: l._id,
+          institutionId: l.institutionId,
+          claimedByNgoId: l.claimedByNgoId || (topMatch ? topMatch.ngoId : null),
+          assignedToDeliveryPartnerId: null,
+          status: "assigned",
+          createdAt: l.createdAt || now,
+          updatedAt: now,
+        });
+      }
+    }
+
     // Find active assignments:
     // 1. Broadcast assignments open to all registered delivery partners (unassigned)
-    // 2. Active assignments claimed/assigned to this partner
+    // 2. Active assignments claimed/assigned to this partner (assigned, accepted, picked_up)
     const query = {
       $or: [
-        { assignedToDeliveryPartnerId: partner._id, status: { $in: ["assigned", "accepted", "picked_up", "delivered"] } },
+        { assignedToDeliveryPartnerId: partner._id, status: { $in: ["assigned", "accepted", "picked_up"] } },
         { status: "assigned", assignedToDeliveryPartnerId: null },
         { status: "assigned", assignedToDeliveryPartnerId: { $in: [null, undefined] } },
         { status: "assigned", assignedToDeliveryPartnerId: { $exists: false } },
+        { status: "pending_acceptance" },
       ],
     };
 
@@ -48,7 +75,7 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // Enrich assignments with listing, institution, and NGO details
-    const listingIds = assignments.map((a) => a.surplusListingId).filter(Boolean);
+    const listingIds = assignments.map((a) => a.surplusListingId || a.listingId).filter(Boolean);
     const listings = await db
       .collection("surplusListings")
       .find({ _id: { $in: listingIds } })
@@ -66,6 +93,7 @@ export async function GET(request: NextRequest) {
 
     for (const a of assignments) {
       if (a.claimedByNgoId) ngoIds.push(a.claimedByNgoId);
+      if (a.institutionId) institutionIds.push(a.institutionId);
     }
 
     const institutions = await db
@@ -81,44 +109,46 @@ export async function GET(request: NextRequest) {
     const instMap = new Map(institutions.map((i) => [String(i._id), i]));
     const ngoMap = new Map(ngos.map((n) => [String(n._id), n]));
 
-    const enriched = assignments.map((a) => {
-      const listing = listingMap.get(String(a.surplusListingId));
-      const institution = listing ? instMap.get(String(listing.institutionId)) : null;
-      const ngo = ngoMap.get(String(a.claimedByNgoId || listing?.claimedByNgoId));
+    const enriched = assignments
+      .filter((a) => listingMap.has(String(a.surplusListingId || a.listingId)))
+      .map((a) => {
+        const listing = listingMap.get(String(a.surplusListingId || a.listingId));
+        const institution = listing ? instMap.get(String(listing.institutionId)) : instMap.get(String(a.institutionId));
+        const ngo = ngoMap.get(String(a.claimedByNgoId || listing?.claimedByNgoId));
 
-      return {
-        _id: a._id,
-        surplusListingId: a.surplusListingId,
-        status: a.status,
-        createdAt: a.createdAt,
-        acceptedAt: a.acceptedAt,
-        pickedUpAt: a.pickedUpAt,
-        deliveredAt: a.deliveredAt,
-        confirmedAt: a.confirmedAt,
-        isAssignedToMe: String(a.assignedToDeliveryPartnerId) === String(partner._id),
-        isOpenBroadcast: !a.assignedToDeliveryPartnerId && a.status === "assigned",
-        item: {
-          name: listing?.itemName || "Surplus Batch",
-          category: listing?.category || "cooked_food",
-          quantity: listing?.quantity || 0,
-          unit: listing?.unit || "kg",
-          pickupWindow: listing?.pickupWindow || null,
-        },
-        pickup: {
-          name: listing?.institutionName || institution?.name || "Donor Kitchen",
-          address: listing?.pickupLocation?.address || institution?.address || "Main Dispatch Bay",
-          lat: listing?.pickupLocation?.lat || institution?.location?.lat,
-          lng: listing?.pickupLocation?.lng || institution?.location?.lng,
-        },
-        drop: {
-          name: ngo?.orgName || "Verified NGO Recipient",
-          address: ngo?.serviceArea || "Recipient Center",
-          contactPhone: ngo?.contactPhone || "",
-          lat: ngo?.location?.lat,
-          lng: ngo?.location?.lng,
-        },
-      };
-    });
+        return {
+          _id: a._id,
+          surplusListingId: a.surplusListingId || a.listingId,
+          status: a.status,
+          createdAt: a.createdAt,
+          acceptedAt: a.acceptedAt,
+          pickedUpAt: a.pickedUpAt,
+          deliveredAt: a.deliveredAt,
+          confirmedAt: a.confirmedAt,
+          isAssignedToMe: String(a.assignedToDeliveryPartnerId) === String(partner._id),
+          isOpenBroadcast: !a.assignedToDeliveryPartnerId && a.status === "assigned",
+          item: {
+            name: listing?.itemName || "Surplus Batch",
+            category: listing?.category || "cooked_food",
+            quantity: listing?.quantity || 0,
+            unit: listing?.unit || "kg",
+            pickupWindow: listing?.pickupWindow || null,
+          },
+          pickup: {
+            name: listing?.institutionName || institution?.name || "Donor Kitchen",
+            address: listing?.pickupLocation?.address || institution?.address || "Main Dispatch Bay",
+            lat: listing?.pickupLocation?.lat || institution?.location?.lat,
+            lng: listing?.pickupLocation?.lng || institution?.location?.lng,
+          },
+          drop: {
+            name: ngo?.orgName || listing?.claimedByNgoName || "Verified NGO Recipient",
+            address: ngo?.serviceArea || "Recipient Center",
+            contactPhone: ngo?.contactPhone || "",
+            lat: ngo?.location?.lat,
+            lng: ngo?.location?.lng,
+          },
+        };
+      });
 
     return NextResponse.json({
       success: true,

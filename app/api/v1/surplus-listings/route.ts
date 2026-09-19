@@ -266,6 +266,46 @@ export async function POST(request: NextRequest) {
       console.error("Error running matching algorithm:", matchErr);
     }
 
+    // Automatically allot open delivery dispatch for all registered delivery partners
+    try {
+      const topNgoId = rankedMatches.length > 0 ? rankedMatches[0].ngoId : undefined;
+      const deliveryAssignmentDoc = {
+        surplusListingId: listingId,
+        institutionId: institution._id,
+        claimedByNgoId: topNgoId,
+        assignedToDeliveryPartnerId: null, // Broadcast to all registered partners
+        status: "assigned",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await db.collection("deliveryAssignments").insertOne(deliveryAssignmentDoc);
+
+      // Broadcast notification to all active delivery partners
+      const allDeliveryPartners = await db
+        .collection("deliveryPartners")
+        .find({ active: { $ne: false } })
+        .toArray();
+
+      for (const partner of allDeliveryPartners) {
+        if (partner.userId) {
+          await createNotification(db, {
+            userId: partner.userId,
+            role: "delivery_partner",
+            type: "delivery_assigned",
+            title: "New Delivery Allotted — Available for Acceptance",
+            message: `New dispatch available: Pickup ${listingQty} ${item.unit} of ${item.name} from ${institution.name}. Tap to accept.`,
+            link: "/app/delivery/assignments",
+            metadata: {
+              listingId: listingId,
+              pickupAddress: locationData.address,
+            },
+          });
+        }
+      }
+    } catch (dispatchErr) {
+      console.error("Error allotting broadcast delivery assignment:", dispatchErr);
+    }
+
     return NextResponse.json(
       {
         success: true,
