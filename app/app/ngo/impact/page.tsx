@@ -36,9 +36,41 @@ interface RecentHandoff {
   deliveredAt: string;
 }
 
+interface CategoryMetric {
+  kg: number;
+  pieces: number;
+  litres: number;
+  totalCount?: number;
+  estimatedMeals?: number;
+}
+
+function formatCategoryQuantity(val: CategoryMetric | number): string {
+  if (typeof val === "number") {
+    return `${val} kg`;
+  }
+  const parts: string[] = [];
+  if (val.kg > 0) parts.push(`${val.kg} kg`);
+  if (val.pieces > 0) parts.push(`${val.pieces} pieces`);
+  if (val.litres > 0) parts.push(`${val.litres} litres`);
+  return parts.length > 0 ? parts.join(" • ") : "0 kg";
+}
+
+function getCategoryTotalCount(val: CategoryMetric | number): number {
+  if (typeof val === "number") return val;
+  return val.totalCount ?? ((val.kg || 0) + (val.pieces || 0) + (val.litres || 0));
+}
+
+function getCategoryMeals(val: CategoryMetric | number): number {
+  if (typeof val === "number") return Math.round(val * 2.5);
+  if (typeof val.estimatedMeals === "number") return val.estimatedMeals;
+  return Math.round(getCategoryTotalCount(val) * 2.5);
+}
+
 export default function NgoImpactPage() {
   const [impact, setImpact] = React.useState<NgoImpactData | null>(null);
-  const [categoryTotals, setCategoryTotals] = React.useState<Record<string, number>>({});
+  const [categoryBreakdown, setCategoryBreakdown] = React.useState<
+    Record<string, CategoryMetric | number>
+  >({});
   const [recentHandoffs, setRecentHandoffs] = React.useState<RecentHandoff[]>([]);
   const [ngoName, setNgoName] = React.useState<string>("");
   const [loading, setLoading] = React.useState(true);
@@ -49,7 +81,7 @@ export default function NgoImpactPage() {
       const json = await res.json();
       if (res.ok) {
         setImpact(json.impact);
-        setCategoryTotals(json.categoryTotals || {});
+        setCategoryBreakdown(json.categoryBreakdown || json.categoryTotals || {});
         setRecentHandoffs(json.recentHandoffs || []);
         setNgoName(json.ngo?.orgName || "Organization");
       }
@@ -189,34 +221,41 @@ export default function NgoImpactPage() {
                 <thead className="bg-[#EAE3D4] border-b border-line uppercase tracking-wider font-mono-numeral text-ink">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Category</th>
-                    <th className="px-4 py-3 font-semibold">Total Weight (kg)</th>
+                    <th className="px-4 py-3 font-semibold">Total Quantity</th>
                     <th className="px-4 py-3 font-semibold">Estimated Meals</th>
                     <th className="px-4 py-3 font-semibold">Share of Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {Object.entries(categoryTotals).map(([cat, kg]) => {
-                    const totalKg = impact?.totalRedistributedKg || 1;
-                    const percent = Math.round((kg / totalKg) * 100);
-                    const meals = Math.round(kg * 2.5);
+                  {(() => {
+                    const totalAllItems: number = Object.values(categoryBreakdown).reduce<number>(
+                      (acc: number, curr) => acc + getCategoryTotalCount(curr),
+                      0
+                    ) || 1;
 
-                    return (
-                      <tr key={cat} className="hover:bg-[#F3EDE0]/80">
-                        <td className="px-4 py-3 font-medium text-ink capitalize">
-                          {cat.replace("_", " ")}
-                        </td>
-                        <td className="px-4 py-3 font-mono-numeral text-ink">
-                          {kg} kg
-                        </td>
-                        <td className="px-4 py-3 font-mono-numeral text-ink">
-                          ~{meals} meals
-                        </td>
-                        <td className="px-4 py-3 font-mono-numeral text-ink-soft">
-                          {percent}%
-                        </td>
-                      </tr>
-                    );
-                  })}
+                    return Object.entries(categoryBreakdown).map(([cat, metric]) => {
+                      const count = getCategoryTotalCount(metric);
+                      const percent = Math.round((count / totalAllItems) * 100);
+                      const meals = getCategoryMeals(metric);
+
+                      return (
+                        <tr key={cat} className="hover:bg-[#F3EDE0]/80">
+                          <td className="px-4 py-3 font-medium text-ink capitalize">
+                            {cat.replace("_", " ")}
+                          </td>
+                          <td className="px-4 py-3 font-mono-numeral text-ink">
+                            {formatCategoryQuantity(metric)}
+                          </td>
+                          <td className="px-4 py-3 font-mono-numeral text-ink">
+                            ~{meals} meals
+                          </td>
+                          <td className="px-4 py-3 font-mono-numeral text-ink-soft">
+                            {percent}%
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

@@ -60,22 +60,52 @@ export async function GET(request: NextRequest) {
       litres: 0,
     };
     const categoryTotals: Record<string, number> = {};
+    const categoryBreakdown: Record<
+      string,
+      {
+        kg: number;
+        pieces: number;
+        litres: number;
+        totalCount: number;
+        estimatedMeals: number;
+      }
+    > = {};
 
     for (const item of confirmedListings) {
       const qty = Number(item.quantity) || 0;
       totalRedistributedKg += qty;
       const rawUnit = (item.unit || "kg").toLowerCase().trim();
+      let normalizedUnit: "kg" | "litres" | "pieces" = "kg";
+
       if (rawUnit === "kg" || rawUnit === "kgs" || rawUnit === "kilogram" || rawUnit === "kilograms") {
         redistributedByUnit.kg += qty;
+        normalizedUnit = "kg";
       } else if (rawUnit === "l" || rawUnit === "liter" || rawUnit === "litres" || rawUnit === "liters" || rawUnit === "litre") {
         redistributedByUnit.litres += qty;
+        normalizedUnit = "litres";
       } else if (rawUnit === "pcs" || rawUnit === "pc" || rawUnit === "piece" || rawUnit === "pieces" || rawUnit === "portions" || rawUnit === "portion") {
         redistributedByUnit.pieces += qty;
+        normalizedUnit = "pieces";
       } else {
         redistributedByUnit.kg += qty;
+        normalizedUnit = "kg";
       }
+
       const cat = item.category || "uncategorized";
       categoryTotals[cat] = (categoryTotals[cat] || 0) + qty;
+
+      if (!categoryBreakdown[cat]) {
+        categoryBreakdown[cat] = {
+          kg: 0,
+          pieces: 0,
+          litres: 0,
+          totalCount: 0,
+          estimatedMeals: 0,
+        };
+      }
+      categoryBreakdown[cat][normalizedUnit] += qty;
+      categoryBreakdown[cat].totalCount += qty;
+      categoryBreakdown[cat].estimatedMeals += Math.round(qty * 2.5);
     }
 
     // Impact conversion standards:
@@ -118,6 +148,7 @@ export async function GET(request: NextRequest) {
         hasData: confirmedListings.length > 0,
       },
       categoryTotals,
+      categoryBreakdown,
       recentHandoffs,
     });
   } catch (error: unknown) {

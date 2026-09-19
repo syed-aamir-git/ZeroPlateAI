@@ -32,12 +32,14 @@ interface ReportData {
     waterPreservedLiters: number;
     costSavedInr: number;
   };
-  categoryBreakdown: Record<string, number>;
+  categoryBreakdown: Record<string, { kg: number; pieces: number; litres: number; total: number } | number>;
   deliveredListingsCount: number;
   records: Array<{
     listingId: string;
     itemName: string;
     category: string;
+    quantity?: number;
+    unit?: string;
     quantityKg: number;
     mealsGiven: number;
     co2eAvoidedKg: number;
@@ -279,7 +281,7 @@ export default function InstitutionReportsPage() {
                             </div>
                           </td>
                           <td className="py-3 px-4 font-mono font-bold text-ink text-right whitespace-nowrap">
-                            {rec.quantityKg} kg
+                            {rec.quantity ?? rec.quantityKg} {rec.unit || "kg"}
                           </td>
                           <td className="py-3 px-4 font-mono text-basil font-semibold text-right whitespace-nowrap">
                             {rec.co2eAvoidedKg} kg

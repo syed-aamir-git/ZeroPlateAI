@@ -111,6 +111,8 @@ export async function POST(
       details: {
         ngoId: ngo._id,
         orgName: ngo.orgName,
+        quantity: listing.quantity,
+        unit: listing.unit || "kg",
         quantityKg: listing.quantity,
         itemName: listing.itemName,
       },

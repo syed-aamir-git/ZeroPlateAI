@@ -120,10 +120,27 @@ export async function GET(
     }
 
     // Category breakdown
-    const categoryTotals: Record<string, number> = {};
+    const categoryTotals: Record<string, { kg: number; pieces: number; litres: number; total: number }> = {};
     for (const l of deliveredListings) {
       const cat = l.category || "cooked_food";
-      categoryTotals[cat] = (categoryTotals[cat] || 0) + (Number(l.quantity) || 0);
+      const qty = Number(l.quantity) || 0;
+      const rawUnit = (l.unit || "kg").toLowerCase().trim();
+      let normalizedUnit: "kg" | "litres" | "pieces" = "kg";
+      if (rawUnit === "kg" || rawUnit === "kgs" || rawUnit === "kilogram" || rawUnit === "kilograms") {
+        normalizedUnit = "kg";
+      } else if (rawUnit === "l" || rawUnit === "liter" || rawUnit === "litres" || rawUnit === "liters" || rawUnit === "litre") {
+        normalizedUnit = "litres";
+      } else if (rawUnit === "pcs" || rawUnit === "pc" || rawUnit === "piece" || rawUnit === "pieces" || rawUnit === "portions" || rawUnit === "portion") {
+        normalizedUnit = "pieces";
+      } else {
+        normalizedUnit = "kg";
+      }
+
+      if (!categoryTotals[cat]) {
+        categoryTotals[cat] = { kg: 0, pieces: 0, litres: 0, total: 0 };
+      }
+      categoryTotals[cat][normalizedUnit] += qty;
+      categoryTotals[cat].total += qty;
     }
 
     // Return JSON if requested
@@ -150,14 +167,16 @@ export async function GET(
         records: deliveredListings.map((l) => {
           const ngo = l.claimedByNgoId ? ngoMap.get(String(l.claimedByNgoId)) : null;
           const assignment = assignmentMap.get(String(l._id));
-          const kg = Number(l.quantity) || 0;
+          const qty = Number(l.quantity) || 0;
           return {
             listingId: l._id,
             itemName: l.itemName,
             category: l.category,
-            quantityKg: kg,
-            mealsGiven: Math.round(kg * SUSTAINABILITY_FACTORS.MEALS_PER_KG),
-            co2eAvoidedKg: Math.round(kg * SUSTAINABILITY_FACTORS.CO2E_PER_KG * 10) / 10,
+            quantity: qty,
+            unit: l.unit || "kg",
+            quantityKg: qty,
+            mealsGiven: Math.round(qty * SUSTAINABILITY_FACTORS.MEALS_PER_KG),
+            co2eAvoidedKg: Math.round(qty * SUSTAINABILITY_FACTORS.CO2E_PER_KG * 10) / 10,
             recipientNgo: ngo?.orgName || l.claimedByNgoName || "Verified Recipient",
             recipientRegistration: ngo?.registrationNumber || "N/A",
             safetyStatus: l.safetyStatus,
@@ -181,7 +200,7 @@ export async function GET(
       `# Conversion Methodology: FAO (2.5 meals/kg) | UNEP/IPCC (1.9 kg CO2e/kg food diverted) | Water Footprint Network (250 L/kg)`,
       `#`,
       `# --- EXECUTIVE SUSTAINABILITY SUMMARY ---`,
-      `# Total Surplus Diverted from Landfill (kg):,${impact.wastePreventedKg}`,
+      `# Total Surplus Diverted from Landfill:,${wastePreventedByUnit.kg} kg | ${wastePreventedByUnit.pieces} pieces | ${wastePreventedByUnit.litres} litres (${impact.wastePreventedKg} kg eq)`,
       `# Total Wholesome Meals Redistributed (count):,${impact.mealsGiven}`,
       `# Total GHG Emissions Avoided (kg CO2e):,${impact.co2eAvoidedKg}`,
       `# Landfill Methane Emissions Avoided (kg CH4):,${impact.methaneAvoidedKg}`,
@@ -189,15 +208,15 @@ export async function GET(
       `# Estimated Institutional Cost Value Recovered (INR):,₹${impact.costSavedInr}`,
       `# Completed Redistribution Runs:,${deliveredListings.length}`,
       `#`,
-      `Listing ID,Batch Date,Item Name,Category,Quantity (kg),Meals Equivalent,CO2e Avoided (kg),Recipient Organization,NGO Registration Number,Dispatch Location,Safety Status,Delivered Timestamp`,
+      `Listing ID,Batch Date,Item Name,Category,Quantity,Unit,Meals Equivalent,CO2e Avoided (kg),Recipient Organization,NGO Registration Number,Dispatch Location,Safety Status,Delivered Timestamp`,
     ];
 
     for (const l of deliveredListings) {
       const ngo = l.claimedByNgoId ? ngoMap.get(String(l.claimedByNgoId)) : null;
       const assignment = assignmentMap.get(String(l._id));
-      const kg = Number(l.quantity) || 0;
-      const meals = Math.round(kg * SUSTAINABILITY_FACTORS.MEALS_PER_KG);
-      const co2e = Math.round(kg * SUSTAINABILITY_FACTORS.CO2E_PER_KG * 10) / 10;
+      const qty = Number(l.quantity) || 0;
+      const meals = Math.round(qty * SUSTAINABILITY_FACTORS.MEALS_PER_KG);
+      const co2e = Math.round(qty * SUSTAINABILITY_FACTORS.CO2E_PER_KG * 10) / 10;
       const deliveredTime = l.deliveredAt || assignment?.deliveredAt || l.updatedAt || l.createdAt;
       const dateFormatted = deliveredTime ? new Date(deliveredTime).toISOString() : "N/A";
       const pickupAddress = l.pickupLocation?.address || institution.address || "Main Dispatch Bay";
@@ -208,7 +227,8 @@ export async function GET(
           `"${new Date(l.createdAt).toISOString().slice(0, 10)}"`,
           `"${(l.itemName || "Surplus Food").replace(/"/g, '""')}"`,
           `"${l.category || "cooked_food"}"`,
-          kg,
+          qty,
+          `"${l.unit || "kg"}"`,
           meals,
           co2e,
           `"${(ngo?.orgName || l.claimedByNgoName || "Verified Recipient").replace(/"/g, '""')}"`,
