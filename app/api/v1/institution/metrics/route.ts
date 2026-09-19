@@ -55,6 +55,26 @@ export async function GET() {
       0
     );
 
+    const wastePreventedByUnit = {
+      kg: 0,
+      pieces: 0,
+      litres: 0,
+    };
+
+    deliveredListings.forEach((curr) => {
+      const qty = Number(curr.quantity) || 0;
+      const rawUnit = (curr.unit || "kg").toLowerCase().trim();
+      if (rawUnit === "kg" || rawUnit === "kgs" || rawUnit === "kilogram" || rawUnit === "kilograms") {
+        wastePreventedByUnit.kg += qty;
+      } else if (rawUnit === "l" || rawUnit === "liter" || rawUnit === "litres" || rawUnit === "liters" || rawUnit === "litre") {
+        wastePreventedByUnit.litres += qty;
+      } else if (rawUnit === "pcs" || rawUnit === "pc" || rawUnit === "piece" || rawUnit === "pieces" || rawUnit === "portions" || rawUnit === "portion") {
+        wastePreventedByUnit.pieces += qty;
+      } else {
+        wastePreventedByUnit.kg += qty;
+      }
+    });
+
     // Official Sustainability Impact Calculation (Functional PRD Section 12.7 & 22)
     const impact = calculateSustainabilityImpact(wastePreventedKg);
 
@@ -68,6 +88,7 @@ export async function GET() {
       },
       metrics: {
         wastePreventedKg: impact.wastePreventedKg,
+        wastePreventedByUnit,
         mealsGiven: impact.mealsGiven,
         co2eAvoidedKg: impact.co2eAvoidedKg,
         costSavedInr: impact.costSavedInr,

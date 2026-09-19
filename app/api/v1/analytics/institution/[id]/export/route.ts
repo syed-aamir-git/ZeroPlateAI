@@ -126,6 +126,25 @@ export async function GET(
 
     const impact = calculateSustainabilityImpact(totalDeliveredKg);
 
+    const wastePreventedByUnit = {
+      kg: 0,
+      pieces: 0,
+      litres: 0,
+    };
+    for (const l of deliveredListings) {
+      const qty = Number(l.quantity) || 0;
+      const rawUnit = (l.unit || "kg").toLowerCase().trim();
+      if (rawUnit === "kg" || rawUnit === "kgs" || rawUnit === "kilogram" || rawUnit === "kilograms") {
+        wastePreventedByUnit.kg += qty;
+      } else if (rawUnit === "l" || rawUnit === "liter" || rawUnit === "litres" || rawUnit === "liters" || rawUnit === "litre") {
+        wastePreventedByUnit.litres += qty;
+      } else if (rawUnit === "pcs" || rawUnit === "pc" || rawUnit === "piece" || rawUnit === "pieces" || rawUnit === "portions" || rawUnit === "portion") {
+        wastePreventedByUnit.pieces += qty;
+      } else {
+        wastePreventedByUnit.kg += qty;
+      }
+    }
+
     // Category breakdown
     const categoryTotals: Record<string, number> = {};
     for (const l of deliveredListings) {
@@ -148,7 +167,10 @@ export async function GET(
           standard: "GHG Protocol Scope 3 Category 5",
           conversionFactors: SUSTAINABILITY_FACTORS,
         },
-        executiveSummary: impact,
+        executiveSummary: {
+          ...impact,
+          wastePreventedByUnit,
+        },
         categoryBreakdown: categoryTotals,
         deliveredListingsCount: deliveredListings.length,
         records: deliveredListings.map((l) => {

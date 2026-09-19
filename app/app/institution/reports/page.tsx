@@ -21,6 +21,11 @@ interface InstitutionData {
 interface ReportData {
   executiveSummary: {
     wastePreventedKg: number;
+    wastePreventedByUnit?: {
+      kg: number;
+      pieces: number;
+      litres: number;
+    };
     mealsGiven: number;
     co2eAvoidedKg: number;
     methaneAvoidedKg: number;
@@ -289,9 +294,12 @@ export default function InstitutionReportsPage() {
                   <span className="text-[10px] uppercase tracking-wider text-ink-soft font-mono block">
                     Waste Diverted
                   </span>
-                  <div className="mt-1.5 font-mono text-2xl font-bold text-ink">
-                    {report.executiveSummary.wastePreventedKg.toLocaleString()}
-                    <span className="text-xs font-normal text-ink-soft ml-1">kg</span>
+                  <div className="mt-1.5 font-mono text-xl font-bold text-ink flex flex-wrap items-baseline gap-x-1.5">
+                    <span>{report.executiveSummary.wastePreventedByUnit?.kg ?? report.executiveSummary.wastePreventedKg}<span className="text-xs font-normal text-ink-soft ml-0.5">kg</span></span>
+                    <span className="text-ink-soft/40 text-xs">•</span>
+                    <span>{report.executiveSummary.wastePreventedByUnit?.pieces ?? 0}<span className="text-xs font-normal text-ink-soft ml-0.5">pcs</span></span>
+                    <span className="text-ink-soft/40 text-xs">•</span>
+                    <span>{report.executiveSummary.wastePreventedByUnit?.litres ?? 0}<span className="text-xs font-normal text-ink-soft ml-0.5">L</span></span>
                   </div>
                   <span className="text-[10px] text-ink-soft mt-0.5 block">100% Landfill avoidance</span>
                 </div>
