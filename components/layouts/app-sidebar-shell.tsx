@@ -65,6 +65,18 @@ function getIconComponent(key?: string) {
   }
 }
 
+function getRolePill(role: string) {
+  switch (role) {
+    case "ngo":
+      return "NGO";
+    case "admin":
+      return "Admin";
+    case "institution":
+    default:
+      return "Kitchen";
+  }
+}
+
 export function AppSidebarShell({
   role,
   roleLabel,
@@ -198,24 +210,24 @@ export function AppSidebarShell({
                 isAdmin ? "border-[#5A3653]" : "border-line"
               )}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <span className="font-display text-xl font-bold tracking-tight">
                   ZeroPlate<span className="text-saffron">.ai</span>
                 </span>
                 <span
                   className={cn(
-                    "text-[10px] font-mono-numeral uppercase tracking-wider px-1.5 py-0.5 rounded-full border ml-1",
+                    "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2 py-0.5 rounded-[4px] border shrink-0 whitespace-nowrap",
                     isAdmin
                       ? "bg-[#4A2E44] text-[#E0D0DC] border-[#663E5D]"
                       : "bg-basil/10 text-basil border-basil/20"
                   )}
                 >
-                  {roleLabel}
+                  {getRolePill(role)}
                 </span>
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-1.5 rounded-[6px] text-ink-soft hover:text-ink"
+                className="p-1.5 rounded-[6px] text-ink-soft hover:text-ink cursor-pointer"
                 aria-label="Close menu"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -265,18 +277,18 @@ export function AppSidebarShell({
             : "bg-ledger-paper text-ink border-line"
         )}
       >
-        {/* Sidebar Brand Header */}
+        {/* Sidebar Brand Header - Clean, Structured & Uncrowded */}
         <div
           className={cn(
-            "h-16 px-6 flex items-center justify-between border-b",
-            isAdmin ? "border-[#5A3653]" : "border-line"
+            "h-16 px-5 flex items-center justify-between border-b transition-colors",
+            isAdmin ? "border-[#5A3653] bg-[#352031]/40" : "border-line bg-ledger-paper"
           )}
         >
-          <Link href={`/dashboard/${role}`} className="flex items-center gap-2">
+          <Link href={`/dashboard/${role}`} className="flex items-center gap-2 group">
             <span
               className={cn(
-                "font-display text-xl font-bold tracking-tight",
-                isAdmin ? "text-[#F3EEE2]" : "text-basil"
+                "font-display text-xl font-bold tracking-tight transition-colors",
+                isAdmin ? "text-[#F3EEE2] group-hover:text-saffron" : "text-basil group-hover:text-basil-dark"
               )}
             >
               ZeroPlate<span className="text-saffron">.ai</span>
@@ -284,13 +296,13 @@ export function AppSidebarShell({
           </Link>
           <span
             className={cn(
-              "text-[11px] font-mono-numeral uppercase tracking-wider px-2 py-0.5 rounded-full border",
+              "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2 py-0.5 rounded-[4px] border shrink-0 whitespace-nowrap",
               isAdmin
                 ? "bg-[#4A2E44] text-[#E0D0DC] border-[#663E5D]"
-                : "bg-[#2F4B3A]/10 text-basil border-basil/20"
+                : "bg-basil/10 text-basil border-basil/20"
             )}
           >
-            {roleLabel}
+            {getRolePill(role)}
           </span>
         </div>
 
@@ -441,24 +453,28 @@ export function AppSidebarShell({
             </span>
           </div>
 
-          <div className="hidden md:block text-xs uppercase tracking-wider text-ink-soft">
-            Institutional Abundance Ledger
+          <div className="hidden md:block text-xs uppercase tracking-wider text-ink-soft font-mono-numeral">
+            {role === "ngo"
+              ? "Community Redistribution Ledger"
+              : role === "admin"
+              ? "Platform Compliance & Safety Ledger"
+              : "Institutional Abundance Ledger"}
           </div>
 
-          {/* Top-Right: Notifications Bell + Profile Menu */}
+          {/* Top-Right: Notifications Bell + Role Badge */}
           <div className="flex items-center gap-3">
             <NotificationBell isAdmin={isAdmin} />
 
             <div
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-[6px] border text-xs font-medium",
+                "flex items-center gap-2 px-3 py-1.5 rounded-[6px] border text-xs font-medium shrink-0",
                 isAdmin
                   ? "border-[#5A3653] bg-[#4A2E44] text-[#F3EEE2]"
                   : "border-line bg-ledger-paper text-ink"
               )}
             >
-              <div className="w-2 h-2 rounded-full bg-basil" />
-              <span>{roleLabel}</span>
+              <div className="w-2 h-2 rounded-full bg-basil shrink-0" />
+              <span className="whitespace-nowrap">{roleLabel}</span>
             </div>
           </div>
         </header>
