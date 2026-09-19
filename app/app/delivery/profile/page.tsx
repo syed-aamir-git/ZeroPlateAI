@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { UserIcon, ShieldCheckIcon } from "@/components/icons/ledger-icons";
+import { UserIcon, ShieldCheckIcon, LogOutIcon } from "@/components/icons/ledger-icons";
+import { signOut } from "@/lib/auth-client";
 
 interface PartnerProfile {
   _id: string;
@@ -25,6 +26,7 @@ export default function DeliveryProfilePage() {
   const [serviceArea, setServiceArea] = React.useState("");
   const [active, setActive] = React.useState(true);
   const [message, setMessage] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [loggingOut, setLoggingOut] = React.useState(false);
 
   const fetchProfile = React.useCallback(async () => {
     try {
@@ -77,6 +79,17 @@ export default function DeliveryProfilePage() {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Error saving profile." });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setLoggingOut(true);
+    try {
+      await signOut();
+    } catch (err) {
+      console.error("Partner sign out error:", err);
+    } finally {
+      window.location.href = "/";
     }
   };
 
@@ -244,6 +257,28 @@ export default function DeliveryProfilePage() {
           Ensure insulated food containers remain sealed during transport. For cooked meals, direct delivery
           must be executed promptly within the designated dispatch window to preserve food safety integrity.
         </p>
+      </div>
+
+      {/* Account Session & Sign Out Section */}
+      <div className="border border-[#3B362E] bg-[#1D1B17] p-4 rounded-[6px] space-y-3">
+        <div>
+          <div className="font-mono-numeral text-[11px] uppercase tracking-wider text-[#9E9587]">
+            Account Session
+          </div>
+          <div className="text-xs text-[#D4CBBF] mt-0.5">
+            Signed in as <span className="text-[#F3EEE2] font-semibold">{profile?.name || "Partner"}</span> ({profile?.email || "driver@zeroplate.ai"})
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleSignOut}
+          disabled={loggingOut}
+          className="w-full min-h-[44px] py-2.5 px-4 rounded-[6px] border border-rose-800/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-rose-100 font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500"
+        >
+          <LogOutIcon size={16} />
+          <span>{loggingOut ? "Signing out..." : "Sign Out of Partner Account"}</span>
+        </button>
       </div>
     </div>
   );
