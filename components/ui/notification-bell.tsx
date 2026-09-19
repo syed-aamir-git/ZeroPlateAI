@@ -123,23 +123,23 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
       {isOpen && (
         <div
           className={cn(
-            "absolute right-0 mt-2 w-80 sm:w-96 rounded-lg shadow-lg border z-50 overflow-hidden",
+            "absolute right-0 mt-2 w-80 sm:w-96 rounded-lg shadow-2xl border z-50 overflow-hidden",
             isAdmin
               ? "bg-[#2E1A2B] border-[#5A3653] text-[#F3EEE2]"
-              : "bg-ledger-surface border-line text-ink"
+              : "bg-[#FAF6EE] border-line text-ink"
           )}
         >
           {/* Header */}
           <div
             className={cn(
-              "px-4 py-3 border-b flex items-center justify-between",
-              isAdmin ? "border-[#5A3653] bg-[#3D2538]" : "border-line bg-ledger-paper"
+              "px-4 py-3 border-b flex items-center justify-between shrink-0",
+              isAdmin ? "border-[#5A3653] bg-[#3D2538] text-[#F3EEE2]" : "border-line bg-[#EFE8D8] text-ink"
             )}
           >
             <div className="flex items-center gap-2">
               <span className="font-serif font-bold text-sm">Notifications</span>
               {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-clay-rust/20 text-clay-rust">
+                <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-clay-rust/20 text-clay-rust font-semibold">
                   {unreadCount} unread
                 </span>
               )}
@@ -148,7 +148,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-basil hover:underline font-sans cursor-pointer"
+                className="text-xs text-basil hover:underline font-sans cursor-pointer font-medium"
               >
                 Mark all read
               </button>
@@ -156,9 +156,21 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
           </div>
 
           {/* List */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-line/40">
+          <div
+            className={cn(
+              "max-h-80 overflow-y-auto divide-y",
+              isAdmin
+                ? "bg-[#2E1A2B] divide-[#5A3653]/60"
+                : "bg-[#FAF6EE] divide-line/60"
+            )}
+          >
             {notifications.length === 0 ? (
-              <div className="p-6 text-center text-xs text-ink-soft">
+              <div
+                className={cn(
+                  "p-6 text-center text-xs",
+                  isAdmin ? "bg-[#2E1A2B] text-[#D8C9B8]" : "bg-[#FAF6EE] text-ink-soft"
+                )}
+              >
                 No notifications logged in the ledger yet.
               </div>
             ) : (
@@ -167,31 +179,46 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
                   key={n._id}
                   onClick={() => !n.readStatus && handleMarkItemRead(n._id)}
                   className={cn(
-                    "p-3 text-xs transition-colors cursor-pointer",
+                    "p-3 text-xs transition-colors cursor-pointer border-l-2",
                     !n.readStatus
                       ? isAdmin
-                        ? "bg-[#4A2E44]/40"
-                        : "bg-saffron/10"
-                      : "hover:bg-black/5"
+                        ? "bg-[#3D2538] hover:bg-[#4A2E44] border-l-saffron text-[#F3EEE2]"
+                        : "bg-[#F3ECE0] hover:bg-[#EBE3D4] border-l-saffron text-ink"
+                      : isAdmin
+                        ? "bg-[#2E1A2B] hover:bg-[#382134] border-l-transparent text-[#E3D9CD]"
+                        : "bg-[#FAF6EE] hover:bg-[#F2ECE0] border-l-transparent text-ink"
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-semibold">{n.title}</span>
-                    <span className="text-[10px] text-ink-soft shrink-0 font-mono">
+                    <span
+                      className={cn(
+                        "text-[10px] shrink-0 font-mono",
+                        isAdmin ? "text-[#CBBBB0]" : "text-ink-soft"
+                      )}
+                    >
                       {new Date(n.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </span>
                   </div>
-                  <p className="mt-1 text-ink-soft text-[11px] line-clamp-2">
+                  <p
+                    className={cn(
+                      "mt-1 text-[11px] line-clamp-2",
+                      isAdmin ? "text-[#D8C9B8]" : "text-ink-soft"
+                    )}
+                  >
                     {n.message}
                   </p>
                   {n.link && (
                     <Link
                       href={n.link}
                       onClick={() => setIsOpen(false)}
-                      className="inline-block mt-1.5 text-[11px] text-basil hover:underline font-medium"
+                      className={cn(
+                        "inline-block mt-1.5 text-[11px] hover:underline font-medium",
+                        isAdmin ? "text-[#E6C687]" : "text-basil"
+                      )}
                     >
                       View Details →
                     </Link>
@@ -204,14 +231,19 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
           {/* Footer */}
           <div
             className={cn(
-              "px-4 py-2 border-t text-center",
-              isAdmin ? "border-[#5A3653] bg-[#3D2538]" : "border-line bg-ledger-paper"
+              "px-4 py-2.5 border-t text-center shrink-0",
+              isAdmin ? "border-[#5A3653] bg-[#3D2538]" : "border-line bg-[#EFE8D8]"
             )}
           >
             <Link
               href="/app/notifications"
               onClick={() => setIsOpen(false)}
-              className="text-xs font-medium text-ink hover:text-basil transition-colors"
+              className={cn(
+                "text-xs font-medium transition-colors",
+                isAdmin
+                  ? "text-[#F3EEE2] hover:text-saffron"
+                  : "text-ink hover:text-basil"
+              )}
             >
               View Full Notifications Center →
             </Link>
