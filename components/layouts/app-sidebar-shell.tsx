@@ -187,7 +187,7 @@ export function AppSidebarShell({
   );
 
   return (
-    <div className="min-h-screen flex bg-ledger-paper text-ink">
+    <div className="h-screen flex overflow-hidden bg-ledger-paper text-ink">
       {/* Mobile Menu Backdrop & Drawer */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
@@ -271,7 +271,7 @@ export function AppSidebarShell({
       {/* Sidebar Desktop */}
       <aside
         className={cn(
-          "hidden md:flex flex-col w-64 shrink-0 border-r transition-colors",
+          "hidden md:flex flex-col w-64 h-full shrink-0 border-r transition-colors select-none",
           isAdmin
             ? "bg-[#3D2538] text-[#F3EEE2] border-[#5A3653]"
             : "bg-ledger-paper text-ink border-line"
@@ -425,7 +425,7 @@ export function AppSidebarShell({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Top App Bar */}
         <header
           className={cn(
