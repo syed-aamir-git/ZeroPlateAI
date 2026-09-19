@@ -98,7 +98,7 @@ export default function NgoMyClaimsPage() {
   };
 
   const totalClaimedBatches = claims.length;
-  const confirmedCount = claims.filter((c) => c.isConfirmed || c.status === "delivered").length;
+  const confirmedCount = claims.filter((c) => c.isConfirmed || c.deliveryStatus === "confirmed").length;
   const inTransitCount = totalClaimedBatches - confirmedCount;
 
   return (
@@ -206,7 +206,7 @@ export default function NgoMyClaimsPage() {
               {claims.map((claim) => {
                 const startDate = new Date(claim.pickupWindow.start);
                 const endDate = new Date(claim.pickupWindow.end);
-                const isConfirmed = claim.isConfirmed || claim.status === "delivered";
+                const isConfirmed = claim.isConfirmed || claim.deliveryStatus === "confirmed";
                 const isConfirming = confirmingId === claim._id;
 
                 return (
@@ -248,9 +248,17 @@ export default function NgoMyClaimsPage() {
                       ) : (
                         <div className="space-y-1">
                           <StatusBadge
-                            variant={claim.deliveryStatus === "picked_up" ? "in_transit" : "pending"}
+                            variant={
+                              claim.deliveryStatus === "delivered"
+                                ? "in_stock"
+                                : claim.deliveryStatus === "picked_up"
+                                ? "in_transit"
+                                : "pending"
+                            }
                             label={
-                              claim.deliveryStatus === "picked_up"
+                              claim.deliveryStatus === "delivered"
+                                ? "Delivered — Tap Confirm"
+                                : claim.deliveryStatus === "picked_up"
                                 ? "In Transit"
                                 : claim.deliveryStatus === "accepted"
                                 ? "Driver Assigned"
@@ -266,7 +274,7 @@ export default function NgoMyClaimsPage() {
 
                     <td className="px-4 py-3 text-right">
                       {isConfirmed ? (
-                        <div className="text-xs text-basil font-mono-numeral">
+                        <div className="text-xs text-basil font-mono-numeral font-medium">
                           ✓ Confirmed
                           {claim.confirmedAt && (
                             <div className="text-[10px] text-ink-soft">
@@ -280,8 +288,9 @@ export default function NgoMyClaimsPage() {
                           size="sm"
                           onClick={() => handleConfirmReceipt(claim._id)}
                           disabled={isConfirming}
+                          className="bg-basil hover:bg-[#254B34] text-[#FAF7F2] font-semibold text-xs transition-colors shadow-sm cursor-pointer"
                         >
-                          {isConfirming ? "Confirming..." : "Confirm receipt"}
+                          {isConfirming ? "Confirming..." : "✓ Confirm Receipt"}
                         </Button>
                       )}
                     </td>

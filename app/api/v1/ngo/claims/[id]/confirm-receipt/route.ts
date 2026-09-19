@@ -3,6 +3,7 @@ import { getDb } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { ObjectId } from "mongodb";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(
   request: NextRequest,
@@ -43,7 +44,11 @@ export async function POST(
     const listingObjectId = new ObjectId(id);
     const listing = await db.collection("surplusListings").findOne({
       _id: listingObjectId,
-      claimedByNgoId: ngo._id,
+      $or: [
+        { claimedByNgoId: ngo._id },
+        { claimedByNgoId: String(ngo._id) },
+        { claimedByNgoId: { $in: [null, undefined] } },
+      ],
     });
 
     if (!listing) {
@@ -57,7 +62,12 @@ export async function POST(
 
     // Update DeliveryAssignment status to 'confirmed' (Functional PRD Section 12.5)
     await db.collection("deliveryAssignments").updateOne(
-      { surplusListingId: listingObjectId },
+      {
+        $or: [
+          { surplusListingId: listingObjectId },
+          { listingId: listingObjectId },
+        ],
+      },
       {
         $set: {
           status: "confirmed",
@@ -68,12 +78,14 @@ export async function POST(
       }
     );
 
-    // Update SurplusListing status to 'delivered'
+    // Update SurplusListing status to 'delivered' and ensure claimedByNgo is recorded
     await db.collection("surplusListings").updateOne(
       { _id: listingObjectId },
       {
         $set: {
           status: "delivered",
+          claimedByNgoId: ngo._id,
+          claimedByNgoName: ngo.orgName,
           deliveredAt: now,
           updatedAt: now,
         },
@@ -104,6 +116,33 @@ export async function POST(
       },
       createdAt: now,
     });
+
+    // Notify Delivery Partner that receipt has been confirmed
+    try {
+      const assignment = await db.collection("deliveryAssignments").findOne({
+        $or: [
+          { surplusListingId: listingObjectId },
+          { listingId: listingObjectId },
+        ],
+      });
+      if (assignment?.assignedToDeliveryPartnerId) {
+        const partner = await db.collection("deliveryPartners").findOne({
+          _id: assignment.assignedToDeliveryPartnerId,
+        });
+        if (partner?.userId) {
+          await createNotification(db, {
+            userId: partner.userId,
+            role: "delivery_partner",
+            type: "delivery_status_change",
+            title: "Delivery Run Confirmed by Recipient",
+            message: `${ngo.orgName} has confirmed receipt for ${listing.quantity} ${listing.unit} of ${listing.itemName}. Great work!`,
+            link: "/app/delivery/history",
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.error("Error notifying driver of receipt confirmation:", notifErr);
+    }
 
     return NextResponse.json({
       success: true,
