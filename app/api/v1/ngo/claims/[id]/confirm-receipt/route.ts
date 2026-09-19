@@ -96,7 +96,7 @@ export async function POST(
     if (listing.inventoryItemId) {
       await db.collection("inventoryItems").updateOne(
         { _id: listing.inventoryItemId },
-        { $set: { status: "expired", updatedAt: now } }
+        { $set: { status: "delivered", updatedAt: now } }
       );
     }
 

@@ -397,16 +397,22 @@ export default function InstitutionSurplusListingsPage() {
                       ) : (
                         <StatusBadge
                           variant={
-                            item.status === "claimed" || item.status === "delivered"
+                            item.status === "delivered"
                               ? "delivered"
-                              : item.status === "matched"
+                              : item.status === "claimed" || item.status === "matched"
                               ? "in_transit"
                               : item.status === "expired"
                               ? "expired"
                               : "pending"
                           }
                           label={
-                            item.status === "pending"
+                            item.status === "delivered"
+                              ? "Delivered"
+                              : item.status === "claimed"
+                              ? "Claimed (In Progress)"
+                              : item.status === "matched"
+                              ? "Matched"
+                              : item.status === "pending"
                               ? "Pending Match"
                               : item.status.charAt(0).toUpperCase() + item.status.slice(1)
                           }

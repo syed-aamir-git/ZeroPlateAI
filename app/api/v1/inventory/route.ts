@@ -51,18 +51,64 @@ export async function GET() {
     .sort({ createdAt: -1 })
     .toArray();
 
+  const itemIds = items.map((i) => i._id);
+  const listings = await db
+    .collection("surplusListings")
+    .find({ inventoryItemId: { $in: itemIds } })
+    .toArray();
+
+  const listingByItemId = new Map<string, any>();
+  for (const l of listings) {
+    const key = String(l.inventoryItemId);
+    const existing = listingByItemId.get(key);
+    if (!existing) {
+      listingByItemId.set(key, l);
+    } else if (l.status === "delivered") {
+      listingByItemId.set(key, l);
+    } else if (
+      existing.status !== "delivered" &&
+      (l.status === "claimed" || l.status === "matched" || l.status === "pending")
+    ) {
+      listingByItemId.set(key, l);
+    }
+  }
+
   const enrichedItems = items.map((item) => {
     const expiryStatus = computeExpiryStatus(item.category, item.expiryEstimateAt);
+    const linkedListing = listingByItemId.get(String(item._id));
 
     let effectiveStatus = item.status;
-    if (effectiveStatus === "in_stock" && expiryStatus.isExpired) {
+
+    if (item.status === "delivered" || linkedListing?.status === "delivered") {
+      effectiveStatus = "delivered";
+    } else if (
+      item.status === "in_progress" ||
+      item.status === "claimed" ||
+      item.status === "listed" ||
+      item.status === "surplus" ||
+      linkedListing?.status === "claimed" ||
+      linkedListing?.status === "matched" ||
+      linkedListing?.status === "pending"
+    ) {
+      effectiveStatus = "in_progress";
+    } else if (effectiveStatus === "expired" || expiryStatus.isExpired || linkedListing?.status === "expired") {
       effectiveStatus = "expired";
+    } else {
+      effectiveStatus = "in_stock";
     }
 
     return {
       ...item,
       status: effectiveStatus,
       expiryStatus,
+      linkedListing: linkedListing
+        ? {
+            id: linkedListing._id,
+            status: linkedListing.status,
+            deliveredAt: linkedListing.deliveredAt,
+            claimedByNgoName: linkedListing.claimedByNgoName,
+          }
+        : undefined,
     };
   });
 

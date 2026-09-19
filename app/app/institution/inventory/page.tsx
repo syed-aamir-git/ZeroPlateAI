@@ -17,13 +17,19 @@ interface InventoryItem {
   unit: string;
   preparedOrReceivedAt: string;
   expiryEstimateAt: string;
-  status: "in_stock" | "surplus" | "listed" | "expired";
+  status: "in_stock" | "surplus" | "listed" | "in_progress" | "claimed" | "delivered" | "expired";
   createdAt: string;
   expiryStatus?: {
     isExpired: boolean;
     isNearingExpiry: boolean;
     hoursRemaining: number;
     thresholdHours: number;
+  };
+  linkedListing?: {
+    id: string;
+    status: string;
+    deliveredAt?: string;
+    claimedByNgoName?: string;
   };
 }
 
@@ -241,18 +247,28 @@ export default function InstitutionInventoryPage() {
               {filteredItems.map((item) => {
                 const exp = item.expiryStatus;
                 const isNearing = exp?.isNearingExpiry;
-                const isExp = exp?.isExpired || item.status === "expired";
+                const isDelivered = item.status === "delivered" || item.linkedListing?.status === "delivered";
+                const isInProgress =
+                  !isDelivered &&
+                  (item.status === "in_progress" ||
+                    item.status === "claimed" ||
+                    item.status === "listed" ||
+                    item.status === "surplus" ||
+                    item.linkedListing?.status === "claimed" ||
+                    item.linkedListing?.status === "matched" ||
+                    item.linkedListing?.status === "pending");
+                const isExp = !isDelivered && !isInProgress && (item.status === "expired" || exp?.isExpired);
 
                 return (
                   <tr
                     key={item._id}
                     className={`hover:bg-[#F3EDE0]/80 transition-colors ${
-                      isNearing ? "bg-clay-rust/5" : ""
+                      isNearing && !isDelivered && !isInProgress ? "bg-clay-rust/5" : ""
                     }`}
                   >
                     <td className="px-4 py-3 font-medium text-ink">
                       <div className="flex items-center gap-2">
-                        {isNearing && (
+                        {isNearing && !isDelivered && !isInProgress && (
                           <span
                             className="w-2 h-2 rounded-full bg-clay-rust shrink-0"
                             title="Nearing Expiry (Auto-Flagged)"
@@ -280,7 +296,11 @@ export default function InstitutionInventoryPage() {
                     </td>
 
                     <td className="px-4 py-3 font-ledger-mono text-xs">
-                      {isExp ? (
+                      {isDelivered ? (
+                        <span className="text-basil font-semibold">Delivered</span>
+                      ) : isInProgress ? (
+                        <span className="text-[#7E570A] font-semibold">In Redistribution</span>
+                      ) : isExp ? (
                         <span className="text-[#8A4331] font-semibold">Expired</span>
                       ) : isNearing ? (
                         <span className="text-clay-rust font-semibold">
@@ -294,10 +314,10 @@ export default function InstitutionInventoryPage() {
                     </td>
 
                     <td className="px-4 py-3">
-                      {item.status === "listed" ? (
-                        <StatusBadge variant="pending" label="Listed for Surplus" />
-                      ) : item.status === "surplus" ? (
-                        <StatusBadge variant="forecasted" label="Marked Surplus" />
+                      {isDelivered ? (
+                        <StatusBadge variant="delivered" label="Delivered" />
+                      ) : isInProgress ? (
+                        <StatusBadge variant="pending" label="In Progress" />
                       ) : isExp ? (
                         <StatusBadge variant="expired" label="Expired" />
                       ) : isNearing ? (
@@ -309,7 +329,7 @@ export default function InstitutionInventoryPage() {
 
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {item.status === "in_stock" && !isExp && (
+                        {item.status === "in_stock" && !isExp && !isDelivered && !isInProgress && (
                           <button
                             onClick={() => handleMarkSurplus(item._id)}
                             className="px-2.5 py-1 rounded-[4px] bg-ledger-paper border border-basil text-basil text-xs font-medium hover:bg-basil hover:text-ledger-paper transition-colors cursor-pointer"
@@ -318,7 +338,7 @@ export default function InstitutionInventoryPage() {
                           </button>
                         )}
 
-                        {item.status === "surplus" && (
+                        {item.status === "surplus" && !isDelivered && (
                           <Button asChild variant="default" size="sm">
                             <Link href={`/app/institution/surplus-listings?itemId=${item._id}`}>
                               <TicketIcon size={12} />
