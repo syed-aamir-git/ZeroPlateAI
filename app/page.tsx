@@ -4,7 +4,7 @@ import { PublicFooter } from "@/components/layouts/public-footer";
 import { Button } from "@/components/ui/button";
 import { TicketStrip } from "@/components/public/ticket-strip";
 import { ImpactCounter } from "@/components/public/impact-counter";
-import { getPlatformStats } from "@/lib/platform-stats";
+import { getPlatformStats, getLiveRedistributionTickets } from "@/lib/platform-stats";
 import {
   CrateIcon,
   TicketIcon,
@@ -18,7 +18,10 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const stats = await getPlatformStats();
+  const [stats, tickets] = await Promise.all([
+    getPlatformStats(),
+    getLiveRedistributionTickets(),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-ledger-paper text-ink">
@@ -64,7 +67,7 @@ export default async function HomePage() {
                 Automated safety checks & verified claims
               </span>
             </div>
-            <TicketStrip />
+            <TicketStrip tickets={tickets} />
           </div>
         </div>
       </section>

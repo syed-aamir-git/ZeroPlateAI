@@ -236,7 +236,26 @@ export function SettingsIcon({ size = 20, strokeWidth = 1.5, className = "", ...
   );
 }
 
-// 11. Chevron Down / Right
+// 11. Chevron Left / Right
+export function ChevronLeftIcon({ size = 16, strokeWidth = 1.5, className = "", ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon({ size = 16, strokeWidth = 1.5, className = "", ...props }: IconProps) {
   return (
     <svg

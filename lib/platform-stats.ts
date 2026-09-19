@@ -93,3 +93,131 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     };
   }
 }
+
+export interface LiveRedistributionTicket {
+  id: string;
+  item: string;
+  institutionType: string;
+  quantity: string;
+  meals: string;
+  status: "verified_safe" | "confirmed" | "delivered" | "pending" | "nearing_expiry" | "expired" | "in_transit";
+  statusLabel?: string;
+  isClaimed?: boolean;
+}
+
+export async function getLiveRedistributionTickets(): Promise<LiveRedistributionTicket[]> {
+  try {
+    const db = await getDb();
+
+    const rawListings = await db
+      .collection("surplusListings")
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .toArray();
+
+    if (!rawListings || rawListings.length === 0) {
+      return [];
+    }
+
+    const instIds = rawListings.map((l) => l.institutionId).filter(Boolean);
+    const insts = await db
+      .collection("institutions")
+      .find({ _id: { $in: instIds } })
+      .project({ name: 1, type: 1 })
+      .toArray();
+
+    const instMap = new Map(insts.map((i) => [i._id.toString(), i]));
+
+    const formatType = (type?: string) => {
+      if (!type) return "";
+      const map: Record<string, string> = {
+        college: "College Mess",
+        hospital: "Hospital Dietary",
+        hotel: "Hotel Banquet",
+        corporate_cafeteria: "Corporate Cafeteria",
+        caterer: "Caterer Banquet",
+        commercial_kitchen: "Commercial Kitchen",
+        processing_unit: "Processing Unit",
+      };
+      return map[type] || type.replace(/_/g, " ");
+    };
+
+    return rawListings.map((l) => {
+      const inst = l.institutionId ? instMap.get(l.institutionId.toString()) : null;
+      const instTypeName = inst?.type ? formatType(inst.type) : "";
+      const institutionType = l.institutionName
+        ? (instTypeName ? `${l.institutionName} • ${instTypeName}` : l.institutionName)
+        : (instTypeName || "Institutional Kitchen");
+
+      const qty = Number(l.quantity) || 0;
+      const rawUnit = (l.unit || "kg").toLowerCase().trim();
+      let displayUnit = l.unit || "kg";
+      let mealsCount = 0;
+
+      if (
+        rawUnit === "pcs" ||
+        rawUnit === "pc" ||
+        rawUnit === "pieces" ||
+        rawUnit === "piece" ||
+        rawUnit === "portions"
+      ) {
+        displayUnit = "pcs";
+        mealsCount = Math.max(1, Math.round(qty * 0.5));
+      } else if (
+        rawUnit === "l" ||
+        rawUnit === "liter" ||
+        rawUnit === "litres" ||
+        rawUnit === "liters" ||
+        rawUnit === "litre"
+      ) {
+        displayUnit = "L";
+        mealsCount = Math.max(1, Math.round(qty * 2.5));
+      } else {
+        displayUnit = "kg";
+        mealsCount = Math.max(1, Math.round(qty * 2.5));
+      }
+
+      let status: LiveRedistributionTicket["status"] = "verified_safe";
+      let isClaimed = false;
+      let statusLabel = "Verified Safe";
+
+      if (l.status === "delivered") {
+        status = "delivered";
+        statusLabel = "Delivered";
+      } else if (l.status === "claimed" || l.claimedAt || l.claimedByNgoId) {
+        status = "confirmed";
+        isClaimed = true;
+        statusLabel = "Claimed";
+      } else if (l.status === "expired" || l.safetyStatus === "rejected") {
+        status = "expired";
+        statusLabel = "Expired";
+      } else if (l.status === "in_transit") {
+        status = "in_transit";
+        statusLabel = "In Transit";
+      } else if (l.status === "matched") {
+        status = "confirmed";
+        statusLabel = "Matched";
+      } else if (l.safetyStatus === "verified_safe") {
+        status = "verified_safe";
+        statusLabel = "Verified Safe";
+      }
+
+      const formattedQty = qty % 1 === 0 ? qty.toString() : qty.toFixed(1);
+
+      return {
+        id: l._id.toString(),
+        item: l.itemName || "Surplus Redistribution Batch",
+        institutionType,
+        quantity: `${formattedQty} ${displayUnit}`,
+        meals: `~${mealsCount} meals`,
+        status,
+        statusLabel,
+        isClaimed,
+      };
+    });
+  } catch (err) {
+    console.error("Error reading live redistribution tickets from MongoDB:", err);
+    return [];
+  }
+}
