@@ -42,7 +42,23 @@ export default function DeliveryHistoryPage() {
     fetchHistory();
   }, [fetchHistory]);
 
-  const totalKg = history.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
+  const totalByUnit = history.reduce(
+    (acc, curr) => {
+      const qty = Number(curr.quantity) || 0;
+      const rawUnit = (curr.unit || "kg").toLowerCase().trim();
+      if (rawUnit === "kg" || rawUnit === "kgs" || rawUnit === "kilogram" || rawUnit === "kilograms") {
+        acc.kg += qty;
+      } else if (rawUnit === "l" || rawUnit === "liter" || rawUnit === "litres" || rawUnit === "liters" || rawUnit === "litre") {
+        acc.litres += qty;
+      } else if (rawUnit === "pcs" || rawUnit === "pc" || rawUnit === "piece" || rawUnit === "pieces" || rawUnit === "portions" || rawUnit === "portion") {
+        acc.pieces += qty;
+      } else {
+        acc.kg += qty;
+      }
+      return acc;
+    },
+    { kg: 0, pieces: 0, litres: 0 }
+  );
 
   return (
     <div className="space-y-4 text-left">
@@ -76,8 +92,12 @@ export default function DeliveryHistoryPage() {
           <div className="text-[10px] uppercase font-mono-numeral text-[#9E9587]">
             Food Transported
           </div>
-          <div className="font-mono-numeral text-xl font-bold text-[#86C29B] mt-0.5">
-            {totalKg} <span className="text-xs font-normal text-[#9E9587]">kg</span>
+          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 font-mono-numeral text-sm sm:text-base font-bold text-[#86C29B]">
+            <span className="whitespace-nowrap">{totalByUnit.kg} <span className="text-[11px] font-normal text-[#9E9587]">kg</span></span>
+            <span className="text-[#9E9587]/40 text-xs select-none">•</span>
+            <span className="whitespace-nowrap">{totalByUnit.pieces} <span className="text-[11px] font-normal text-[#9E9587]">pieces</span></span>
+            <span className="text-[#9E9587]/40 text-xs select-none">•</span>
+            <span className="whitespace-nowrap">{totalByUnit.litres} <span className="text-[11px] font-normal text-[#9E9587]">litres</span></span>
           </div>
         </div>
       </div>

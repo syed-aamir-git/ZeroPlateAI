@@ -7,6 +7,11 @@ export interface PlatformStats {
   totalListingsCount: number;
   deliveredListingsCount: number;
   wastePreventedKg: number;
+  wastePreventedByUnit: {
+    kg: number;
+    pieces: number;
+    litres: number;
+  };
   mealsRedistributed: number;
   co2eAvoidedKg: number;
   hasActivity: boolean;
@@ -30,10 +35,27 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       db.collection("surplusListings").find({ status: "delivered" }).toArray(),
     ]);
 
-    const wastePreventedKg = deliveredListings.reduce(
-      (acc, curr) => acc + (Number(curr.quantity) || 0),
-      0
-    );
+    let wastePreventedKg = 0;
+    const wastePreventedByUnit = {
+      kg: 0,
+      pieces: 0,
+      litres: 0,
+    };
+
+    for (const curr of deliveredListings) {
+      const qty = Number(curr.quantity) || 0;
+      wastePreventedKg += qty;
+      const rawUnit = (curr.unit || "kg").toLowerCase().trim();
+      if (rawUnit === "kg" || rawUnit === "kgs" || rawUnit === "kilogram" || rawUnit === "kilograms") {
+        wastePreventedByUnit.kg += qty;
+      } else if (rawUnit === "l" || rawUnit === "liter" || rawUnit === "litres" || rawUnit === "liters" || rawUnit === "litre") {
+        wastePreventedByUnit.litres += qty;
+      } else if (rawUnit === "pcs" || rawUnit === "pc" || rawUnit === "piece" || rawUnit === "pieces" || rawUnit === "portions" || rawUnit === "portion") {
+        wastePreventedByUnit.pieces += qty;
+      } else {
+        wastePreventedByUnit.kg += qty;
+      }
+    }
 
     // Standard conversions (PRD Section 12.7 & 22: kg -> meals * 2.5, kg -> CO2e * 1.8 FAO factor)
     const mealsRedistributed = Math.round(wastePreventedKg * 2.5);
@@ -46,6 +68,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       totalListingsCount,
       deliveredListingsCount: deliveredListings.length,
       wastePreventedKg,
+      wastePreventedByUnit,
       mealsRedistributed,
       co2eAvoidedKg,
       hasActivity: wastePreventedKg > 0 || totalListingsCount > 0,
@@ -59,6 +82,11 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       totalListingsCount: 0,
       deliveredListingsCount: 0,
       wastePreventedKg: 0,
+      wastePreventedByUnit: {
+        kg: 0,
+        pieces: 0,
+        litres: 0,
+      },
       mealsRedistributed: 0,
       co2eAvoidedKg: 0,
       hasActivity: false,

@@ -45,14 +45,29 @@ export async function GET() {
 
     let totalListedKg = 0;
     let totalRedistributedKg = 0;
+    const redistributedByUnit = {
+      kg: 0,
+      pieces: 0,
+      litres: 0,
+    };
 
     for (const l of listings) {
       const qty = Number(l.quantity) || 0;
+      const rawUnit = (l.unit || "kg").toLowerCase().trim();
       if (l.safetyStatus === "verified_safe") {
         totalListedKg += qty;
       }
       if (l.status === "delivered") {
         totalRedistributedKg += qty;
+        if (rawUnit === "kg" || rawUnit === "kgs" || rawUnit === "kilogram" || rawUnit === "kilograms") {
+          redistributedByUnit.kg += qty;
+        } else if (rawUnit === "l" || rawUnit === "liter" || rawUnit === "litres" || rawUnit === "liters" || rawUnit === "litre") {
+          redistributedByUnit.litres += qty;
+        } else if (rawUnit === "pcs" || rawUnit === "pc" || rawUnit === "piece" || rawUnit === "pieces" || rawUnit === "portions" || rawUnit === "portion") {
+          redistributedByUnit.pieces += qty;
+        } else {
+          redistributedByUnit.kg += qty;
+        }
       }
     }
 
@@ -133,6 +148,7 @@ export async function GET() {
         totalUsersCount,
         totalListedKg,
         totalRedistributedKg: impact.wastePreventedKg,
+        redistributedByUnit,
         mealsGiven: impact.mealsGiven,
         co2eAvoidedKg: impact.co2eAvoidedKg,
         methaneAvoidedKg: impact.methaneAvoidedKg,

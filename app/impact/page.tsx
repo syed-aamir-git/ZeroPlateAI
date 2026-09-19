@@ -60,8 +60,21 @@ export default async function PublicImpactPage() {
                 <span className="text-xs text-ink-soft block uppercase tracking-wider font-mono-numeral">
                   Food Waste Prevented
                 </span>
-                <div className="mt-2 text-4xl sm:text-5xl font-semibold text-ink">
-                  <ImpactCounter value={stats.wastePreventedKg} suffix=" kg" />
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-3xl sm:text-4xl font-semibold text-ink whitespace-nowrap font-mono-numeral">
+                    <ImpactCounter value={stats.wastePreventedByUnit?.kg ?? stats.wastePreventedKg} />
+                    <span className="text-sm font-mono text-ink-soft ml-1">kg</span>
+                  </span>
+                  <span className="text-ink-soft/40 text-sm select-none">•</span>
+                  <span className="text-3xl sm:text-4xl font-semibold text-ink whitespace-nowrap font-mono-numeral">
+                    <ImpactCounter value={stats.wastePreventedByUnit?.pieces ?? 0} />
+                    <span className="text-sm font-mono text-ink-soft ml-1">pieces</span>
+                  </span>
+                  <span className="text-ink-soft/40 text-sm select-none">•</span>
+                  <span className="text-3xl sm:text-4xl font-semibold text-ink whitespace-nowrap font-mono-numeral">
+                    <ImpactCounter value={stats.wastePreventedByUnit?.litres ?? 0} />
+                    <span className="text-sm font-mono text-ink-soft ml-1">litres</span>
+                  </span>
                 </div>
                 <p className="text-xs text-ink-soft mt-2 leading-relaxed">
                   Bulk institutional inventory safely redistributed instead of diverted to municipal landfills.

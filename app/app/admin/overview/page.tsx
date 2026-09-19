@@ -19,6 +19,11 @@ interface AdminMetrics {
   totalUsersCount: number;
   totalListedKg: number;
   totalRedistributedKg: number;
+  redistributedByUnit?: {
+    kg: number;
+    pieces: number;
+    litres: number;
+  };
   mealsGiven: number;
   co2eAvoidedKg: number;
   auditLogCount: number;
@@ -181,8 +186,21 @@ export default function AdminOverviewPage() {
             <div className="text-xs uppercase tracking-wider text-[#C9B9C7] font-mono-numeral">
               Food Redistributed
             </div>
-            <div className="font-mono-numeral text-2xl font-bold text-[#86C29B] mt-1">
-              {metrics?.totalRedistributedKg || 0} <span className="text-xs font-normal text-[#C9B9C7]">kg</span>
+            <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="font-mono-numeral text-xl sm:text-2xl font-bold text-[#86C29B] whitespace-nowrap">
+                {metrics?.redistributedByUnit?.kg ?? metrics?.totalRedistributedKg ?? 0}
+                <span className="text-xs font-normal text-[#C9B9C7] ml-1">kg</span>
+              </span>
+              <span className="text-[#C9B9C7]/40 text-xs select-none">•</span>
+              <span className="font-mono-numeral text-xl sm:text-2xl font-bold text-[#86C29B] whitespace-nowrap">
+                {metrics?.redistributedByUnit?.pieces ?? 0}
+                <span className="text-xs font-normal text-[#C9B9C7] ml-1">pieces</span>
+              </span>
+              <span className="text-[#C9B9C7]/40 text-xs select-none">•</span>
+              <span className="font-mono-numeral text-xl sm:text-2xl font-bold text-[#86C29B] whitespace-nowrap">
+                {metrics?.redistributedByUnit?.litres ?? 0}
+                <span className="text-xs font-normal text-[#C9B9C7] ml-1">litres</span>
+              </span>
             </div>
             <div className="text-[11px] text-[#C9B9C7] mt-0.5">delivered to recipients</div>
           </div>

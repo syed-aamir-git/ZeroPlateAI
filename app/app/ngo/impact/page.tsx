@@ -12,6 +12,11 @@ import {
 
 interface NgoImpactData {
   totalRedistributedKg: number;
+  redistributedByUnit?: {
+    kg: number;
+    pieces: number;
+    litres: number;
+  };
   mealsProvided: number;
   co2eAvoidedKg: number;
   totalClaimsCount: number;
@@ -93,9 +98,21 @@ export default function NgoImpactPage() {
           <div className="text-xs uppercase tracking-wider text-ink-soft font-mono-numeral">
             Food Redistributed
           </div>
-          <div className="font-mono-numeral text-2xl sm:text-3xl font-normal text-basil mt-1">
-            {impact?.totalRedistributedKg || 0}{" "}
-            <span className="text-xs text-ink-soft font-normal">kg</span>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="font-mono-numeral text-xl sm:text-2xl font-normal text-basil whitespace-nowrap">
+              {impact?.redistributedByUnit?.kg ?? impact?.totalRedistributedKg ?? 0}
+              <span className="text-xs text-ink-soft font-normal ml-1">kg</span>
+            </span>
+            <span className="text-ink-soft/40 text-xs select-none">•</span>
+            <span className="font-mono-numeral text-xl sm:text-2xl font-normal text-basil whitespace-nowrap">
+              {impact?.redistributedByUnit?.pieces ?? 0}
+              <span className="text-xs text-ink-soft font-normal ml-1">pieces</span>
+            </span>
+            <span className="text-ink-soft/40 text-xs select-none">•</span>
+            <span className="font-mono-numeral text-xl sm:text-2xl font-normal text-basil whitespace-nowrap">
+              {impact?.redistributedByUnit?.litres ?? 0}
+              <span className="text-xs text-ink-soft font-normal ml-1">litres</span>
+            </span>
           </div>
           <div className="text-[11px] text-ink-soft mt-0.5">confirmed receipts</div>
         </div>

@@ -54,11 +54,26 @@ export async function GET(request: NextRequest) {
     );
 
     let totalRedistributedKg = 0;
+    const redistributedByUnit = {
+      kg: 0,
+      pieces: 0,
+      litres: 0,
+    };
     const categoryTotals: Record<string, number> = {};
 
     for (const item of confirmedListings) {
       const qty = Number(item.quantity) || 0;
       totalRedistributedKg += qty;
+      const rawUnit = (item.unit || "kg").toLowerCase().trim();
+      if (rawUnit === "kg" || rawUnit === "kgs" || rawUnit === "kilogram" || rawUnit === "kilograms") {
+        redistributedByUnit.kg += qty;
+      } else if (rawUnit === "l" || rawUnit === "liter" || rawUnit === "litres" || rawUnit === "liters" || rawUnit === "litre") {
+        redistributedByUnit.litres += qty;
+      } else if (rawUnit === "pcs" || rawUnit === "pc" || rawUnit === "piece" || rawUnit === "pieces" || rawUnit === "portions" || rawUnit === "portion") {
+        redistributedByUnit.pieces += qty;
+      } else {
+        redistributedByUnit.kg += qty;
+      }
       const cat = item.category || "uncategorized";
       categoryTotals[cat] = (categoryTotals[cat] || 0) + qty;
     }
@@ -94,6 +109,7 @@ export async function GET(request: NextRequest) {
       },
       impact: {
         totalRedistributedKg,
+        redistributedByUnit,
         mealsProvided,
         co2eAvoidedKg,
         totalClaimsCount: allClaims.length,

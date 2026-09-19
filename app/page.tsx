@@ -103,8 +103,21 @@ export default async function HomePage() {
               <span className="text-xs text-ink-soft block uppercase tracking-wider font-mono-numeral">
                 Waste Prevented
               </span>
-              <div className="mt-1 text-3xl sm:text-4xl text-ink font-semibold">
-                <ImpactCounter value={stats.wastePreventedKg} suffix=" kg" />
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="text-2xl sm:text-3xl font-semibold text-ink whitespace-nowrap font-mono-numeral">
+                  <ImpactCounter value={stats.wastePreventedByUnit?.kg ?? stats.wastePreventedKg} />
+                  <span className="text-xs font-mono text-ink-soft ml-1">kg</span>
+                </span>
+                <span className="text-ink-soft/40 text-xs select-none">•</span>
+                <span className="text-2xl sm:text-3xl font-semibold text-ink whitespace-nowrap font-mono-numeral">
+                  <ImpactCounter value={stats.wastePreventedByUnit?.pieces ?? 0} />
+                  <span className="text-xs font-mono text-ink-soft ml-1">pieces</span>
+                </span>
+                <span className="text-ink-soft/40 text-xs select-none">•</span>
+                <span className="text-2xl sm:text-3xl font-semibold text-ink whitespace-nowrap font-mono-numeral">
+                  <ImpactCounter value={stats.wastePreventedByUnit?.litres ?? 0} />
+                  <span className="text-xs font-mono text-ink-soft ml-1">litres</span>
+                </span>
               </div>
               <span className="text-[11px] text-ink-soft mt-1 block">
                 Diverted from waste streams
