@@ -28,18 +28,14 @@ declare global {
 }
 
 let client: MongoClient;
-if (process.env.NODE_ENV === "development") {
-  if (!global._mongoAuthClient) {
-    global._mongoAuthClient = new MongoClient(uri);
-  }
-  client = global._mongoAuthClient;
-} else {
-  client = new MongoClient(uri);
+if (!global._mongoAuthClient) {
+  global._mongoAuthClient = new MongoClient(uri);
 }
+client = global._mongoAuthClient;
 
-function getBaseUrl(): string {
+function getFallbackBaseUrl(): string {
   if (process.env.BETTER_AUTH_URL && !process.env.BETTER_AUTH_URL.includes("localhost")) {
-    return process.env.BETTER_AUTH_URL;
+    return process.env.BETTER_AUTH_URL.replace(/\/+$/, "");
   }
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
@@ -50,6 +46,35 @@ function getBaseUrl(): string {
   return process.env.BETTER_AUTH_URL || "http://localhost:3000";
 }
 
+function getBaseUrlConfig() {
+  const allowedHosts: string[] = [
+    "localhost:3000",
+    "localhost:3001",
+    "*.vercel.app",
+    "*.onrender.com",
+  ];
+
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    allowedHosts.push(process.env.VERCEL_PROJECT_PRODUCTION_URL);
+  }
+  if (process.env.VERCEL_URL) {
+    allowedHosts.push(process.env.VERCEL_URL);
+  }
+  if (process.env.BETTER_AUTH_URL) {
+    try {
+      const parsed = new URL(process.env.BETTER_AUTH_URL);
+      allowedHosts.push(parsed.host);
+    } catch {
+      // ignore invalid URL
+    }
+  }
+
+  return {
+    allowedHosts: Array.from(new Set(allowedHosts)),
+    fallback: getFallbackBaseUrl(),
+  };
+}
+
 const db = client.db(dbName);
 
 export const auth = betterAuth({
@@ -57,13 +82,17 @@ export const auth = betterAuth({
   secret:
     process.env.BETTER_AUTH_SECRET ||
     "zeroplate_auth_dev_secret_secure_key_2026_antigravity",
-  baseURL: getBaseUrl(),
+  baseURL: getBaseUrlConfig(),
+  trustedProxyHeaders: true,
   trustedOrigins: [
     "http://localhost:3000",
     "http://localhost:3001",
-    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
-    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+    "https://*.vercel.app",
+    "https://*.onrender.com",
+    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL.replace(/\/+$/, "")] : []),
+    ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "")] : []),
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`] : []),
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
   ],
   emailAndPassword: {
     enabled: true,
@@ -111,6 +140,9 @@ export const auth = betterAuth({
           google: {
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            ...(process.env.GOOGLE_REDIRECT_URI
+              ? { redirectURI: process.env.GOOGLE_REDIRECT_URI }
+              : {}),
           },
         }
       : {}),
