@@ -5,12 +5,12 @@ import { hashPassword } from '@better-auth/utils/password';
 dotenv.config({ path: '.env.local' });
 
 async function resetPassword() {
-  const email = process.argv[2] || 'syed.aamir7002@gmail.com';
-  const newPassword = process.argv[3] || 'ZeroPlate@123';
+  const email = process.argv[2]?.trim().toLowerCase();
+  const newPassword = process.argv[3]?.trim();
 
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    console.error('Missing MONGODB_URI in .env.local');
+  if (!email || !newPassword) {
+    console.error('Usage: node scripts/reset-password.mjs <email> <password>');
+    console.error('Example: node scripts/reset-password.mjs aamir.syed7082@gmail.com Syed@1234');
     process.exit(1);
   }
 

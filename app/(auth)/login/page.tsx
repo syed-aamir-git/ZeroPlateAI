@@ -30,14 +30,28 @@ function LoginForm() {
     setError(null);
     setLoading(true);
 
-    try {
-      const res = await signIn.email({
-        email,
-        password,
-      });
+    const normalizedEmail = email.trim().toLowerCase();
+    const passwordsToTry = password !== password.trim() ? [password, password.trim()] : [password];
 
-      if (res.error) {
-        setError(res.error.message || "Invalid credentials. Please verify your email and password.");
+    try {
+      let lastError: { message?: string } | null = null;
+      let signedIn = false;
+
+      for (const pwd of passwordsToTry) {
+        const res = await signIn.email({
+          email: normalizedEmail,
+          password: pwd,
+        });
+
+        if (!res.error) {
+          signedIn = true;
+          break;
+        }
+        lastError = res.error;
+      }
+
+      if (!signedIn) {
+        setError(lastError?.message || "Invalid credentials. Please verify your email and password.");
         setLoading(false);
         return;
       }
