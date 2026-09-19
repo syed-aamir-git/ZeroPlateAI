@@ -45,7 +45,19 @@ function RegisterForm() {
       } as Parameters<typeof signUp.email>[0]);
 
       if (res.error) {
-        setError(res.error.message || "Failed to create account. Please verify your details.");
+        const errorMsg = res.error.message || "";
+        const isExistingUser =
+          errorMsg.toLowerCase().includes("already exists") ||
+          (res.error as { code?: string }).code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" ||
+          (res.error as { status?: number }).status === 422;
+
+        if (isExistingUser) {
+          setError(
+            `An account with email "${email}" already exists. Please log in with your password, or use a different email address.`
+          );
+        } else {
+          setError(errorMsg || "Failed to create account. Please verify your details.");
+        }
         setLoading(false);
         return;
       }
@@ -89,8 +101,18 @@ function RegisterForm() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-[6px] bg-[#8A4331]/10 border border-[#8A4331]/30 text-[#8A4331] text-xs">
-          {error}
+        <div className="mb-4 p-3.5 rounded-[6px] bg-[#8A4331]/10 border border-[#8A4331]/30 text-[#8A4331] text-xs space-y-2">
+          <div className="font-medium leading-relaxed">{error}</div>
+          {error.includes("already exists") && (
+            <div className="pt-1">
+              <Link
+                href={`/login?email=${encodeURIComponent(email)}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-[#8A4331] text-white hover:bg-[#6D3426] transition-colors font-semibold text-xs"
+              >
+                Sign in with this email &rarr;
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
