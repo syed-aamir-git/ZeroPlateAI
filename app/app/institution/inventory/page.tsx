@@ -103,12 +103,25 @@ export default function InstitutionInventoryPage() {
       // Reset form and reload list
       setName("");
       setQuantity("");
+      setCategory("cooked_food");
+      setUnit("kg");
       setIsAddOpen(false);
       fetchInventory();
     } catch (err: unknown) {
       setAddError(err instanceof Error ? err.message : "Error creating item.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCategoryChange = (newCat: string) => {
+    setCategory(newCat);
+    if (newCat === "cooked_food" || newCat === "raw_produce") {
+      setUnit("kg");
+    } else if (newCat === "dairy") {
+      setUnit("L");
+    } else if (newCat === "packaged" || newCat === "bakery") {
+      setUnit("pcs");
     }
   };
 
@@ -413,7 +426,7 @@ export default function InstitutionInventoryPage() {
                   </label>
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
                     className="w-full px-3 py-2 text-sm bg-ledger-paper border border-line rounded-[6px] text-ink cursor-pointer"
                   >
                     <option value="cooked_food">Cooked Food (4h rule)</option>
