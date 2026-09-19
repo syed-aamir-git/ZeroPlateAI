@@ -70,11 +70,16 @@ export default function InstitutionForecastPage() {
         // 2. Fetch forecast proxy
         const fRes = await fetch(`/api/v1/forecast/${currentInst._id}`);
         if (!fRes.ok) {
-          const fErr = await fRes.json();
-          throw new Error(fErr.error || "Failed to load forecast data.");
+          const fErr = await fRes.json().catch(() => ({}));
+          setError(fErr.error || "Failed to load forecast data.");
+          return;
         }
         const fJson = await fRes.json();
-        setForecast(fJson.forecast);
+        if (fJson.forecast) {
+          setForecast(fJson.forecast);
+        } else {
+          setError("Forecast data unavailable for this institution.");
+        }
       } catch (err: any) {
         console.error("Forecast page load error:", err);
         setError(err.message || "Failed to load predictive forecast.");
