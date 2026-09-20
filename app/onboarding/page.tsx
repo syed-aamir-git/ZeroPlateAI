@@ -145,7 +145,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-ledger-paper text-ink">
-      <PublicNav />
+      <PublicNav hideAuthButtons />
 
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full">
         <div className="bg-[#FAF6EE] border border-line rounded-[6px] p-6 sm:p-10 shadow-none">
