@@ -15,6 +15,7 @@ import {
   SettingsIcon,
   ShieldCheckIcon,
   LogOutIcon,
+  AnalyticsIcon,
 } from "@/components/icons/ledger-icons";
 import { NotificationBell } from "@/components/ui/notification-bell";
 
@@ -40,6 +41,8 @@ function getIconComponent(key?: string) {
     case "inventory":
     case "institutions":
       return CrateIcon;
+    case "analytics":
+      return AnalyticsIcon;
     case "forecast":
       return ForecastIcon;
     case "surplus":
