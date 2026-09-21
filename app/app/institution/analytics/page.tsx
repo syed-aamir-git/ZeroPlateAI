@@ -649,12 +649,16 @@ ${calculation.categoryAllocation.map((c) => `  - ${c.name}: ${c.kg} kg`).join("\
                       dataKey="consumedKg"
                       name="Food Consumed"
                       fill="#2F5E41"
+                      stackId="daily"
+                      maxBarSize={36}
                       radius={[3, 3, 0, 0]}
                     />
                     <Bar
                       dataKey="surplusKg"
                       name="Surplus Diverted"
                       fill="#D9A441"
+                      stackId="daily"
+                      maxBarSize={36}
                       radius={[3, 3, 0, 0]}
                     />
                     <Line
@@ -663,7 +667,8 @@ ${calculation.categoryAllocation.map((c) => `  - ${c.name}: ${c.kg} kg`).join("\
                       name="Food Prepared"
                       stroke="#1C1917"
                       strokeWidth={2}
-                      dot={{ r: 3, fill: "#1C1917" }}
+                      dot={{ r: 4, fill: "#1C1917", stroke: "#FAF7F2", strokeWidth: 1.5 }}
+                      activeDot={{ r: 6, fill: "#1C1917", stroke: "#FAF7F2", strokeWidth: 2 }}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
