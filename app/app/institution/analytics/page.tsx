@@ -156,21 +156,24 @@ export default function InstitutionAnalyticsPage() {
     };
 
     // Buffer multipliers: guarantees plenty of food without wasteful over-prep
-    const bufferMap: Record<string, { pct: number; label: string; desc: string }> = {
+    const bufferMap: Record<string, { pct: number; label: string; desc: string; tag: string }> = {
       lean: {
         pct: 3.5,
-        label: "Lean (+3.5% Buffer)",
-        desc: "Best for fixed seated dining with strict attendance checks.",
+        label: "Lean (+3.5%)",
+        desc: "Fixed headcount / seated dining",
+        tag: "Low Surplus",
       },
       balanced: {
         pct: 6.5,
-        label: "Balanced / Recommended (+6.5% Buffer)",
-        desc: "Optimal balance: ample food for second helpings with <3% post-service surplus.",
+        label: "Balanced (+6.5%)",
+        desc: "Optimal: ample seconds, 0 tray runout",
+        tag: "Recommended",
       },
       generous: {
         pct: 12.0,
-        label: "Generous (+12% Buffer)",
-        desc: "Recommended for guest days, banquets, and open-buffet events.",
+        label: "Generous (+12%)",
+        desc: "Banquets, open buffets & guest days",
+        tag: "Max Safety",
       },
     };
 
@@ -203,10 +206,42 @@ export default function InstitutionAnalyticsPage() {
 
     // Recommended category breakdown for this batch
     const categoryAllocation = [
-      { name: "Main Carbohydrate (Rice / Roti / Breads)", share: 0.45, kg: Math.round(recommendedPrepKg * 0.45 * 10) / 10 },
-      { name: "Protein & Entree (Dal / Paneer / Curry)", share: 0.35, kg: Math.round(recommendedPrepKg * 0.35 * 10) / 10 },
-      { name: "Vegetables & Sides", share: 0.15, kg: Math.round(recommendedPrepKg * 0.15 * 10) / 10 },
-      { name: "Salad / Dairy / Condiments", share: 0.05, kg: Math.round(recommendedPrepKg * 0.05 * 10) / 10 },
+      {
+        name: "Main Carbohydrate (Rice / Roti / Breads)",
+        shortName: "Carbohydrates",
+        icon: "🌾",
+        share: 0.45,
+        kg: Math.round(recommendedPrepKg * 0.45 * 10) / 10,
+        perPatronGrams: Math.round(portionGrams * 0.45),
+        color: "#2F5E41",
+      },
+      {
+        name: "Protein & Entree (Dal / Paneer / Curry)",
+        shortName: "Protein & Curry",
+        icon: "🍲",
+        share: 0.35,
+        kg: Math.round(recommendedPrepKg * 0.35 * 10) / 10,
+        perPatronGrams: Math.round(portionGrams * 0.35),
+        color: "#D9A441",
+      },
+      {
+        name: "Vegetables & Sides",
+        shortName: "Vegetables & Sides",
+        icon: "🥦",
+        share: 0.15,
+        kg: Math.round(recommendedPrepKg * 0.15 * 10) / 10,
+        perPatronGrams: Math.round(portionGrams * 0.15),
+        color: "#4A7C59",
+      },
+      {
+        name: "Salad / Dairy / Condiments",
+        shortName: "Dairy & Salad",
+        icon: "🥛",
+        share: 0.05,
+        kg: Math.round(recommendedPrepKg * 0.05 * 10) / 10,
+        perPatronGrams: Math.round(portionGrams * 0.05),
+        color: "#8B5E3C",
+      },
     ];
 
     return {
@@ -221,6 +256,7 @@ export default function InstitutionAnalyticsPage() {
       co2eSavedKg,
       bufferLabel: selectedBuffer.label,
       bufferDesc: selectedBuffer.desc,
+      bufferTag: selectedBuffer.tag,
       categoryAllocation,
     };
   }, [expectedDiners, mealService, targetDay, bufferMode]);
@@ -385,184 +421,404 @@ ${calculation.categoryAllocation.map((c) => `  - ${c.name}: ${c.kg} kg`).join("\
               </button>
             </div>
 
-            {/* Inputs & Controls Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Expected Headcount / Diners */}
-              <div className="bg-ledger-surface p-4 rounded-md border border-line">
-                <label className="text-xs font-semibold text-ink uppercase tracking-wider block mb-1.5">
-                  Expected Headcount (Diners)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={10}
-                    max={5000}
-                    step={10}
-                    value={expectedDiners}
-                    onChange={(e) => setExpectedDiners(Math.max(1, Number(e.target.value) || 0))}
-                    className="w-full font-mono text-xl font-bold bg-[#FAF6EE] border border-line rounded px-3 py-1.5 text-ink focus:outline-none focus:border-basil"
-                  />
-                  <span className="text-xs font-mono text-ink-soft">patrons</span>
-                </div>
-                <div className="flex gap-1.5 mt-2.5">
-                  {[150, 300, 500, 800].map((count) => (
-                    <button
-                      key={count}
-                      type="button"
-                      onClick={() => setExpectedDiners(count)}
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                        expectedDiners === count
-                          ? "bg-basil text-[#FAF7F2] border-basil font-bold"
-                          : "border-line text-ink-soft hover:bg-black/5"
-                      }`}
-                    >
-                      {count}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Meal Service Slot */}
-              <div className="bg-ledger-surface p-4 rounded-md border border-line">
-                <label className="text-xs font-semibold text-ink uppercase tracking-wider block mb-1.5">
-                  Meal Service Window
-                </label>
-                <select
-                  value={mealService}
-                  onChange={(e) => setMealService(e.target.value as any)}
-                  className="w-full bg-[#FAF6EE] border border-line rounded px-3 py-2 text-sm text-ink font-medium focus:outline-none focus:border-basil"
-                >
-                  <option value="lunch">Lunch Service (~420g / portion)</option>
-                  <option value="dinner">Dinner Service (~400g / portion)</option>
-                  <option value="breakfast">Breakfast Service (~280g / portion)</option>
-                  <option value="full_day">Full Day Catered (~1,100g / person)</option>
-                </select>
-                <span className="text-[11px] text-ink-soft mt-1.5 block">
-                  Reference: {calculation.portionGrams}g food per patron
-                </span>
-              </div>
-
-              {/* Day of Week Target */}
-              <div className="bg-ledger-surface p-4 rounded-md border border-line">
-                <label className="text-xs font-semibold text-ink uppercase tracking-wider block mb-1.5">
-                  Service Day
-                </label>
-                <select
-                  value={targetDay}
-                  onChange={(e) => setTargetDay(e.target.value)}
-                  className="w-full bg-[#FAF6EE] border border-line rounded px-3 py-2 text-sm text-ink font-medium focus:outline-none focus:border-basil"
-                >
-                  <option value="Today">Today (Current Trend)</option>
-                  <option value="Monday">Monday (High volume resumption)</option>
-                  <option value="Tuesday">Tuesday (Steady baseline)</option>
-                  <option value="Wednesday">Wednesday (Mid-week peak)</option>
-                  <option value="Thursday">Thursday (Normal service)</option>
-                  <option value="Friday">Friday (Early departures -6%)</option>
-                  <option value="Saturday">Saturday (Weekend cohort -30%)</option>
-                  <option value="Sunday">Sunday (Reduced mess -35%)</option>
-                </select>
-                <span className="text-[11px] text-ink-soft mt-1.5 block">
-                  Calibrates for weekday/weekend attendance cycles
-                </span>
-              </div>
-
-              {/* Buffer Mode Tolerance */}
-              <div className="bg-ledger-surface p-4 rounded-md border border-line">
-                <label className="text-xs font-semibold text-ink uppercase tracking-wider block mb-1.5">
-                  Safety Buffer Mode
-                </label>
-                <select
-                  value={bufferMode}
-                  onChange={(e) => setBufferMode(e.target.value as any)}
-                  className="w-full bg-[#FAF6EE] border border-line rounded px-3 py-2 text-sm text-ink font-medium focus:outline-none focus:border-basil"
-                >
-                  <option value="balanced">Balanced (+6.5% Ample Buffer)</option>
-                  <option value="lean">Lean (+3.5% Buffer)</option>
-                  <option value="generous">Generous (+12% Buffer)</option>
-                </select>
-                <span className="text-[11px] text-basil font-medium mt-1.5 block">
-                  Guarantees ample servings with 0 tray runout
-                </span>
-              </div>
-            </div>
-
-            {/* Live Recommendation Output Banner */}
-            <div className="bg-ledger-surface border border-basil/50 rounded-md p-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-              <div className="lg:col-span-5 space-y-2">
-                <div className="text-xs font-mono uppercase tracking-wider text-ink-soft">
-                  Optimal Kitchen Preparation Target
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-4xl sm:text-5xl font-extrabold text-basil">
-                    {calculation.recommendedPrepKg}
-                  </span>
-                  <span className="font-sans text-lg font-medium text-ink">kg</span>
-                  <span className="text-sm font-mono text-ink-soft ml-2">
-                    (~{Math.round(calculation.recommendedPrepKg * 2.5)} wholesome meals)
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-ink-soft">
-                  <ShieldCheckIcon size={16} className="text-basil shrink-0" />
-                  <span>
-                    Includes <strong>+{calculation.safetyBufferKg} kg ample buffer</strong> ({calculation.bufferLabel}) to ensure no diner is turned away.
-                  </span>
-                </div>
-              </div>
-
-              {/* Comparison vs Uncalibrated Overproduction */}
-              <div className="lg:col-span-7 border-t lg:border-t-0 lg:border-l border-line pt-4 lg:pt-0 lg:pl-6 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-ink-soft">Traditional Uncalibrated Prep (+25% blind overcook):</span>
-                  <span className="font-mono font-bold text-clay-rust line-through">
-                    {calculation.traditionalBlindPrepKg} kg
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-basil font-semibold">ZeroPlate Calibrated Production:</span>
-                  <span className="font-mono font-bold text-basil">
-                    {calculation.recommendedPrepKg} kg
-                  </span>
-                </div>
-
-                {/* Savings Bar */}
-                <div className="bg-[#FAF6EE] p-3 rounded border border-line/60 grid grid-cols-3 gap-2 text-center text-xs">
-                  <div>
-                    <span className="text-[10px] uppercase text-ink-soft block font-mono">Waste Prevented</span>
-                    <span className="font-mono font-bold text-basil text-sm">
-                      {calculation.foodSavedKg} kg
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase text-ink-soft block font-mono">Cost Saved</span>
-                    <span className="font-mono font-bold text-ink text-sm">
-                      ₹{calculation.costSavedInr.toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase text-ink-soft block font-mono">CO2e Diverted</span>
-                    <span className="font-mono font-bold text-saffron text-sm">
-                      {calculation.co2eSavedKg} kg
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Production Batch Category Allocation Table */}
-            <div className="bg-ledger-surface p-4 rounded-md border border-line space-y-2">
-              <span className="text-xs font-semibold text-ink uppercase tracking-wider block">
-                Batch Ingredient Breakdown (Target {calculation.recommendedPrepKg} kg)
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-                {calculation.categoryAllocation.map((item) => (
-                  <div key={item.name} className="p-3 rounded bg-[#FAF6EE] border border-line/70">
-                    <span className="text-[11px] text-ink-soft block truncate">{item.name}</span>
-                    <div className="mt-1 flex items-baseline justify-between">
-                      <span className="font-mono text-lg font-bold text-ink">{item.kg} kg</span>
-                      <span className="text-[10px] font-mono text-ink-soft">{Math.round(item.share * 100)}%</span>
+            {/* Controls Section: Clean 2-Row Layout */}
+            <div className="space-y-4">
+              {/* Row 1: Headcount & Service Day */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Expected Headcount / Diners with Stepper + Slider */}
+                <div className="lg:col-span-7 bg-ledger-surface p-4 rounded-md border border-line space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-xs font-semibold text-ink uppercase tracking-wider block">
+                        Expected Headcount (Diners)
+                      </label>
+                      <span className="text-[11px] text-ink-soft">
+                        Enter number of guests or mess attendance
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setExpectedDiners((prev) => Math.max(10, prev - 50))}
+                        className="text-xs font-mono font-bold px-2 py-1 rounded border border-line bg-ledger-paper hover:bg-black/5 text-ink cursor-pointer transition-colors"
+                        title="Decrease by 50"
+                      >
+                        -50
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setExpectedDiners((prev) => Math.max(10, prev - 10))}
+                        className="text-xs font-mono font-bold px-2 py-1 rounded border border-line bg-ledger-paper hover:bg-black/5 text-ink cursor-pointer transition-colors"
+                        title="Decrease by 10"
+                      >
+                        -10
+                      </button>
+                      <div className="flex items-center bg-[#FAF6EE] border border-line rounded px-3 py-1 font-mono">
+                        <input
+                          type="number"
+                          min={10}
+                          max={3000}
+                          step={10}
+                          value={expectedDiners}
+                          onChange={(e) => setExpectedDiners(Math.max(1, Number(e.target.value) || 0))}
+                          className="w-20 font-bold text-lg text-ink bg-transparent focus:outline-none text-right"
+                        />
+                        <span className="text-xs text-ink-soft ml-1.5">diners</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setExpectedDiners((prev) => prev + 10)}
+                        className="text-xs font-mono font-bold px-2 py-1 rounded border border-line bg-ledger-paper hover:bg-black/5 text-ink cursor-pointer transition-colors"
+                        title="Increase by 10"
+                      >
+                        +10
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setExpectedDiners((prev) => prev + 50)}
+                        className="text-xs font-mono font-bold px-2 py-1 rounded border border-line bg-ledger-paper hover:bg-black/5 text-ink cursor-pointer transition-colors"
+                        title="Increase by 50"
+                      >
+                        +50
+                      </button>
                     </div>
                   </div>
-                ))}
+
+                  {/* Interactive Range Slider */}
+                  <div className="space-y-1 pt-1">
+                    <input
+                      type="range"
+                      min={20}
+                      max={1200}
+                      step={10}
+                      value={expectedDiners}
+                      onChange={(e) => setExpectedDiners(Number(e.target.value))}
+                      className="w-full h-2 bg-line rounded-lg appearance-none cursor-pointer accent-basil"
+                    />
+                    <div className="flex justify-between items-center text-[10px] font-mono text-ink-soft">
+                      <span>20 diners</span>
+                      <span>300 (standard)</span>
+                      <span>600</span>
+                      <span>1,200+ patrons</span>
+                    </div>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[11px] text-ink-soft font-medium">Quick Presets:</span>
+                    {[100, 200, 300, 500, 800].map((count) => (
+                      <button
+                        key={count}
+                        type="button"
+                        onClick={() => setExpectedDiners(count)}
+                        className={`text-xs font-mono px-2.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                          expectedDiners === count
+                            ? "bg-basil text-[#FAF7F2] border-basil font-bold"
+                            : "border-line bg-[#FAF6EE] text-ink-soft hover:text-ink hover:border-ink/40"
+                        }`}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Day of Week Target */}
+                <div className="lg:col-span-5 bg-ledger-surface p-4 rounded-md border border-line space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-ink uppercase tracking-wider block">
+                      Service Day
+                    </label>
+                    <span className="text-[10px] font-mono text-basil font-medium">
+                      Attendance Rhythm
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-ink-soft">
+                    Calibrates for weekday/weekend attendance cycles
+                  </p>
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {[
+                      { id: "Today", label: "Today", note: "Live" },
+                      { id: "Monday", label: "Mon", note: "High" },
+                      { id: "Tuesday", label: "Tue", note: "Normal" },
+                      { id: "Wednesday", label: "Wed", note: "Peak" },
+                      { id: "Thursday", label: "Thu", note: "Normal" },
+                      { id: "Friday", label: "Fri", note: "-6%" },
+                      { id: "Saturday", label: "Sat", note: "-30%" },
+                      { id: "Sunday", label: "Sun", note: "-35%" },
+                    ].map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setTargetDay(d.id)}
+                        className={`p-1.5 rounded border text-center transition-all cursor-pointer ${
+                          targetDay === d.id
+                            ? "bg-basil text-[#FAF7F2] border-basil font-bold shadow-xs"
+                            : "bg-[#FAF6EE] border-line text-ink hover:border-ink/40"
+                        }`}
+                      >
+                        <div className="text-xs font-bold leading-tight">{d.label}</div>
+                        <div
+                          className={`text-[9px] font-mono ${
+                            targetDay === d.id ? "text-[#FAF7F2]/80" : "text-ink-soft"
+                          }`}
+                        >
+                          {d.note}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: Meal Window & Safety Buffer Mode (Segmented Visual Cards) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Meal Service Window: 4 Clickable Cards */}
+                <div className="lg:col-span-7 bg-ledger-surface p-4 rounded-md border border-line space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-ink uppercase tracking-wider block">
+                      Meal Service Window
+                    </label>
+                    <span className="text-[11px] font-mono text-ink-soft">
+                      Portion Baseline: {calculation.portionGrams}g / diner
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                    {[
+                      { id: "breakfast", icon: "☀️", label: "Breakfast", grams: "280g", desc: "Poha, Idli, Upma" },
+                      { id: "lunch", icon: "🍲", label: "Lunch", grams: "420g", desc: "Rice, Dal, Curries", popular: true },
+                      { id: "dinner", icon: "🌙", label: "Dinner", grams: "400g", desc: "Full Evening Meal" },
+                      { id: "full_day", icon: "📋", label: "Full Day", grams: "1,100g", desc: "All 3 Services" },
+                    ].map((meal) => (
+                      <button
+                        key={meal.id}
+                        type="button"
+                        onClick={() => setMealService(meal.id as any)}
+                        className={`p-2.5 rounded border text-left transition-all cursor-pointer relative ${
+                          mealService === meal.id
+                            ? "bg-basil/10 border-basil text-ink shadow-xs ring-1 ring-basil/40"
+                            : "bg-[#FAF6EE] border-line text-ink hover:border-ink/40"
+                        }`}
+                      >
+                        {meal.popular && (
+                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded text-[8px] font-mono font-bold bg-saffron text-[#FAF7F2] uppercase">
+                            Common
+                          </span>
+                        )}
+                        <div className="text-base leading-none mb-1">{meal.icon}</div>
+                        <div className="text-xs font-bold text-ink">{meal.label}</div>
+                        <div className="text-[11px] font-mono font-semibold text-basil mt-0.5">
+                          ~{meal.grams}
+                        </div>
+                        <div className="text-[10px] text-ink-soft truncate mt-0.5">
+                          {meal.desc}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Safety Buffer Mode: 3 Crystal Clear Strategy Cards */}
+                <div className="lg:col-span-5 bg-ledger-surface p-4 rounded-md border border-line space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-ink uppercase tracking-wider block">
+                      Safety Buffer Strategy
+                    </label>
+                    <span className="text-[10px] font-mono font-semibold text-basil">
+                      Zero Tray Runout
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {[
+                      { id: "lean", label: "Lean", pct: "+3.5%", desc: "Fixed seating", sub: "Minimal surplus" },
+                      { id: "balanced", label: "Balanced", pct: "+6.5%", desc: "Recommended", sub: "Ample seconds", rec: true },
+                      { id: "generous", label: "Generous", pct: "+12%", desc: "Banquets", sub: "High safety" },
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setBufferMode(mode.id as any)}
+                        className={`p-2.5 rounded border text-left transition-all cursor-pointer relative ${
+                          bufferMode === mode.id
+                            ? "bg-basil text-[#FAF7F2] border-basil font-bold shadow-xs"
+                            : "bg-[#FAF6EE] border-line text-ink hover:border-ink/40"
+                        }`}
+                      >
+                        {mode.rec && (
+                          <span className={`absolute top-1 right-1 px-1 py-0.2 rounded text-[8px] font-mono uppercase ${
+                            bufferMode === mode.id ? "bg-[#FAF7F2] text-basil font-bold" : "bg-basil text-[#FAF7F2]"
+                          }`}>
+                            ★ Best
+                          </span>
+                        )}
+                        <div className="text-xs font-bold leading-tight">{mode.label}</div>
+                        <div className={`font-mono text-sm font-extrabold mt-0.5 ${
+                          bufferMode === mode.id ? "text-[#FAF7F2]" : "text-basil"
+                        }`}>
+                          {mode.pct}
+                        </div>
+                        <div className={`text-[10px] mt-0.5 truncate ${
+                          bufferMode === mode.id ? "text-[#FAF7F2]/80" : "text-ink-soft"
+                        }`}>
+                          {mode.sub}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Recommendation Output Hero Banner */}
+            <div className="bg-ledger-surface border-2 border-basil/40 rounded-lg p-5 lg:p-6 space-y-5 shadow-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                {/* Target Number & Ample Guarantee */}
+                <div className="lg:col-span-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono uppercase tracking-wider text-ink-soft">
+                      Optimal Kitchen Preparation Target
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-basil/15 text-basil font-bold uppercase">
+                      Calibrated
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-mono text-4xl sm:text-5xl font-extrabold text-basil tracking-tight">
+                      {calculation.recommendedPrepKg}
+                    </span>
+                    <span className="font-sans text-xl font-bold text-ink">kg</span>
+                    <span className="text-sm font-mono text-ink-soft ml-2">
+                      (~{Math.round(calculation.recommendedPrepKg * 2.5)} wholesome meals)
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded bg-[#FAF6EE] border border-line flex items-start gap-2 text-xs text-ink-soft">
+                    <ShieldCheckIcon size={16} className="text-basil shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-ink">Ample Guarantee:</strong> Includes{" "}
+                      <span className="text-basil font-bold">+{calculation.safetyBufferKg} kg safety buffer</span>{" "}
+                      ({calculation.bufferLabel}) to ensure plenty of food for seconds with zero diner runouts.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comparison vs Uncalibrated Overproduction + Savings Visual Meter */}
+                <div className="lg:col-span-7 border-t lg:border-t-0 lg:border-l border-line pt-4 lg:pt-0 lg:pl-6 space-y-4">
+                  {/* Visual Comparison Bars */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-ink-soft">Traditional Blind Prep (+25% overcook):</span>
+                      <span className="font-mono font-bold text-clay-rust line-through">
+                        {calculation.traditionalBlindPrepKg} kg
+                      </span>
+                    </div>
+                    <div className="w-full h-3 bg-clay-rust/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-clay-rust/60 rounded-full" style={{ width: "100%" }} />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <span className="text-basil font-bold flex items-center gap-1">
+                        <span>ZeroPlate Recommended Production:</span>
+                        <span className="text-[10px] font-mono bg-basil/15 text-basil px-1.5 py-0.2 rounded font-semibold">
+                          Save {calculation.foodSavedKg} kg
+                        </span>
+                      </span>
+                      <span className="font-mono font-extrabold text-basil text-sm">
+                        {calculation.recommendedPrepKg} kg
+                      </span>
+                    </div>
+                    <div className="w-full h-3 bg-line rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-basil rounded-full transition-all duration-300"
+                        style={{
+                          width: `${Math.min(100, Math.round((calculation.recommendedPrepKg / Math.max(1, calculation.traditionalBlindPrepKg)) * 100))}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Savings KPI Cards */}
+                  <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                    <div className="p-2.5 rounded bg-[#FAF6EE] border border-line">
+                      <span className="text-[10px] uppercase text-ink-soft block font-mono">Waste Prevented</span>
+                      <span className="font-mono font-bold text-basil text-base sm:text-lg block mt-0.5">
+                        {calculation.foodSavedKg} kg
+                      </span>
+                      <span className="text-[9px] text-ink-soft font-mono">~{calculation.mealsSaved} meals</span>
+                    </div>
+                    <div className="p-2.5 rounded bg-[#FAF6EE] border border-line">
+                      <span className="text-[10px] uppercase text-ink-soft block font-mono">Procurement Saved</span>
+                      <span className="font-mono font-bold text-ink text-base sm:text-lg block mt-0.5">
+                        ₹{calculation.costSavedInr.toLocaleString()}
+                      </span>
+                      <span className="text-[9px] text-ink-soft font-mono">this service</span>
+                    </div>
+                    <div className="p-2.5 rounded bg-[#FAF6EE] border border-line">
+                      <span className="text-[10px] uppercase text-ink-soft block font-mono">CO2e Diverted</span>
+                      <span className="font-mono font-bold text-saffron text-base sm:text-lg block mt-0.5">
+                        {calculation.co2eSavedKg} kg
+                      </span>
+                      <span className="text-[9px] text-ink-soft font-mono">greenhouse gas</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Batch Ingredient Breakdown with Proportional Progress Bar */}
+              <div className="border-t border-line pt-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <span className="text-xs font-semibold text-ink uppercase tracking-wider block">
+                    Chef Recipe Ingredient Allocation ({calculation.recommendedPrepKg} kg Total)
+                  </span>
+                  <span className="text-[11px] font-mono text-ink-soft">
+                    Calibrated for ~{expectedDiners} diners @ {calculation.portionGrams}g plate average
+                  </span>
+                </div>
+
+                {/* Proportional Segment Bar */}
+                <div className="h-2.5 w-full rounded-full overflow-hidden flex bg-line">
+                  {calculation.categoryAllocation.map((item) => (
+                    <div
+                      key={item.name}
+                      style={{ width: `${Math.round(item.share * 100)}%`, backgroundColor: item.color }}
+                      title={`${item.shortName}: ${item.kg} kg (${Math.round(item.share * 100)}%)`}
+                    />
+                  ))}
+                </div>
+
+                {/* Recipe Ingredient Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                  {calculation.categoryAllocation.map((item) => (
+                    <div
+                      key={item.name}
+                      className="p-3.5 rounded-md bg-[#FAF6EE] border border-line hover:border-basil/40 transition-colors space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm">{item.icon}</span>
+                          <span className="text-xs font-bold text-ink truncate">{item.shortName}</span>
+                        </div>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/5 text-ink-soft font-semibold">
+                          {Math.round(item.share * 100)}%
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline justify-between pt-0.5">
+                        <span className="font-mono text-2xl font-extrabold text-ink">
+                          {item.kg} <span className="text-xs font-sans font-normal text-ink-soft">kg</span>
+                        </span>
+                        <span className="text-[11px] font-mono text-basil font-medium">
+                          ~{item.perPatronGrams}g / plate
+                        </span>
+                      </div>
+
+                      <span className="text-[10px] text-ink-soft block truncate pt-0.5">
+                        {item.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
