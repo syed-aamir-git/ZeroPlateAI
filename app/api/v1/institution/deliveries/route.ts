@@ -43,19 +43,51 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .toArray();
 
+    if (!assignments || assignments.length === 0) {
+      return NextResponse.json({
+        success: true,
+        deliveries: [],
+        count: 0,
+      });
+    }
+
     // Enrich with listing, driver, and NGO details
     const listingIds = assignments.map((a) => a.surplusListingId).filter(Boolean);
     const driverIds = assignments.map((a) => a.assignedToDeliveryPartnerId).filter(Boolean);
     const ngoIds = assignments.map((a) => a.claimedByNgoId).filter(Boolean);
 
+    const toIdFilter = (ids: any[]) => {
+      const list: any[] = [];
+      ids.forEach((id) => {
+        if (!id) return;
+        list.push(id);
+        if (typeof id === "string" && ObjectId.isValid(id)) {
+          try {
+            list.push(new ObjectId(id));
+          } catch {}
+        } else if (id instanceof ObjectId) {
+          list.push(id.toString());
+        }
+      });
+      return list;
+    };
+
     const [listings, drivers, ngos] = await Promise.all([
-      db.collection("surplusListings").find({ _id: { $in: listingIds } }).toArray(),
-      db.collection("deliveryPartners").find({ _id: { $in: driverIds } }).toArray(),
-      db.collection("ngos").find({ _id: { $in: ngoIds } }).toArray(),
+      listingIds.length > 0
+        ? db.collection("surplusListings").find({ _id: { $in: toIdFilter(listingIds) } }).toArray()
+        : [],
+      driverIds.length > 0
+        ? db.collection("deliveryPartners").find({ _id: { $in: toIdFilter(driverIds) } }).toArray()
+        : [],
+      ngoIds.length > 0
+        ? db.collection("ngos").find({ _id: { $in: toIdFilter(ngoIds) } }).toArray()
+        : [],
     ]);
 
     const driverUserIds = drivers.map((d) => d.userId).filter(Boolean);
-    const driverUsers = await db.collection("user").find({ _id: { $in: driverUserIds } }).toArray();
+    const driverUsers = driverUserIds.length > 0
+      ? await db.collection("user").find({ _id: { $in: toIdFilter(driverUserIds) } }).toArray()
+      : [];
     const driverUserMap = new Map(driverUsers.map((u) => [String(u._id), u]));
 
     const listingMap = new Map(listings.map((l) => [String(l._id), l]));

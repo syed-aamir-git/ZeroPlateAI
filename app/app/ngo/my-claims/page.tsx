@@ -43,24 +43,43 @@ export default function NgoMyClaimsPage() {
     message: string;
   } | null>(null);
 
-  const fetchClaims = React.useCallback(async () => {
+  const isFetchingRef = React.useRef(false);
+
+  const fetchClaims = React.useCallback(async (signal?: AbortSignal) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      const res = await fetch("/api/v1/ngo/claims");
-      const json = await res.json();
+      const res = await fetch("/api/v1/ngo/claims", { signal });
       if (res.ok) {
+        const json = await res.json();
         setClaims(json.claims || []);
       }
-    } catch (err) {
-      console.error("Failed to load claims:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.warn("NGO claims sync paused:", err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
-    fetchClaims();
-    const interval = setInterval(fetchClaims, 5000);
-    return () => clearInterval(interval);
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    fetchClaims(abortController.signal);
+    const interval = setInterval(() => {
+      if (isMounted) {
+        fetchClaims(abortController.signal);
+      }
+    }, 15000);
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+      clearInterval(interval);
+    };
   }, [fetchClaims]);
 
   const handleConfirmReceipt = async (claimId: string) => {

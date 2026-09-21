@@ -62,26 +62,45 @@ export default function AdminOverviewPage() {
   const [dispatches, setDispatches] = React.useState<DispatchItem[]>([]);
   const [loading, setLoading] = React.useState(true);
 
-  const fetchOverview = React.useCallback(async () => {
+  const isFetchingRef = React.useRef(false);
+
+  const fetchOverview = React.useCallback(async (signal?: AbortSignal) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      const res = await fetch("/api/v1/admin/overview");
+      const res = await fetch("/api/v1/admin/overview", { signal });
       const json = await res.json();
       if (res.ok) {
         setMetrics(json.metrics);
         setRecentLogs(json.recentLogs || []);
         setDispatches(json.dispatches || []);
       }
-    } catch (err) {
-      console.error("Failed to load admin overview:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.warn("Admin overview sync paused:", err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
-    fetchOverview();
-    const interval = setInterval(fetchOverview, 5000);
-    return () => clearInterval(interval);
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    fetchOverview(abortController.signal);
+    const interval = setInterval(() => {
+      if (isMounted) {
+        fetchOverview(abortController.signal);
+      }
+    }, 15000);
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+      clearInterval(interval);
+    };
   }, [fetchOverview]);
 
   if (loading) {

@@ -68,24 +68,43 @@ export default function DeliveryAssignmentsPage() {
     message: string;
   } | null>(null);
 
-  const fetchAssignments = React.useCallback(async () => {
+  const isFetchingRef = React.useRef(false);
+
+  const fetchAssignments = React.useCallback(async (signal?: AbortSignal) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      const res = await fetch("/api/v1/delivery/assignments");
-      const json = await res.json();
+      const res = await fetch("/api/v1/delivery/assignments", { signal });
       if (res.ok) {
+        const json = await res.json();
         setAssignments(json.assignments || []);
       }
-    } catch (err) {
-      console.error("Failed to load delivery assignments:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.warn("Delivery assignments sync paused:", err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
-    fetchAssignments();
-    const interval = setInterval(fetchAssignments, 5000);
-    return () => clearInterval(interval);
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    fetchAssignments(abortController.signal);
+    const interval = setInterval(() => {
+      if (isMounted) {
+        fetchAssignments(abortController.signal);
+      }
+    }, 15000);
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+      clearInterval(interval);
+    };
   }, [fetchAssignments]);
 
   const handleAdvanceStatus = async (
@@ -152,7 +171,7 @@ export default function DeliveryAssignmentsPage() {
         </div>
 
         <button
-          onClick={fetchAssignments}
+          onClick={() => fetchAssignments()}
           className="text-xs text-[#D9A441] hover:underline font-mono-numeral cursor-pointer"
         >
           ↻ Refresh

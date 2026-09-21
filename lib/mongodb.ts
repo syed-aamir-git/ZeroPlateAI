@@ -12,7 +12,13 @@ function getMongoUri(): string {
 }
 
 const uri = getMongoUri();
-const options = {};
+const options = {
+  maxPoolSize: 20,
+  minPoolSize: 1,
+  connectTimeoutMS: 10000,
+  socketTimeoutMS: 20000,
+  serverSelectionTimeoutMS: 10000,
+};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;

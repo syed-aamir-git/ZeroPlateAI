@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { BellIcon, CheckIcon } from "@/components/icons/ledger-icons";
 import { cn } from "@/lib/utils";
@@ -25,28 +25,50 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isFetchingRef = useRef(false);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async (signal?: AbortSignal) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
       setIsLoading(true);
-      const res = await fetch("/api/v1/notifications");
+      const res = await fetch("/api/v1/notifications", {
+        signal,
+      });
+
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
       }
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      // Log as warning rather than console.error to avoid throwing Next.js dev overlay on transient drops
+      console.warn("Notifications sync paused:", err);
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 20000); // 20s polling
-    return () => clearInterval(interval);
-  }, []);
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    fetchNotifications(abortController.signal);
+    const interval = setInterval(() => {
+      if (isMounted) {
+        fetchNotifications(abortController.signal);
+      }
+    }, 25000);
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+      clearInterval(interval);
+    };
+  }, [fetchNotifications]);
 
   // Close when clicking outside
   useEffect(() => {

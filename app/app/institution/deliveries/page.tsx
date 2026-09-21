@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { RouteIcon, CheckIcon } from "@/components/icons/ledger-icons";
@@ -45,25 +45,45 @@ export default function InstitutionDeliveriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
 
-  useEffect(() => {
-    async function loadDeliveries() {
-      try {
-        const res = await fetch("/api/v1/institution/deliveries");
-        if (res.ok) {
-          const data = await res.json();
-          setDeliveries(data.deliveries || []);
-        }
-      } catch (err) {
-        console.error("Error loading deliveries:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  const isFetchingRef = useRef(false);
 
-    loadDeliveries();
-    const interval = setInterval(loadDeliveries, 5000);
-    return () => clearInterval(interval);
+  const loadDeliveries = useCallback(async (signal?: AbortSignal) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    try {
+      const res = await fetch("/api/v1/institution/deliveries", { signal });
+      if (res.ok) {
+        const data = await res.json();
+        setDeliveries(data.deliveries || []);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      // Log as warning rather than console.error to avoid throwing Next.js dev overlay
+      console.warn("Deliveries update paused:", err);
+    } finally {
+      isFetchingRef.current = false;
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    loadDeliveries(abortController.signal);
+    const interval = setInterval(() => {
+      if (isMounted) {
+        loadDeliveries(abortController.signal);
+      }
+    }, 15000);
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+      clearInterval(interval);
+    };
+  }, [loadDeliveries]);
 
   const getStepIndex = (status: string) => {
     const idx = STEPS.findIndex((s) => s.key === status);
