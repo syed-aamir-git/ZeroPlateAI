@@ -208,7 +208,7 @@ export async function GET(
       `# Estimated Institutional Cost Value Recovered (INR):,₹${impact.costSavedInr}`,
       `# Completed Redistribution Runs:,${deliveredListings.length}`,
       `#`,
-      `Listing ID,Batch Date,Item Name,Category,Quantity,Unit,Meals Equivalent,CO2e Avoided (kg),Recipient Organization,NGO Registration Number,Dispatch Location,Safety Status,Delivered Timestamp`,
+      `Food Name,Batch Date,Category,Quantity,Unit,Meals Equivalent,CO2e Avoided (kg),Recipient Organization,NGO Registration Number,Dispatch Location,Safety Status,Delivered Timestamp,Audit ID`,
     ];
 
     for (const l of deliveredListings) {
@@ -220,13 +220,14 @@ export async function GET(
       const deliveredTime = l.deliveredAt || assignment?.deliveredAt || l.updatedAt || l.createdAt;
       const dateFormatted = deliveredTime ? new Date(deliveredTime).toISOString() : "N/A";
       const pickupAddress = l.pickupLocation?.address || institution.address || "Main Dispatch Bay";
+      const foodName = (l.itemName || l.name || "Surplus Food").replace(/"/g, '""');
+      const category = (l.category || "cooked_food").replace(/_/g, " ");
 
       csvLines.push(
         [
-          `"${l._id}"`,
+          `"${foodName}"`,
           `"${new Date(l.createdAt).toISOString().slice(0, 10)}"`,
-          `"${(l.itemName || "Surplus Food").replace(/"/g, '""')}"`,
-          `"${l.category || "cooked_food"}"`,
+          `"${category}"`,
           qty,
           `"${l.unit || "kg"}"`,
           meals,
@@ -236,6 +237,7 @@ export async function GET(
           `"${pickupAddress.replace(/"/g, '""')}"`,
           `"${l.safetyStatus || "verified_safe"}"`,
           `"${dateFormatted}"`,
+          `"${l._id}"`,
         ].join(",")
       );
     }
