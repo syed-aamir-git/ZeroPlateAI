@@ -7,6 +7,7 @@ import {
   ShieldCheckIcon,
   AlertTriangleIcon,
 } from "@/components/icons/ledger-icons";
+import LocationPickerMap from "@/components/maps/location-picker-map";
 
 interface NgoProfile {
   _id: string;
@@ -278,6 +279,29 @@ export default function NgoOrganizationPage() {
             required
             placeholder="e.g. South Delhi, Okhla, Ashram, Lajpat Nagar"
             className="w-full px-3 py-2 text-xs bg-ledger-paper border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+          />
+        </div>
+
+        {/* Interactive Location Pin on Leaflet Map */}
+        <div className="space-y-2">
+          <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft">
+            NGO Facility Location & Service Coverage Map *
+          </label>
+          <p className="text-[11px] text-ink-soft">
+            Drag the pin or click on the map to set your verified distribution center coordinates.
+          </p>
+          <LocationPickerMap
+            lat={Number(lat) || 28.6139}
+            lng={Number(lng) || 77.209}
+            radiusMeters={6000}
+            pinType="ngo"
+            theme="light"
+            label="Verified NGO Center"
+            onChange={({ lat: newLat, lng: newLng }) => {
+              setLat(String(newLat));
+              setLng(String(newLng));
+            }}
+            className="w-full h-56 sm:h-64"
           />
         </div>
 

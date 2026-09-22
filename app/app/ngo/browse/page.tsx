@@ -10,8 +10,10 @@ import {
   ShieldCheckIcon,
   AlertTriangleIcon,
   CrateIcon,
+  RouteIcon,
 } from "@/components/icons/ledger-icons";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
+import MarketplaceMap from "@/components/maps/marketplace-map";
 
 interface SurplusListing {
   _id: string;
@@ -48,6 +50,8 @@ export default function NgoBrowsePage() {
   const [ngo, setNgo] = React.useState<NgoInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [filterCategory, setFilterCategory] = React.useState("all");
+  const [viewMode, setViewMode] = React.useState<"grid" | "map">("grid");
+  const [selectedMapId, setSelectedMapId] = React.useState<string | null>(null);
   const [claimingId, setClaimingId] = React.useState<string | null>(null);
   const [claimFeedback, setClaimFeedback] = React.useState<{
     type: "success" | "error";
@@ -230,30 +234,76 @@ export default function NgoBrowsePage() {
         </div>
       )}
 
-      {/* Category Filter Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto border border-line bg-[#FAF6EE] p-2.5 rounded-[6px]">
-        {[
-          { id: "all", label: `All Surplus (${listings.length})` },
-          { id: "cooked_food", label: "Cooked Food" },
-          { id: "dairy", label: "Dairy" },
-          { id: "bakery", label: "Bakery" },
-          { id: "raw_produce", label: "Raw Produce" },
-          { id: "packaged", label: "Packaged" },
-        ].map((tab) => (
+      {/* Category Filter Pills and View Mode Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-line bg-[#FAF6EE] p-2.5 rounded-[6px]">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {[
+            { id: "all", label: `All (${listings.length})` },
+            { id: "cooked_food", label: "Cooked Food" },
+            { id: "dairy", label: "Dairy" },
+            { id: "bakery", label: "Bakery" },
+            { id: "raw_produce", label: "Raw Produce" },
+            { id: "packaged", label: "Packaged" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilterCategory(tab.id)}
+              className={`px-3 py-1 text-xs rounded-[4px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                filterCategory === tab.id
+                  ? "bg-basil text-ledger-paper"
+                  : "bg-ledger-paper text-ink-soft border border-line hover:text-ink"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* View Mode Switcher: Grid vs Map */}
+        <div className="flex items-center gap-1 self-end sm:self-auto bg-ledger-paper p-1 rounded border border-line">
           <button
-            key={tab.id}
-            onClick={() => setFilterCategory(tab.id)}
-            className={`px-3 py-1 text-xs rounded-[4px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
-              filterCategory === tab.id
+            type="button"
+            onClick={() => setViewMode("grid")}
+            className={`px-2.5 py-1 text-xs rounded font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              viewMode === "grid"
                 ? "bg-basil text-ledger-paper"
-                : "bg-ledger-paper text-ink-soft border border-line hover:text-ink"
+                : "text-ink-soft hover:text-ink"
             }`}
           >
-            {tab.label}
+            <span>⊞ Grid</span>
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={() => setViewMode("map")}
+            className={`px-2.5 py-1 text-xs rounded font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              viewMode === "map"
+                ? "bg-basil text-ledger-paper"
+                : "text-ink-soft hover:text-ink"
+            }`}
+          >
+            <span>🗺️ Map View</span>
+          </button>
+        </div>
       </div>
 
+      {/* Map View Display */}
+      {viewMode === "map" ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-ink-soft font-mono-numeral bg-[#FAF6EE] p-3 rounded-[6px] border border-line">
+            <span>Click any map pin to inspect batch details, pickup window, and claim directly.</span>
+            <span className="font-semibold text-basil">{filteredListings.length} Active Listings Mapped</span>
+          </div>
+          <MarketplaceMap
+            listings={filteredListings}
+            selectedId={selectedMapId}
+            onSelect={(id) => setSelectedMapId(id)}
+            onClaim={handleClaim}
+            isKycApproved={isKycApproved}
+            className="w-full h-[520px]"
+          />
+        </div>
+      ) : (
+        <>
       {/* Ticket Card Grid (Design PRD Section 5.3) */}
       {loading ? (
         <div className="p-12 text-center text-xs font-mono-numeral text-ink-soft">
@@ -362,6 +412,8 @@ export default function NgoBrowsePage() {
             );
           })}
         </div>
+      )}
+        </>
       )}
     </div>
   );

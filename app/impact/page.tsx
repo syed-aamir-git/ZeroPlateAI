@@ -3,12 +3,16 @@ import { PublicNav } from "@/components/layouts/public-nav";
 import { PublicFooter } from "@/components/layouts/public-footer";
 import { Button } from "@/components/ui/button";
 import { ImpactCounter } from "@/components/public/impact-counter";
-import { getPlatformStats } from "@/lib/platform-stats";
+import { PublicNetworkMap } from "@/components/public/public-network-map";
+import { getPlatformStats, getPublicNetworkData } from "@/lib/platform-stats";
 
 export const dynamic = "force-dynamic";
 
 export default async function PublicImpactPage() {
-  const stats = await getPlatformStats();
+  const [stats, networkData] = await Promise.all([
+    getPlatformStats(),
+    getPublicNetworkData(),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-ledger-paper text-ink">
@@ -179,6 +183,31 @@ export default async function PublicImpactPage() {
               </p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Live Geographic Distribution Map */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-line bg-ledger-paper">
+        <div className="max-w-5xl mx-auto text-left">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 mb-6">
+            <div>
+              <span className="font-mono-numeral text-xs uppercase tracking-widest text-ink-soft block mb-1">
+                Regional Redistribution Topology
+              </span>
+              <h2 className="font-display text-2xl sm:text-3xl font-normal text-ink">
+                Live Geographic Coverage & Corridors
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm text-ink-soft">
+                Auditable spatial distribution of verified commercial donor kitchens, recipient non-profits, and active logistics transfers.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-mono-numeral bg-basil/10 text-basil border border-basil/20 font-semibold flex items-center gap-1.5 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-basil animate-pulse" />
+              Live Leaflet.js Network
+            </span>
+          </div>
+
+          <PublicNetworkMap nodes={networkData.nodes} routes={networkData.routes} />
         </div>
       </section>
 

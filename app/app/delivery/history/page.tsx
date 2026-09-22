@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { LedgerTabIcon, StampIcon, RouteIcon } from "@/components/icons/ledger-icons";
+import DeliveryRouteMap from "@/components/maps/delivery-route-map";
 
 interface CompletedDelivery {
   _id: string;
@@ -18,11 +19,18 @@ interface CompletedDelivery {
   pickupAddress: string;
   recipientName: string;
   dropAddress: string;
+  pickupLocation?: { lat?: number; lng?: number; address?: string };
+  dropLocation?: { lat?: number; lng?: number; address?: string };
 }
 
 export default function DeliveryHistoryPage() {
   const [history, setHistory] = React.useState<CompletedDelivery[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [openMapIds, setOpenMapIds] = React.useState<Record<string, boolean>>({});
+
+  const toggleMap = (id: string) => {
+    setOpenMapIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const fetchHistory = React.useCallback(async () => {
     try {
@@ -173,14 +181,41 @@ export default function DeliveryHistoryPage() {
                 </div>
 
                 <div className="flex items-center justify-between border-t border-[#3B362E] pt-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleMap(item._id)}
+                    className="text-[11px] font-mono-numeral text-[#D9A441] hover:text-[#E2B359] transition-colors cursor-pointer flex items-center gap-1 bg-[#24211C] px-2.5 py-1 rounded border border-[#3B362E]"
+                  >
+                    <RouteIcon size={12} />
+                    <span>{openMapIds[item._id] ? "Hide Map" : "View Route 🗺️"}</span>
+                  </button>
                   <span className="text-[11px] font-mono-numeral text-[#86C29B] flex items-center gap-1">
                     <StampIcon size={12} />
                     <span>{item.status === "confirmed" ? "Confirmed by NGO" : "Handed over"}</span>
                   </span>
-                  <span className="text-[10px] font-mono-numeral text-[#9E9587]">
-                    ID: {item._id.slice(-6)}
-                  </span>
                 </div>
+
+                {openMapIds[item._id] && (
+                  <div className="mt-2 pt-2 border-t border-[#3B362E]">
+                    <DeliveryRouteMap
+                      pickup={{
+                        name: item.donorName,
+                        address: item.pickupAddress,
+                        lat: item.pickupLocation?.lat,
+                        lng: item.pickupLocation?.lng,
+                      }}
+                      drop={{
+                        name: item.recipientName,
+                        address: item.dropAddress,
+                        lat: item.dropLocation?.lat,
+                        lng: item.dropLocation?.lng,
+                      }}
+                      status={item.status}
+                      theme="dark"
+                      className="w-full h-56"
+                    />
+                  </div>
+                )}
               </div>
             );
           })}

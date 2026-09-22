@@ -4,7 +4,8 @@ import { PublicFooter } from "@/components/layouts/public-footer";
 import { Button } from "@/components/ui/button";
 import { TicketStrip } from "@/components/public/ticket-strip";
 import { ImpactCounter } from "@/components/public/impact-counter";
-import { getPlatformStats, getLiveRedistributionTickets } from "@/lib/platform-stats";
+import { PublicNetworkMap } from "@/components/public/public-network-map";
+import { getPlatformStats, getLiveRedistributionTickets, getPublicNetworkData } from "@/lib/platform-stats";
 import {
   CrateIcon,
   TicketIcon,
@@ -18,9 +19,10 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [stats, tickets] = await Promise.all([
+  const [stats, tickets, networkData] = await Promise.all([
     getPlatformStats(),
     getLiveRedistributionTickets(),
+    getPublicNetworkData(),
   ]);
 
   return (
@@ -234,6 +236,33 @@ export default async function HomePage() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Live Circular Network Map (Direct Leaflet JS Integration) */}
+      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-line bg-ledger-paper">
+        <div className="max-w-7xl mx-auto text-left">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 mb-8">
+            <div>
+              <span className="font-mono-numeral text-xs uppercase tracking-widest text-ink-soft block mb-1">
+                Regional Logistics Topology
+              </span>
+              <h2 className="font-display text-3xl sm:text-4xl font-normal text-ink">
+                Live Circular Redistribution Network
+              </h2>
+              <p className="mt-2 text-sm text-ink-soft max-w-2xl">
+                Explore real-time redistribution corridors connecting onboarded dining facilities, verified NGOs, and dedicated logistics couriers across the metropolitan region.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full text-xs font-mono-numeral bg-basil/10 text-basil border border-basil/20 font-semibold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-basil animate-pulse" />
+                Live Leaflet.js Map
+              </span>
+            </div>
+          </div>
+
+          <PublicNetworkMap nodes={networkData.nodes} routes={networkData.routes} />
         </div>
       </section>
 

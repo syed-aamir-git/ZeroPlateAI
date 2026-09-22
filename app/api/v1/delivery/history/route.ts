@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
         pickupAddress: listing?.pickupLocation?.address || "Dispatch Gate",
         recipientName: ngo?.orgName || "Verified NGO",
         dropAddress: ngo?.serviceArea || "Recipient Center",
+        pickupLocation: listing?.pickupLocation || { address: "Dispatch Gate", lat: 28.6139, lng: 77.209 },
+        dropLocation: ngo?.location || { address: ngo?.serviceArea || "Recipient Center", lat: 28.58, lng: 77.24 },
       };
     });
 

@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ShieldCheckIcon, UserIcon } from "@/components/icons/ledger-icons";
 import { StatusBadge } from "@/components/ui/status-badge";
+import NetworkDirectoryMap from "@/components/maps/network-directory-map";
 
 interface VerifiedNGO {
   _id: string;
@@ -24,6 +25,7 @@ export default function InstitutionNetworkPage() {
   const [ngos, setNgos] = React.useState<VerifiedNGO[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
+  const [viewMode, setViewMode] = React.useState<"grid" | "map">("grid");
 
   React.useEffect(() => {
     async function loadNetwork() {
@@ -89,8 +91,8 @@ export default function InstitutionNetworkPage() {
         </p>
       </div>
 
-      {/* Filter / Search */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Filter / Search & View Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">
           <input
             type="text"
@@ -100,13 +102,65 @@ export default function InstitutionNetworkPage() {
             className="w-full px-3 py-2 text-sm bg-white border border-line rounded-[6px] text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <div className="text-xs font-mono text-ink-soft">
-          {filteredNgos.length} verified {filteredNgos.length === 1 ? "partner" : "partners"}
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-white p-1 rounded border border-line">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`px-3 py-1 text-xs rounded font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                viewMode === "grid"
+                  ? "bg-basil text-ledger-paper"
+                  : "text-ink-soft hover:text-ink"
+              }`}
+            >
+              <span>⊞ Directory Grid</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("map")}
+              className={`px-3 py-1 text-xs rounded font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                viewMode === "map"
+                  ? "bg-basil text-ledger-paper"
+                  : "text-ink-soft hover:text-ink"
+              }`}
+            >
+              <span>🗺️ Partner Map</span>
+            </button>
+          </div>
+
+          <div className="text-xs font-mono text-ink-soft whitespace-nowrap">
+            {filteredNgos.length} verified {filteredNgos.length === 1 ? "partner" : "partners"}
+          </div>
         </div>
       </div>
 
-      {/* Directory Grid */}
-      {loading ? (
+      {/* Directory Map View Display */}
+      {viewMode === "map" ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-ink-soft font-mono bg-ledger-paper p-3 rounded-[6px] border border-line">
+            <span>Geographical coverage of all verified NGO distribution hubs across your dispatch territory.</span>
+            <span className="font-semibold text-basil">{filteredNgos.length} Hubs Plotted</span>
+          </div>
+          <NetworkDirectoryMap
+            entities={filteredNgos.map((n) => ({
+              _id: n._id,
+              name: n.orgName,
+              subtitle: n.serviceArea,
+              location: n.location,
+              badgeText: "Verified Recipient",
+              details: {
+                Registration: n.registrationNumber,
+                Capacity: `${n.capacityPerWeek} kg/week`,
+                "Service Area": n.serviceArea,
+              },
+            }))}
+            entityType="ngo"
+            theme="light"
+            className="w-full h-[500px]"
+          />
+        </div>
+      ) : loading ? (
         <div className="py-16 text-center text-sm text-ink-soft font-mono animate-pulse">
           Loading verified NGO network...
         </div>

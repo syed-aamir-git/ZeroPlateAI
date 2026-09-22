@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { RouteIcon, CheckIcon } from "@/components/icons/ledger-icons";
+import DeliveryRouteMap from "@/components/maps/delivery-route-map";
 
 interface DeliveryItem {
   _id: string;
@@ -18,6 +19,19 @@ interface DeliveryItem {
     category: string;
     quantity: number;
     unit: string;
+  };
+  pickup?: {
+    name: string;
+    address: string;
+    lat?: number;
+    lng?: number;
+  };
+  drop?: {
+    name: string;
+    address: string;
+    contactPhone?: string;
+    lat?: number;
+    lng?: number;
   };
   recipient: {
     name: string;
@@ -44,6 +58,11 @@ export default function InstitutionDeliveriesPage() {
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [openMapIds, setOpenMapIds] = useState<Record<string, boolean>>({});
+
+  const toggleMap = (id: string) => {
+    setOpenMapIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const isFetchingRef = useRef(false);
 
@@ -268,6 +287,52 @@ export default function InstitutionDeliveriesPage() {
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* Interactive Leaflet Tracking Route Map */}
+                  <div className="pt-2 border-t border-line space-y-2">
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => toggleMap(d._id)}
+                        className="inline-flex items-center gap-1.5 text-xs font-mono text-basil hover:underline bg-ledger-paper border border-line px-3 py-1.5 rounded-[4px] cursor-pointer"
+                      >
+                        <RouteIcon size={14} />
+                        <span>{openMapIds[d._id] ? "Hide Live Route Map" : "Track Live Route on Map 🗺️"}</span>
+                      </button>
+                      {openMapIds[d._id] && (
+                        <span className="text-[10px] font-mono text-ink-soft">
+                          Interactive Redistribution Path
+                        </span>
+                      )}
+                    </div>
+
+                    {openMapIds[d._id] && (
+                      <div className="mt-2">
+                        <DeliveryRouteMap
+                          pickup={
+                            d.pickup || {
+                              name: "Your Kitchen Facility",
+                              address: "Main Dispatch Bay",
+                              lat: 28.6139,
+                              lng: 77.209,
+                            }
+                          }
+                          drop={
+                            d.drop || {
+                              name: d.recipient.name,
+                              address: d.recipient.serviceArea,
+                              contactPhone: d.recipient.contactPhone,
+                              lat: 28.58,
+                              lng: 77.24,
+                            }
+                          }
+                          status={d.status}
+                          theme="light"
+                          className="w-full h-64 sm:h-72"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );

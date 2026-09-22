@@ -3,6 +3,7 @@
 import * as React from "react";
 import { UserIcon, ShieldCheckIcon, LogOutIcon } from "@/components/icons/ledger-icons";
 import { signOut } from "@/lib/auth-client";
+import LocationPickerMap from "@/components/maps/location-picker-map";
 
 interface PartnerProfile {
   _id: string;
@@ -213,6 +214,20 @@ export default function DeliveryProfilePage() {
             placeholder="e.g. South Delhi, Okhla Logistics Corridor"
             className="w-full px-3 py-2 text-xs bg-[#24211C] border border-[#3B362E] rounded-[4px] text-[#F3EEE2] focus:border-[#D9A441] outline-none"
           />
+          <div className="mt-2 space-y-1">
+            <span className="text-[10px] font-mono-numeral text-[#9E9587] block">
+              Logistics Service Hub & Coverage Radius (8 km zone):
+            </span>
+            <LocationPickerMap
+              lat={28.6139}
+              lng={77.209}
+              radiusMeters={8000}
+              pinType="courier"
+              theme="dark"
+              label="Delivery Hub & Service Radius"
+              className="w-full h-48 sm:h-56"
+            />
+          </div>
         </div>
 
         {/* Availability Toggle */}

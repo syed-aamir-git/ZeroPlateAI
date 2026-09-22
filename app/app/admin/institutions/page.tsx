@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { CrateIcon, TicketIcon } from "@/components/icons/ledger-icons";
+import NetworkDirectoryMap from "@/components/maps/network-directory-map";
 
 interface InstitutionItem {
   _id: string;
@@ -19,6 +20,7 @@ interface InstitutionItem {
 export default function AdminInstitutionsPage() {
   const [institutions, setInstitutions] = React.useState<InstitutionItem[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [viewMode, setViewMode] = React.useState<"table" | "map">("table");
 
   const fetchInstitutions = React.useCallback(async () => {
     try {
@@ -58,6 +60,67 @@ export default function AdminInstitutionsPage() {
         </div>
       </div>
 
+      {/* View Mode Switcher */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-1 bg-[#3D2538] p-1 rounded border border-[#5A3653]">
+          <button
+            type="button"
+            onClick={() => setViewMode("table")}
+            className={`px-3 py-1 text-xs font-mono-numeral rounded transition-colors cursor-pointer ${
+              viewMode === "table"
+                ? "bg-[#D9A441] text-[#24211C] font-bold"
+                : "text-[#C9B9C7] hover:text-[#F3EEE2]"
+            }`}
+          >
+            <span>⊞ Facilities Table</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("map")}
+            className={`px-3 py-1 text-xs font-mono-numeral rounded transition-colors cursor-pointer ${
+              viewMode === "map"
+                ? "bg-[#D9A441] text-[#24211C] font-bold"
+                : "text-[#C9B9C7] hover:text-[#F3EEE2]"
+            }`}
+          >
+            <span>🗺️ Facility Map View</span>
+          </button>
+        </div>
+
+        <div className="font-mono-numeral text-xs text-[#C9B9C7]">
+          {institutions.length} commercial kitchen nodes
+        </div>
+      </div>
+
+      {/* Facility Map View */}
+      {viewMode === "map" ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-[#C9B9C7] font-mono-numeral bg-[#3D2538] p-3 rounded-[6px] border border-[#5A3653]">
+            <span>Interactive regional facility distribution across dining verticals, processing centers, and campus kitchens.</span>
+            <span className="text-[#86C29B] font-semibold">{institutions.length} Kitchens Mapped</span>
+          </div>
+          <NetworkDirectoryMap
+            entities={institutions.map((inst) => ({
+              _id: inst._id,
+              name: inst.name,
+              subtitle: inst.type.replace("_", " ").toUpperCase(),
+              address: inst.address,
+              location: inst.location,
+              badgeText: inst.plan === "premium" ? "Enterprise Kitchen" : "Standard Kitchen",
+              details: {
+                Type: inst.type.replace("_", " "),
+                "Surplus Listed": `${inst.totalSurplusKg} kg`,
+                "Inventory Items": inst.inventoryCount,
+                "Active Listings": inst.listingsCount,
+              },
+            }))}
+            entityType="kitchen"
+            theme="dark"
+            className="w-full h-[520px]"
+          />
+        </div>
+      ) : (
+        <>
       {/* Institutions Ledger Table */}
       {loading ? (
         <div className="p-12 text-center text-xs font-mono-numeral text-[#C9B9C7]">
@@ -135,6 +198,8 @@ export default function AdminInstitutionsPage() {
             </tbody>
           </table>
         </div>
+      )}
+        </>
       )}
     </div>
   );

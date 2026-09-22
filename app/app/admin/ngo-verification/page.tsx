@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { ShieldCheckIcon, AlertTriangleIcon, UserIcon } from "@/components/icons/ledger-icons";
+import { ShieldCheckIcon, AlertTriangleIcon, UserIcon, RouteIcon } from "@/components/icons/ledger-icons";
+import LocationPickerMap from "@/components/maps/location-picker-map";
 
 interface NgoItem {
   _id: string;
@@ -17,12 +18,18 @@ interface NgoItem {
   createdAt: string;
   kycReviewedAt?: string;
   kycRejectionReason?: string;
+  location?: { lat?: number; lng?: number; address?: string };
 }
 
 export default function AdminNgoVerificationPage() {
   const [ngos, setNgos] = React.useState<NgoItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [statusFilter, setStatusFilter] = React.useState<string>("pending");
+  const [openMapIds, setOpenMapIds] = React.useState<Record<string, boolean>>({});
+
+  const toggleMap = (id: string) => {
+    setOpenMapIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
   const [actionLoadingId, setActionLoadingId] = React.useState<string | null>(null);
   const [feedback, setFeedback] = React.useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -173,7 +180,8 @@ export default function AdminNgoVerificationPage() {
                 const isActionLoading = actionLoadingId === item._id;
 
                 return (
-                  <tr key={item._id} className="hover:bg-[#4A2E44]/40 transition-colors">
+                  <React.Fragment key={item._id}>
+                    <tr className="hover:bg-[#4A2E44]/40 transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-medium text-[#F3EEE2] text-sm">{item.orgName}</div>
                       <div className="text-[10px] text-[#C9B9C7] font-mono-numeral">
@@ -189,8 +197,18 @@ export default function AdminNgoVerificationPage() {
                       {item.contactPhone}
                     </td>
 
-                    <td className="px-4 py-3 text-[#D4CBBF] max-w-[180px] truncate" title={item.serviceArea}>
-                      {item.serviceArea}
+                    <td className="px-4 py-3 text-[#D4CBBF]">
+                      <div className="max-w-[180px] truncate" title={item.serviceArea}>
+                        {item.serviceArea}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleMap(item._id)}
+                        className="text-[10px] text-[#D9A441] hover:underline font-mono-numeral flex items-center gap-1 mt-1 cursor-pointer"
+                      >
+                        <RouteIcon size={10} />
+                        <span>{openMapIds[item._id] ? "Hide Map" : "Verify Map 🗺️"}</span>
+                      </button>
                     </td>
 
                     <td className="px-4 py-3 font-mono-numeral text-[#F3EEE2]">
@@ -241,8 +259,35 @@ export default function AdminNgoVerificationPage() {
                       )}
                     </td>
                   </tr>
-                );
-              })}
+                  {openMapIds[item._id] && (
+                    <tr key={`${item._id}-map`}>
+                      <td colSpan={7} className="p-3 bg-[#2A1927] border-b border-[#5A3653]">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px] font-mono-numeral text-[#C9B9C7]">
+                            <span className="font-semibold text-[#F3EEE2]">
+                              Statutory Physical Facility Location & Service Coverage Verification
+                            </span>
+                            <span>
+                              Coordinates: {item.location?.lat || 28.6139}, {item.location?.lng || 77.209}
+                            </span>
+                          </div>
+                          <LocationPickerMap
+                            lat={item.location?.lat || 28.6139}
+                            lng={item.location?.lng || 77.209}
+                            radiusMeters={6000}
+                            pinType="ngo"
+                            theme="dark"
+                            readOnly={true}
+                            label={`Applicant: ${item.orgName}`}
+                            className="w-full h-52 sm:h-60"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
             </tbody>
           </table>
         </div>

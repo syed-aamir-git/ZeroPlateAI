@@ -7,6 +7,7 @@ import {
   ShieldCheckIcon,
   TicketIcon,
 } from "@/components/icons/ledger-icons";
+import LocationPickerMap from "@/components/maps/location-picker-map";
 
 interface InstitutionProfile {
   _id: string;
@@ -270,6 +271,28 @@ export default function InstitutionSettingsPage() {
             required
             placeholder="e.g. North Gate Logistics Bay, Tech Park 4"
             className="w-full px-3 py-2 text-xs bg-ledger-paper border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+          />
+        </div>
+
+        {/* Interactive Kitchen Facility Location Pin */}
+        <div className="space-y-2">
+          <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft">
+            Kitchen Facility Dispatch Bay Map *
+          </label>
+          <p className="text-[11px] text-ink-soft">
+            Drag or click to position your commercial kitchen's exact pickup bay coordinates on the map.
+          </p>
+          <LocationPickerMap
+            lat={Number(lat) || 28.6139}
+            lng={Number(lng) || 77.209}
+            pinType="kitchen"
+            theme="light"
+            label="Kitchen Dispatch Bay"
+            onChange={({ lat: newLat, lng: newLng }) => {
+              setLat(String(newLat));
+              setLng(String(newLng));
+            }}
+            className="w-full h-56 sm:h-64"
           />
         </div>
 

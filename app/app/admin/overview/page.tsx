@@ -10,6 +10,7 @@ import {
   RouteIcon,
   LedgerTabIcon,
 } from "@/components/icons/ledger-icons";
+import AdminCommandMap, { AdminMapFacility } from "@/components/maps/admin-command-map";
 
 interface AdminMetrics {
   institutionCount: number;
@@ -39,6 +40,8 @@ interface DispatchItem {
   unit: string;
   institutionName: string;
   ngoName: string;
+  pickupLocation?: { lat?: number; lng?: number; address?: string };
+  dropLocation?: { lat?: number; lng?: number; address?: string };
   courier: {
     name: string;
     phone: string;
@@ -60,6 +63,7 @@ export default function AdminOverviewPage() {
   const [metrics, setMetrics] = React.useState<AdminMetrics | null>(null);
   const [recentLogs, setRecentLogs] = React.useState<AuditEvent[]>([]);
   const [dispatches, setDispatches] = React.useState<DispatchItem[]>([]);
+  const [facilities, setFacilities] = React.useState<AdminMapFacility[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   const isFetchingRef = React.useRef(false);
@@ -75,6 +79,7 @@ export default function AdminOverviewPage() {
         setMetrics(json.metrics);
         setRecentLogs(json.recentLogs || []);
         setDispatches(json.dispatches || []);
+        setFacilities(json.facilities || []);
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
@@ -262,6 +267,15 @@ export default function AdminOverviewPage() {
             <span className="w-2 h-2 rounded-full bg-[#86C29B] animate-pulse" />
             Live Network Coordination
           </span>
+        </div>
+
+        {/* City-Wide Operations Command Map */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-[#C9B9C7] font-mono-numeral">
+            <span>Metropolitan Command Center Map: Real-time routes, dispatch tracking & circular network nodes</span>
+            <span className="text-[#86C29B] font-semibold">{dispatches.length} Live Routes</span>
+          </div>
+          <AdminCommandMap dispatches={dispatches} facilities={facilities} className="w-full h-80 sm:h-96" />
         </div>
 
         {dispatches.length === 0 ? (

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { TicketIcon, ShieldCheckIcon, AlertTriangleIcon, CrateIcon } from "@/components/icons/ledger-icons";
+import { TicketIcon, ShieldCheckIcon, AlertTriangleIcon, CrateIcon, RouteIcon } from "@/components/icons/ledger-icons";
+import LocationPickerMap from "@/components/maps/location-picker-map";
 
 interface SurplusListing {
   _id: string;
@@ -59,6 +60,10 @@ function SurplusListingsContent() {
   const [windowStartHours, setWindowStartHours] = React.useState<string>("0"); // hours from now
   const [windowDurationHours, setWindowDurationHours] = React.useState<string>("2"); // duration
   const [pickupAddress, setPickupAddress] = React.useState<string>("");
+  const [pickupCoords, setPickupCoords] = React.useState<{ lat: number; lng: number }>({
+    lat: 28.6139,
+    lng: 77.209,
+  });
   const [submitting, setSubmitting] = React.useState(false);
 
   // Quick Add Form state
@@ -251,8 +256,8 @@ function SurplusListingsContent() {
           },
           pickupLocation: {
             address: pickupAddress.trim() || "Main Kitchen Dispatch Gate",
-            lat: 28.6139,
-            lng: 77.209,
+            lat: pickupCoords.lat,
+            lng: pickupCoords.lng,
           },
         }),
       });
@@ -891,7 +896,7 @@ function SurplusListingsContent() {
 
               <div>
                 <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
-                  Dispatch Point / Gate
+                  Dispatch Point / Gate & Location Pin
                 </label>
                 <input
                   type="text"
@@ -900,6 +905,22 @@ function SurplusListingsContent() {
                   placeholder="e.g. Loading Dock B, Main Kitchen Gate"
                   className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
                 />
+                <div className="mt-2 space-y-1">
+                  <span className="text-[10px] font-mono-numeral text-ink-soft block">
+                    Confirm Pickup Dock Coordinates for Logistics Driver:
+                  </span>
+                  <LocationPickerMap
+                    lat={pickupCoords.lat}
+                    lng={pickupCoords.lng}
+                    pinType="kitchen"
+                    theme="light"
+                    label="Pickup Dock"
+                    onChange={({ lat: newLat, lng: newLng }) => {
+                      setPickupCoords({ lat: newLat, lng: newLng });
+                    }}
+                    className="w-full h-44 sm:h-48"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-line">

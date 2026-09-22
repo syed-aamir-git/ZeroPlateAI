@@ -7,6 +7,7 @@ import {
   ShieldCheckIcon,
   UserIcon,
 } from "@/components/icons/ledger-icons";
+import DeliveryRouteMap from "@/components/maps/delivery-route-map";
 
 interface Assignment {
   _id: string;
@@ -67,6 +68,11 @@ export default function DeliveryAssignmentsPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [openMapIds, setOpenMapIds] = React.useState<Record<string, boolean>>({});
+
+  const toggleMap = (id: string) => {
+    setOpenMapIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const isFetchingRef = React.useRef(false);
 
@@ -290,6 +296,36 @@ export default function DeliveryAssignmentsPage() {
                     <div className="font-semibold text-[#F3EEE2]">{assignment.drop.name}</div>
                     <div className="text-[#D4CBBF]">{assignment.drop.address}</div>
                   </div>
+                </div>
+
+                {/* Interactive Leaflet Route Map Toggle & View */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => toggleMap(assignment._id)}
+                      className="inline-flex items-center gap-1.5 text-xs font-mono-numeral text-[#D9A441] hover:text-[#E2B359] transition-colors cursor-pointer bg-[#24211C] hover:bg-[#2C2822] border border-[#3B362E] px-3 py-1.5 rounded-[4px]"
+                    >
+                      <RouteIcon size={14} />
+                      <span>{openMapIds[assignment._id] ? "Hide Route Map" : "View Live Route on Map 🗺️"}</span>
+                    </button>
+                    {openMapIds[assignment._id] && (
+                      <span className="text-[10px] font-mono-numeral text-[#9E9587]">
+                        Interactive Leaflet Map
+                      </span>
+                    )}
+                  </div>
+
+                  {openMapIds[assignment._id] && (
+                    <div className="mt-2">
+                      <DeliveryRouteMap
+                        pickup={assignment.pickup}
+                        drop={assignment.drop}
+                        status={assignment.status}
+                        theme="dark"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Step-Tracker UI with Stamp Mark Animation (Design PRD Section 5.4 & 7) */}

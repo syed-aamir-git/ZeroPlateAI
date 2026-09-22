@@ -10,6 +10,7 @@ import {
   TicketIcon,
   RouteIcon,
 } from "@/components/icons/ledger-icons";
+import DeliveryRouteMap from "@/components/maps/delivery-route-map";
 
 interface ClaimRecord {
   _id: string;
@@ -38,6 +39,11 @@ export default function NgoMyClaimsPage() {
   const [claims, setClaims] = React.useState<ClaimRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [confirmingId, setConfirmingId] = React.useState<string | null>(null);
+  const [openMapIds, setOpenMapIds] = React.useState<Record<string, boolean>>({});
+
+  const toggleMap = (id: string) => {
+    setOpenMapIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
   const [feedback, setFeedback] = React.useState<{
     type: "success" | "error";
     message: string;
@@ -229,7 +235,8 @@ export default function NgoMyClaimsPage() {
                 const isConfirming = confirmingId === claim._id;
 
                 return (
-                  <tr key={claim._id} className="hover:bg-[#F3EDE0]/80 transition-colors">
+                  <React.Fragment key={claim._id}>
+                    <tr className="hover:bg-[#F3EDE0]/80 transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-medium text-ink">{claim.itemName}</div>
                       <div className="text-[11px] text-ink-soft capitalize">
@@ -302,20 +309,60 @@ export default function NgoMyClaimsPage() {
                           )}
                         </div>
                       ) : (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleConfirmReceipt(claim._id)}
-                          disabled={isConfirming}
-                          className="bg-basil hover:bg-[#254B34] text-[#FAF7F2] font-semibold text-xs transition-colors shadow-sm cursor-pointer"
-                        >
-                          {isConfirming ? "Confirming..." : "✓ Confirm Receipt"}
-                        </Button>
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleMap(claim._id)}
+                            className="px-2.5 py-1 text-xs font-mono-numeral text-ink-soft hover:text-ink bg-ledger-paper border border-line rounded-[4px] transition-colors cursor-pointer flex items-center gap-1"
+                          >
+                            <RouteIcon size={12} />
+                            <span>{openMapIds[claim._id] ? "Hide Map" : "View Map 🗺️"}</span>
+                          </button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleConfirmReceipt(claim._id)}
+                            disabled={isConfirming}
+                            className="bg-basil hover:bg-[#254B34] text-[#FAF7F2] font-semibold text-xs transition-colors shadow-sm cursor-pointer"
+                          >
+                            {isConfirming ? "Confirming..." : "✓ Confirm Receipt"}
+                          </Button>
+                        </div>
                       )}
                     </td>
                   </tr>
-                );
-              })}
+                  {openMapIds[claim._id] && (
+                    <tr className="bg-[#FAF6EE]/50">
+                      <td colSpan={6} className="p-3 border-b border-line">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px] font-mono-numeral text-ink-soft">
+                            <span className="font-semibold text-ink">Redistribution Route & Pickup Bay Map</span>
+                            <span>Direct Dispatch Line</span>
+                          </div>
+                          <DeliveryRouteMap
+                            pickup={{
+                              name: claim.institutionName || "Donor Kitchen",
+                              address: claim.pickupLocation?.address || "Main Dispatch Gate",
+                              lat: claim.pickupLocation?.lat,
+                              lng: claim.pickupLocation?.lng,
+                            }}
+                            drop={{
+                              name: "Your Receiving Center",
+                              address: "Registered Center",
+                              lat: claim.pickupLocation?.lat ? claim.pickupLocation.lat - 0.03 : 28.58,
+                              lng: claim.pickupLocation?.lng ? claim.pickupLocation.lng + 0.035 : 77.24,
+                            }}
+                            status={claim.deliveryStatus}
+                            theme="light"
+                            className="w-full h-56 sm:h-64"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
             </tbody>
           </table>
         </div>
