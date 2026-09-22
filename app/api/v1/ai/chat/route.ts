@@ -13,11 +13,12 @@ YOUR IDENTITY & ROLE:
 - You guide users on how to use the website, navigate to the right portals, understand surplus food listings, manage delivery logistics, and learn about food safety and ESG impact.
 - Always provide clear, concise, actionable responses. Format links using markdown (e.g. [Surplus Listings](/app/institution/surplus-listings)).
 
-CRITICAL RELEVANCE GUARDRAIL (STRICT RULE):
-- You ONLY answer questions related to the ZeroPlate AI web app, its features, portals, food waste prevention, surplus listings, NGO claims, delivery logistics, accounts, and food safety policies.
-- If the user asks ANY question irrelevant to the ZeroPlate AI web app (such as general knowledge, coding, math, writing essays, politics, sports, celebrity news, recipes, world history, jokes, weather, or other unrelated topics), you MUST decline and answer:
-"I can't help you with that, ask me anything about the web app!"
-- Never answer off-topic questions. Always redirect the user back to the ZeroPlate AI web app.
+CRITICAL RELEVANCE GUARDRAIL (STRICT FORMAL RULE):
+- You are strictly dedicated to assisting users with the ZeroPlate AI web application, its portals, features, surplus food donation, NGO claims, delivery logistics, account verification, and food safety policies.
+- If a user inquires about topics outside the scope of the ZeroPlate AI platform (such as general knowledge, programming, mathematics, creative writing, political or world affairs, entertainment, unrelated recipes, or general trivia), you must decline courteously and formally.
+- Formulate your response in a formal, respectful, and professional tone, conveying that your capabilities are specialized solely for the ZeroPlate AI platform. For example:
+"I apologize, but my assistance is specialized exclusively for the ZeroPlate AI platform and its food redistribution operations. I am unable to assist with inquiries outside this scope. Please feel free to ask any questions regarding our web application, surplus listings, NGO claims, delivery dispatches, or platform features."
+- You may phrase this naturally with professional polish, but always uphold a formal standard and redirect the user back to the web application. Never answer off-topic queries.
 
 ZEROPLATE AI PLATFORM ARCHITECTURE:
 1. INSTITUTIONAL KITCHENS (Commercial Messes, Colleges, Hotels, Corporate Canteens):
@@ -167,8 +168,11 @@ function getFallbackResponse(query: string): string {
     q.includes("president") ||
     q.includes("capital");
 
+  const formalDeflection =
+    "I apologize, but my assistance is specialized exclusively for the ZeroPlate AI platform and its food redistribution operations. I am unable to assist with inquiries outside this scope. Please feel free to ask any questions regarding our web application, surplus listings, NGO claims, delivery dispatches, or platform features.";
+
   if (isOffTopic) {
-    return "I can't help you with that, ask me anything about the web app!";
+    return formalDeflection;
   }
 
   if (q.includes("list") || q.includes("surplus") || q.includes("post food") || q.includes("donate") || q.includes("food batch")) {
@@ -183,7 +187,7 @@ function getFallbackResponse(query: string): string {
   if (q.includes("esg") || q.includes("report") || q.includes("carbon") || q.includes("metric") || q.includes("impact")) {
     return "You can view your real-time environmental metrics and automated food rescue audits in the **[ESG Reports](/app/institution/reports)** section or check platform-wide metrics on our **[Public Impact Page](/impact)**.";
   }
-  if (q.includes("forecast") || q.includes("predict") || q.includes("ai")) {
+  if (q.includes("forecast") || q.includes("predict") || /\bai\b/.test(q) || q.includes("artificial intelligence")) {
     return "ZeroPlate AI incorporates predictive demand forecasting models in **[Kitchen Forecast](/app/institution/forecast)**. It analyzes past meal consumption and headcount to calculate optimal preparation quantities, preventing surplus before cooking begins.";
   }
   if (q.includes("admin") || q.includes("verify") || q.includes("kyc")) {
@@ -193,7 +197,7 @@ function getFallbackResponse(query: string): string {
     return "I'm here to help you navigate ZeroPlate AI! You can ask me how to list surplus batches, claim meals as an NGO, coordinate delivery dispatches, view ESG carbon savings, or navigate any portal on the platform.";
   }
 
-  return "I can't help you with that, ask me anything about the web app!";
+  return formalDeflection;
 }
 
 export async function POST(request: NextRequest) {
