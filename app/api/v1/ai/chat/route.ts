@@ -13,6 +13,12 @@ YOUR IDENTITY & ROLE:
 - You guide users on how to use the website, navigate to the right portals, understand surplus food listings, manage delivery logistics, and learn about food safety and ESG impact.
 - Always provide clear, concise, actionable responses. Format links using markdown (e.g. [Surplus Listings](/app/institution/surplus-listings)).
 
+CRITICAL RELEVANCE GUARDRAIL (STRICT RULE):
+- You ONLY answer questions related to the ZeroPlate AI web app, its features, portals, food waste prevention, surplus listings, NGO claims, delivery logistics, accounts, and food safety policies.
+- If the user asks ANY question irrelevant to the ZeroPlate AI web app (such as general knowledge, coding, math, writing essays, politics, sports, celebrity news, recipes, world history, jokes, weather, or other unrelated topics), you MUST decline and answer:
+"I can't help you with that, ask me anything about the web app!"
+- Never answer off-topic questions. Always redirect the user back to the ZeroPlate AI web app.
+
 ZEROPLATE AI PLATFORM ARCHITECTURE:
 1. INSTITUTIONAL KITCHENS (Commercial Messes, Colleges, Hotels, Corporate Canteens):
    - Portal Route: /app/institution/overview
@@ -141,15 +147,37 @@ async function callGemini(messages: ChatMessage[]): Promise<string | null> {
 
 // Smart rule-based fallback if external APIs ever timeout or fail
 function getFallbackResponse(query: string): string {
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
 
-  if (q.includes("list") || q.includes("surplus") || q.includes("post food") || q.includes("donate")) {
+  // Explicit off-topic check
+  const isOffTopic =
+    q.includes("python") ||
+    q.includes("javascript") ||
+    q.includes("code") ||
+    q.includes("math") ||
+    q.includes("capital of") ||
+    q.includes("who is") ||
+    q.includes("weather") ||
+    q.includes("recipe") ||
+    q.includes("joke") ||
+    q.includes("poem") ||
+    q.includes("movie") ||
+    q.includes("song") ||
+    q.includes("write an essay") ||
+    q.includes("president") ||
+    q.includes("capital");
+
+  if (isOffTopic) {
+    return "I can't help you with that, ask me anything about the web app!";
+  }
+
+  if (q.includes("list") || q.includes("surplus") || q.includes("post food") || q.includes("donate") || q.includes("food batch")) {
     return "To list surplus food from your institutional kitchen, head over to **[Surplus Listings](/app/institution/surplus-listings)**. Tap **'+ New Surplus Batch'**, specify the item category, quantity, safe preparation temperature, and pickup time window. Once logged, matching recipient NGOs will be notified immediately!";
   }
-  if (q.includes("claim") || q.includes("ngo") || q.includes("receive") || q.includes("browse")) {
+  if (q.includes("claim") || q.includes("ngo") || q.includes("receive") || q.includes("browse") || q.includes("donation")) {
     return "NGOs can browse available surplus batches within their local radius at **[Browse Surplus Food](/app/ngo/browse)**. When you find a suitable batch, tap **'Claim Batch'** to immediately coordinate pickup and dispatch with registered delivery partners.";
   }
-  if (q.includes("delivery") || q.includes("courier") || q.includes("driver") || q.includes("dispatch")) {
+  if (q.includes("delivery") || q.includes("courier") || q.includes("driver") || q.includes("dispatch") || q.includes("logistics")) {
     return "Delivery partners can view open broadcast dispatches at **[Delivery Dispatches](/app/delivery/assignments)**. Once an order is accepted, you can track live route coordinates from the kitchen to the recipient NGO with interactive real-road maps and stamp confirmation steps.";
   }
   if (q.includes("esg") || q.includes("report") || q.includes("carbon") || q.includes("metric") || q.includes("impact")) {
@@ -161,8 +189,11 @@ function getFallbackResponse(query: string): string {
   if (q.includes("admin") || q.includes("verify") || q.includes("kyc")) {
     return "Platform administrators can monitor all regional dispatches on the live command map at **[Admin Overview](/app/admin/overview)** and review pending non-profit registrations in the **[NGO Verification Queue](/app/admin/ngo-verification)**.";
   }
+  if (q.includes("help") || q.includes("zeroplate") || q.includes("web app") || q.includes("website") || q.includes("portal") || q.includes("features")) {
+    return "I'm here to help you navigate ZeroPlate AI! You can ask me how to list surplus batches, claim meals as an NGO, coordinate delivery dispatches, view ESG carbon savings, or navigate any portal on the platform.";
+  }
 
-  return "I'm here to help you navigate ZeroPlate AI! You can ask me how to list surplus batches, claim meals as an NGO, coordinate delivery dispatches, view ESG carbon savings, or navigate any portal on the platform.";
+  return "I can't help you with that, ask me anything about the web app!";
 }
 
 export async function POST(request: NextRequest) {

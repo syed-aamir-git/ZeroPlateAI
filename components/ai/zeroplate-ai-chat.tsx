@@ -288,7 +288,7 @@ export default function ZeroPlateAiChat() {
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         className="group relative flex items-center h-12 rounded-full border border-basil/25 bg-ledger-paper hover:bg-[#EAE3D4] text-basil shadow-[0_8px_25px_rgba(47,75,58,0.22)] hover:shadow-[0_12px_30px_rgba(47,75,58,0.3)] transition-all duration-300 ease-out cursor-pointer overflow-hidden px-3"
-        aria-label={isOpen ? "Close ZeroPlate AI Chat" : "Ask zeroplate ai"}
+        aria-label={isOpen ? "Close ZeroPlate AI Chat" : "Ask ZeroPlate AI"}
       >
         {/* Animated AI Icon Container */}
         <div className="w-6 h-6 flex items-center justify-center shrink-0">
@@ -316,8 +316,8 @@ export default function ZeroPlateAiChat() {
         </div>
 
         {/* Horizontal Expand Text on Hover */}
-        <span className="max-w-0 group-hover:max-w-[130px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-xs font-semibold font-mono tracking-tight text-basil pl-0 group-hover:pl-2 select-none">
-          Ask zeroplate ai
+        <span className="max-w-0 group-hover:max-w-[150px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-xs font-semibold font-mono tracking-tight text-basil pl-0 group-hover:pl-2 select-none">
+          Ask ZeroPlate AI
         </span>
 
         {/* Small pulsing notification dot on the button */}
