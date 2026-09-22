@@ -104,7 +104,7 @@ export default function DeliveryAssignmentsPage() {
       if (isMounted) {
         fetchAssignments(abortController.signal);
       }
-    }, 15000);
+    }, 30000);
 
     return () => {
       isMounted = false;
@@ -177,7 +177,10 @@ export default function DeliveryAssignmentsPage() {
         </div>
 
         <button
-          onClick={() => fetchAssignments()}
+          onClick={() => {
+            setLoading(true);
+            fetchAssignments();
+          }}
           className="text-xs text-[#D9A441] hover:underline font-mono-numeral cursor-pointer"
         >
           ↻ Refresh
@@ -199,8 +202,27 @@ export default function DeliveryAssignmentsPage() {
 
       {/* Active Assignment Cards */}
       {loading ? (
-        <div className="p-12 text-center text-xs font-mono-numeral text-[#9E9587]">
-          Checking for active dispatches...
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="border border-[#3B362E] bg-[#1D1B17] rounded-[6px] p-4 space-y-4 animate-pulse"
+            >
+              <div className="flex items-start justify-between border-b border-[#3B362E] pb-3">
+                <div className="space-y-2">
+                  <div className="h-2.5 w-24 bg-[#3B362E] rounded" />
+                  <div className="h-5 w-48 bg-[#3B362E] rounded" />
+                  <div className="h-3 w-36 bg-[#3B362E]/60 rounded" />
+                </div>
+                <div className="h-6 w-16 bg-[#3B362E] rounded" />
+              </div>
+              <div className="space-y-2.5">
+                <div className="h-14 bg-[#24211C] border border-[#3B362E] rounded-[6px]" />
+                <div className="h-14 bg-[#24211C] border border-[#3B362E] rounded-[6px]" />
+              </div>
+              <div className="h-10 bg-[#24211C] border border-[#3B362E] rounded-[6px]" />
+            </div>
+          ))}
         </div>
       ) : assignments.length === 0 ? (
         <div className="border border-[#3B362E] bg-[#1D1B17] p-8 rounded-[6px] text-center space-y-3">

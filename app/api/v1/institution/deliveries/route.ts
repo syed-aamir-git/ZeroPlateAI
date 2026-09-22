@@ -35,70 +35,102 @@ export async function GET(request: NextRequest) {
 
     const institutionId = institution ? institution._id : null;
 
-    // Query assignments for this institution
-    const query = institutionId ? { institutionId } : {};
-    const assignments = await db
-      .collection("deliveryAssignments")
-      .find(query)
-      .sort({ createdAt: -1 })
-      .toArray();
+    // Single-roundtrip aggregation pipeline with $lookup
+    const matchStage = institutionId ? { institutionId } : {};
 
-    if (!assignments || assignments.length === 0) {
-      return NextResponse.json({
-        success: true,
-        deliveries: [],
-        count: 0,
-      });
-    }
+    const pipeline = [
+      { $match: matchStage },
+      { $sort: { createdAt: -1 as const } },
+      { $limit: 100 },
+      {
+        $lookup: {
+          from: "surplusListings",
+          let: { sId: "$surplusListingId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$_id", "$$sId"] },
+                    { $eq: [{ $toString: "$_id" }, { $toString: "$$sId" }] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "listing",
+        },
+      },
+      {
+        $lookup: {
+          from: "deliveryPartners",
+          let: { dpId: "$assignedToDeliveryPartnerId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$_id", "$$dpId"] },
+                    { $eq: [{ $toString: "$_id" }, { $toString: "$$dpId" }] },
+                  ],
+                },
+              },
+            },
+            {
+              $lookup: {
+                from: "user",
+                let: { uId: "$userId" },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $or: [
+                          { $eq: ["$_id", "$$uId"] },
+                          { $eq: [{ $toString: "$_id" }, { $toString: "$$uId" }] },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: "user",
+              },
+            },
+            { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+          ],
+          as: "courier",
+        },
+      },
+      {
+        $lookup: {
+          from: "ngos",
+          let: { nId: "$claimedByNgoId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$_id", "$$nId"] },
+                    { $eq: [{ $toString: "$_id" }, { $toString: "$$nId" }] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "ngo",
+        },
+      },
+      { $unwind: { path: "$listing", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$courier", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$ngo", preserveNullAndEmptyArrays: true } },
+    ];
 
-    // Enrich with listing, driver, and NGO details
-    const listingIds = assignments.map((a) => a.surplusListingId).filter(Boolean);
-    const driverIds = assignments.map((a) => a.assignedToDeliveryPartnerId).filter(Boolean);
-    const ngoIds = assignments.map((a) => a.claimedByNgoId).filter(Boolean);
+    const results = await db.collection("deliveryAssignments").aggregate(pipeline).toArray();
 
-    const toIdFilter = (ids: any[]) => {
-      const list: any[] = [];
-      ids.forEach((id) => {
-        if (!id) return;
-        list.push(id);
-        if (typeof id === "string" && ObjectId.isValid(id)) {
-          try {
-            list.push(new ObjectId(id));
-          } catch {}
-        } else if (id instanceof ObjectId) {
-          list.push(id.toString());
-        }
-      });
-      return list;
-    };
-
-    const [listings, drivers, ngos] = await Promise.all([
-      listingIds.length > 0
-        ? db.collection("surplusListings").find({ _id: { $in: toIdFilter(listingIds) } }).toArray()
-        : [],
-      driverIds.length > 0
-        ? db.collection("deliveryPartners").find({ _id: { $in: toIdFilter(driverIds) } }).toArray()
-        : [],
-      ngoIds.length > 0
-        ? db.collection("ngos").find({ _id: { $in: toIdFilter(ngoIds) } }).toArray()
-        : [],
-    ]);
-
-    const driverUserIds = drivers.map((d) => d.userId).filter(Boolean);
-    const driverUsers = driverUserIds.length > 0
-      ? await db.collection("user").find({ _id: { $in: toIdFilter(driverUserIds) } }).toArray()
-      : [];
-    const driverUserMap = new Map(driverUsers.map((u) => [String(u._id), u]));
-
-    const listingMap = new Map(listings.map((l) => [String(l._id), l]));
-    const driverMap = new Map(drivers.map((d) => [String(d._id), d]));
-    const ngoMap = new Map(ngos.map((n) => [String(n._id), n]));
-
-    const enriched = assignments.map((a) => {
-      const listing = listingMap.get(String(a.surplusListingId));
-      const driver = a.assignedToDeliveryPartnerId ? driverMap.get(String(a.assignedToDeliveryPartnerId)) : null;
-      const driverUser = driver?.userId ? driverUserMap.get(String(driver.userId)) : null;
-      const ngo = ngoMap.get(String(a.claimedByNgoId));
+    const enriched = results.map((a: any) => {
+      const listing = a.listing;
+      const driver = a.courier;
+      const driverUser = driver?.user;
+      const ngo = a.ngo;
 
       return {
         _id: a._id,

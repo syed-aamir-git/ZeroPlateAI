@@ -41,18 +41,18 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     const listingIds = completed.map((a) => a.surplusListingId).filter(Boolean);
-    const listings = await db
-      .collection("surplusListings")
-      .find({ _id: { $in: listingIds } })
-      .toArray();
+    const ngoIds = completed.map((a) => a.claimedByNgoId).filter(Boolean);
+
+    const [listings, ngos] = await Promise.all([
+      listingIds.length > 0
+        ? db.collection("surplusListings").find({ _id: { $in: listingIds } }).toArray()
+        : [],
+      ngoIds.length > 0
+        ? db.collection("ngos").find({ _id: { $in: ngoIds } }).toArray()
+        : [],
+    ]);
 
     const listingMap = new Map(listings.map((l) => [String(l._id), l]));
-
-    const ngoIds = completed.map((a) => a.claimedByNgoId).filter(Boolean);
-    const ngos = await db
-      .collection("ngos")
-      .find({ _id: { $in: ngoIds } })
-      .toArray();
     const ngoMap = new Map(ngos.map((n) => [String(n._id), n]));
 
     const enriched = completed.map((a) => {

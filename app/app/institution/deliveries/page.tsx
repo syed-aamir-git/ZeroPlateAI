@@ -95,7 +95,7 @@ export default function InstitutionDeliveriesPage() {
       if (isMounted) {
         loadDeliveries(abortController.signal);
       }
-    }, 15000);
+    }, 30000);
 
     return () => {
       isMounted = false;
@@ -131,7 +131,16 @@ export default function InstitutionDeliveriesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setIsLoading(true);
+                loadDeliveries();
+              }}
+              className="text-xs text-basil hover:underline font-mono cursor-pointer"
+            >
+              ↻ Refresh
+            </button>
             <div className="flex rounded-md border border-line p-0.5 bg-ledger-paper text-xs">
               <button
                 onClick={() => setFilter("all")}
@@ -163,8 +172,31 @@ export default function InstitutionDeliveriesPage() {
 
         {/* Deliveries List */}
         {isLoading ? (
-          <div className="py-20 text-center font-mono text-xs text-ink-soft">
-            Tracking dispatch runs across local logistics network...
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="border border-line bg-ledger-surface p-5 sm:p-6 rounded-md space-y-5 animate-pulse"
+              >
+                <div className="flex flex-col sm:flex-row justify-between gap-3 border-b border-line pb-4">
+                  <div className="space-y-2">
+                    <div className="h-3 w-28 bg-line/60 rounded" />
+                    <div className="h-5 w-48 bg-line/80 rounded" />
+                    <div className="h-3 w-64 bg-line/50 rounded" />
+                  </div>
+                  <div className="h-14 w-40 bg-line/40 rounded" />
+                </div>
+                <div className="grid grid-cols-5 gap-2 py-2">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <div key={s} className="flex flex-col items-center space-y-2">
+                      <div className="w-7 h-7 rounded-full bg-line/60" />
+                      <div className="h-2 w-14 bg-line/50 rounded" />
+                    </div>
+                  ))}
+                </div>
+                <div className="h-8 w-44 bg-line/40 rounded" />
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="border border-line bg-ledger-surface p-12 text-center rounded-md space-y-3">
