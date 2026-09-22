@@ -29,6 +29,8 @@ export const metadata: Metadata = {
     "AI-powered smart food waste reduction & sustainable redistribution ecosystem for institutional kitchens and food processing units.",
 };
 
+import ZeroPlateAiChat from "@/components/ai/zeroplate-ai-chat";
+
 export default function RootLayout({
   children,
 }: {
@@ -43,8 +45,9 @@ export default function RootLayout({
         ibmPlexMono.variable
       )}
     >
-      <body className="min-h-screen antialiased bg-ledger-paper text-ink">
+      <body className="min-h-screen antialiased bg-ledger-paper text-ink relative">
         {children}
+        <ZeroPlateAiChat />
       </body>
     </html>
   );
