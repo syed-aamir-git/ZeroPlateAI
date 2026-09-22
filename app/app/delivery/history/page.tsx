@@ -2,8 +2,20 @@
 
 import * as React from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { LedgerTabIcon, StampIcon, RouteIcon } from "@/components/icons/ledger-icons";
-import DeliveryRouteMap from "@/components/maps/delivery-route-map";
+
+const DeliveryRouteMap = dynamic(
+  () => import("@/components/maps/delivery-route-map"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-64 sm:h-72 border border-[#3B362E] rounded-[6px] bg-[#1D1B17] flex items-center justify-center text-xs font-mono-numeral text-[#9E9587] animate-pulse">
+        Loading route map...
+      </div>
+    ),
+  }
+);
 
 interface CompletedDelivery {
   _id: string;
@@ -112,8 +124,25 @@ export default function DeliveryHistoryPage() {
 
       {/* History Items */}
       {loading ? (
-        <div className="p-12 text-center text-xs font-mono-numeral text-[#9E9587]">
-          Loading delivery history ledger...
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="border border-[#3B362E] bg-[#1D1B17] rounded-[6px] p-4 space-y-3 animate-pulse"
+            >
+              <div className="flex justify-between items-start border-b border-[#3B362E] pb-3">
+                <div className="space-y-2">
+                  <div className="h-2.5 w-24 bg-[#3B362E] rounded" />
+                  <div className="h-5 w-48 bg-[#3B362E] rounded" />
+                </div>
+                <div className="h-6 w-20 bg-[#3B362E] rounded" />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                <div className="h-14 bg-[#24211C] border border-[#3B362E] rounded-[6px]" />
+                <div className="h-14 bg-[#24211C] border border-[#3B362E] rounded-[6px]" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : history.length === 0 ? (
         <div className="border border-[#3B362E] bg-[#1D1B17] p-8 rounded-[6px] text-center space-y-3">

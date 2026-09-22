@@ -21,17 +21,18 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
     const userObjectId = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
-    const notifications = await db
-      .collection("notifications")
-      .find({ userId: userObjectId as any })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .toArray();
-
-    const unreadCount = await db.collection("notifications").countDocuments({
-      userId: userObjectId as any,
-      readStatus: false,
-    });
+    const [notifications, unreadCount] = await Promise.all([
+      db
+        .collection("notifications")
+        .find({ userId: userObjectId as any })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .toArray(),
+      db.collection("notifications").countDocuments({
+        userId: userObjectId as any,
+        readStatus: false,
+      }),
+    ]);
 
     return NextResponse.json({
       success: true,

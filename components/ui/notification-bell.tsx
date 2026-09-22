@@ -61,7 +61,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
       if (isMounted) {
         fetchNotifications(abortController.signal);
       }
-    }, 25000);
+    }, 60000);
 
     return () => {
       isMounted = false;

@@ -2,9 +2,21 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { RouteIcon, CheckIcon } from "@/components/icons/ledger-icons";
-import DeliveryRouteMap from "@/components/maps/delivery-route-map";
+
+const DeliveryRouteMap = dynamic(
+  () => import("@/components/maps/delivery-route-map"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-64 sm:h-72 border border-line rounded-[6px] bg-ledger-paper flex items-center justify-center text-xs font-mono text-ink-soft animate-pulse">
+        Loading route map...
+      </div>
+    ),
+  }
+);
 
 interface DeliveryItem {
   _id: string;

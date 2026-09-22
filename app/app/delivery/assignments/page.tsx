@@ -1,13 +1,25 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import {
   RouteIcon,
   StampIcon,
   ShieldCheckIcon,
   UserIcon,
 } from "@/components/icons/ledger-icons";
-import DeliveryRouteMap from "@/components/maps/delivery-route-map";
+
+const DeliveryRouteMap = dynamic(
+  () => import("@/components/maps/delivery-route-map"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-64 sm:h-72 border border-[#3B362E] rounded-[6px] bg-[#1D1B17] flex items-center justify-center text-xs font-mono-numeral text-[#9E9587] animate-pulse">
+        Loading route map...
+      </div>
+    ),
+  }
+);
 
 interface Assignment {
   _id: string;
