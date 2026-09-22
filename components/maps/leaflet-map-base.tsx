@@ -134,23 +134,22 @@ export default function LeafletMapBase({
           zoomOffset: -1,
         };
       } else {
-        tileUrl =
-          theme === "dark"
-            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+        // High-reliability OpenStreetMap fallback tiles (never requires an API key or token)
+        tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
         tileOptions = {
           maxZoom: 19,
-          subdomains: "abcd",
+          subdomains: ["a", "b", "c"],
+          className: theme === "dark" ? "leaflet-dark-tiles" : undefined,
         };
       }
 
       const tileLayer = L.tileLayer(tileUrl, tileOptions);
       tileLayer.addTo(map);
 
-      // Attribution
+      // Attribution (OpenStreetMap compliant)
       const attributionPrefix = mapboxToken
-        ? '<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> | &copy; <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Mapbox</a> &copy; <a href="http://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
-        : '<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> | &copy; <a href="https://carto.com/" target="_blank" rel="noopener">CARTO</a>';
+        ? '<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> | &copy; <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+        : '<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> | &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>';
 
       L.control
         .attribution({

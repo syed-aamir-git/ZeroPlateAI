@@ -47,15 +47,29 @@ export default function DeliveryRouteMap({
       let pLat = pickup.lat && !isNaN(pickup.lat) ? pickup.lat : null;
       let pLng = pickup.lng && !isNaN(pickup.lng) ? pickup.lng : null;
 
-      if ((!pLat || !pLng) && mapboxToken && pickup.address) {
+      if ((!pLat || !pLng) && pickup.address) {
         try {
-          const res = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(pickup.address)}.json?access_token=${mapboxToken}&country=in&limit=1`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            if (data.features && data.features.length > 0) {
-              [pLng, pLat] = data.features[0].center;
+          if (mapboxToken) {
+            const res = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(pickup.address)}.json?access_token=${mapboxToken}&country=in&limit=1`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (data.features && data.features.length > 0) {
+                [pLng, pLat] = data.features[0].center;
+              }
+            }
+          } else {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup.address)}&limit=1`,
+              { headers: { "Accept-Language": "en" } }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data) && data.length > 0) {
+                pLat = parseFloat(data[0].lat);
+                pLng = parseFloat(data[0].lon);
+              }
             }
           }
         } catch (e) {
@@ -67,15 +81,29 @@ export default function DeliveryRouteMap({
       let dLat = drop.lat && !isNaN(drop.lat) ? drop.lat : null;
       let dLng = drop.lng && !isNaN(drop.lng) ? drop.lng : null;
 
-      if ((!dLat || !dLng) && mapboxToken && drop.address) {
+      if ((!dLat || !dLng) && drop.address) {
         try {
-          const res = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(drop.address)}.json?access_token=${mapboxToken}&country=in&limit=1`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            if (data.features && data.features.length > 0) {
-              [dLng, dLat] = data.features[0].center;
+          if (mapboxToken) {
+            const res = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(drop.address)}.json?access_token=${mapboxToken}&country=in&limit=1`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (data.features && data.features.length > 0) {
+                [dLng, dLat] = data.features[0].center;
+              }
+            }
+          } else {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(drop.address)}&limit=1`,
+              { headers: { "Accept-Language": "en" } }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data) && data.length > 0) {
+                dLat = parseFloat(data[0].lat);
+                dLng = parseFloat(data[0].lon);
+              }
             }
           }
         } catch (e) {

@@ -137,19 +137,37 @@ export default function LocationPickerMap({
     if (!searchQuery.trim()) return;
 
     const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (!mapboxToken) return;
-
     setIsSearching(true);
     try {
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-        searchQuery.trim()
-      )}.json?access_token=${mapboxToken}&limit=5`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.features) {
-          setSuggestions(data.features);
-          setShowDropdown(true);
+      if (mapboxToken) {
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          searchQuery.trim()
+        )}.json?access_token=${mapboxToken}&limit=5`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.features) {
+            setSuggestions(data.features);
+            setShowDropdown(true);
+          }
+        }
+      } else {
+        // Fallback: OpenStreetMap Nominatim free geocoding
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          searchQuery.trim()
+        )}&limit=5`;
+        const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const mapped: GeocodeSuggestion[] = data.map((item: any) => ({
+              id: String(item.place_id),
+              place_name: item.display_name,
+              center: [parseFloat(item.lon), parseFloat(item.lat)],
+            }));
+            setSuggestions(mapped);
+            setShowDropdown(true);
+          }
         }
       }
     } catch (err) {

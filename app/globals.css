@@ -303,3 +303,8 @@
   background-color: #2F2A22 !important;
   color: #D9A441 !important;
 }
+
+/* OpenStreetMap Dark Mode Tile Filter (fallback when no Mapbox token is configured) */
+.leaflet-dark-tiles {
+  filter: brightness(0.65) invert(1) contrast(2.6) hue-rotate(200deg) saturate(0.3) !important;
+}
