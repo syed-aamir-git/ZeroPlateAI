@@ -287,18 +287,18 @@ export default function ZeroPlateAiChat() {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="group relative flex items-center h-12 rounded-full border border-basil/25 bg-ledger-paper hover:bg-[#EAE3D4] text-basil shadow-[0_8px_25px_rgba(47,75,58,0.22)] hover:shadow-[0_12px_30px_rgba(47,75,58,0.3)] transition-all duration-300 ease-out cursor-pointer overflow-hidden px-3"
+        className="group relative flex items-center h-14 rounded-full border border-basil/25 bg-ledger-paper hover:bg-[#EAE3D4] text-basil shadow-[0_8px_25px_rgba(47,75,58,0.22)] hover:shadow-[0_12px_30px_rgba(47,75,58,0.3)] transition-all duration-300 ease-out cursor-pointer overflow-hidden px-3.5"
         aria-label={isOpen ? "Close ZeroPlate AI Chat" : "Ask ZeroPlate AI"}
       >
         {/* Animated AI Icon Container */}
-        <div className="w-6 h-6 flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 flex items-center justify-center shrink-0">
           <svg
-            width="20"
-            height="20"
+            width="25"
+            height="25"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="transition-transform duration-300 group-hover:rotate-12 text-basil"
@@ -316,13 +316,13 @@ export default function ZeroPlateAiChat() {
         </div>
 
         {/* Horizontal Expand Text on Hover */}
-        <span className="max-w-0 group-hover:max-w-[150px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-xs font-semibold font-mono tracking-tight text-basil pl-0 group-hover:pl-2 select-none">
+        <span className="max-w-0 group-hover:max-w-[160px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-xs font-semibold font-mono tracking-tight text-basil pl-0 group-hover:pl-2.5 select-none">
           Ask ZeroPlate AI
         </span>
 
         {/* Small pulsing notification dot on the button */}
         {!isOpen && (
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-saffron animate-pulse" />
+          <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-saffron animate-pulse" />
         )}
       </button>
     </aside>
