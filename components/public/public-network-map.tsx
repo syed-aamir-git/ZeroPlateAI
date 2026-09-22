@@ -201,15 +201,19 @@ export function PublicNetworkMap({ nodes, routes }: PublicNetworkMapProps) {
 
         <div className="flex items-center gap-2 text-xs font-mono-numeral text-ink-soft self-end sm:self-auto">
           <span className="w-2 h-2 rounded-full bg-basil animate-pulse" />
-          <span>Interactive Leaflet Map • NCR Circulation</span>
+          <span>Interactive Leaflet Map • Verified Redistribution Topology</span>
         </div>
       </div>
 
       {/* Map Canvas */}
       <div className="relative border border-line rounded-[6px] overflow-hidden shadow-sm">
         <LeafletMapBase
-          center={[28.6139, 77.209]}
-          zoom={12}
+          center={
+            nodes.length > 0 && nodes[0].location
+              ? [nodes[0].location.lat, nodes[0].location.lng]
+              : [20.5937, 78.9629]
+          }
+          zoom={nodes.length > 0 ? 12 : 5}
           theme="light"
           className="w-full h-[450px] sm:h-[520px]"
           onMapReady={handleMapReady}

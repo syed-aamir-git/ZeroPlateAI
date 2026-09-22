@@ -150,8 +150,8 @@ export async function GET() {
         unit: listing?.unit || "kg",
         institutionName: inst?.name || listing?.institutionName || "Donor Kitchen",
         ngoName: ngo?.orgName || "Verified NGO",
-        pickupLocation: listing?.pickupLocation || inst?.location || { address: "Donor Kitchen", lat: 28.6139, lng: 77.209 },
-        dropLocation: ngo?.location || { address: ngo?.serviceArea || "Recipient Center", lat: 28.58, lng: 77.24 },
+        pickupLocation: listing?.pickupLocation || inst?.location || null,
+        dropLocation: ngo?.location || null,
         courier: driver
           ? {
               name: driverUser?.name || "Delivery Partner",

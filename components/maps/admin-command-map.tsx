@@ -58,26 +58,15 @@ export default function AdminCommandMap({
 
     // 1. Plot Dispatches & Logistics Routes
     if (activeFilter === "all" || activeFilter === "dispatches") {
-      dispatches.forEach((d, idx) => {
-        const baseLat = 28.6139;
-        const baseLng = 77.209;
-        const angle = (idx * 2 * Math.PI) / Math.max(dispatches.length, 1);
+      dispatches.forEach((d) => {
+        if (!d.pickupLocation?.lat || !d.pickupLocation?.lng || !d.dropLocation?.lat || !d.dropLocation?.lng) {
+          return;
+        }
 
-        const pLat = d.pickupLocation?.lat && !isNaN(d.pickupLocation.lat)
-          ? d.pickupLocation.lat
-          : baseLat + Math.sin(angle) * 0.035;
-
-        const pLng = d.pickupLocation?.lng && !isNaN(d.pickupLocation.lng)
-          ? d.pickupLocation.lng
-          : baseLng + Math.cos(angle) * 0.035;
-
-        const dLat = d.dropLocation?.lat && !isNaN(d.dropLocation.lat)
-          ? d.dropLocation.lat
-          : pLat - 0.032;
-
-        const dLng = d.dropLocation?.lng && !isNaN(d.dropLocation.lng)
-          ? d.dropLocation.lng
-          : pLng + 0.04;
+        const pLat = d.pickupLocation.lat;
+        const pLng = d.pickupLocation.lng;
+        const dLat = d.dropLocation.lat;
+        const dLng = d.dropLocation.lng;
 
         const pCoord: [number, number] = [pLat, pLng];
         const dCoord: [number, number] = [dLat, dLng];
@@ -115,8 +104,8 @@ export default function AdminCommandMap({
         group.addLayer(dMarker);
 
         // Curved Route Polyline
-        const midLat = (pLat + dLat) / 2 + 0.006;
-        const midLng = (pLng + dLng) / 2 - 0.008;
+        const midLat = (pLat + dLat) / 2 + 0.004;
+        const midLng = (pLng + dLng) / 2 - 0.004;
         const line = L.polyline([pCoord, [midLat, midLng], dCoord], {
           color: d.status === "confirmed" ? "#2F4B3A" : "#D9A441",
           weight: 3,
@@ -145,23 +134,12 @@ export default function AdminCommandMap({
 
     // 2. Plot Registered Facilities
     if (activeFilter === "all" || activeFilter === "kitchens" || activeFilter === "ngos") {
-      facilities.forEach((f, idx) => {
+      facilities.forEach((f) => {
         if (activeFilter === "kitchens" && f.type !== "kitchen") return;
         if (activeFilter === "ngos" && f.type !== "ngo") return;
+        if (!f.location?.lat || !f.location?.lng) return;
 
-        const baseLat = 28.6139;
-        const baseLng = 77.209;
-        const angle = (idx * 2 * Math.PI) / Math.max(facilities.length, 1);
-
-        const lat = f.location?.lat && !isNaN(f.location.lat)
-          ? f.location.lat
-          : baseLat + Math.sin(angle) * (f.type === "kitchen" ? 0.045 : 0.038);
-
-        const lng = f.location?.lng && !isNaN(f.location.lng)
-          ? f.location.lng
-          : baseLng + Math.cos(angle) * (f.type === "kitchen" ? 0.045 : 0.038);
-
-        const coord: [number, number] = [lat, lng];
+        const coord: [number, number] = [f.location.lat, f.location.lng];
         bounds.extend(coord);
 
         const icon = createCustomMarkerIcon(L, {
@@ -200,11 +178,23 @@ export default function AdminCommandMap({
     }
   }, [renderLayers]);
 
+  const fLat = facilities[0]?.location?.lat;
+  const fLng = facilities[0]?.location?.lng;
+  const dLat = dispatches[0]?.pickupLocation?.lat;
+  const dLng = dispatches[0]?.pickupLocation?.lng;
+
+  const initialCenter: [number, number] =
+    typeof fLat === "number" && typeof fLng === "number"
+      ? [fLat, fLng]
+      : typeof dLat === "number" && typeof dLng === "number"
+      ? [dLat, dLng]
+      : [12.9716, 77.5946];
+
   return (
     <div className="relative border border-[#5A3653] rounded-[6px] overflow-hidden bg-[#1D1B17]">
       <LeafletMapBase
-        center={[28.6139, 77.209]}
-        zoom={12}
+        center={initialCenter}
+        zoom={facilities.length > 0 || dispatches.length > 0 ? 12 : 5}
         theme="dark"
         className={className}
         onMapReady={handleMapReady}

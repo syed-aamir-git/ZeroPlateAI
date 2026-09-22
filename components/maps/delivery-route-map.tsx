@@ -36,21 +36,61 @@ export default function DeliveryRouteMap({
   const polylineRef = useRef<LeafletType.Polyline | null>(null);
   const [routeInfo, setRouteInfo] = React.useState<{ distanceKm: number; durationMins: number } | null>(null);
 
-  // Default coordinates if not provided (NCR area fallback spread)
-  const pickupLat = pickup.lat && !isNaN(pickup.lat) ? pickup.lat : 28.6139;
-  const pickupLng = pickup.lng && !isNaN(pickup.lng) ? pickup.lng : 77.209;
-
-  // Drop fallback slightly offset (approx 4.5km south-east) if not provided
-  const dropLat = drop.lat && !isNaN(drop.lat) ? drop.lat : pickupLat - 0.035;
-  const dropLng = drop.lng && !isNaN(drop.lng) ? drop.lng : pickupLng + 0.042;
-
   const handleMapReady = useCallback(
     async (map: LeafletType.Map, L: typeof LeafletType) => {
       mapRef.current = map;
       LRef.current = L;
 
-      const pickupCoord: [number, number] = [pickupLat, pickupLng];
-      const dropCoord: [number, number] = [dropLat, dropLng];
+      const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+      // Resolve real pickup coordinates
+      let pLat = pickup.lat && !isNaN(pickup.lat) ? pickup.lat : null;
+      let pLng = pickup.lng && !isNaN(pickup.lng) ? pickup.lng : null;
+
+      if ((!pLat || !pLng) && mapboxToken && pickup.address) {
+        try {
+          const res = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(pickup.address)}.json?access_token=${mapboxToken}&country=in&limit=1`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (data.features && data.features.length > 0) {
+              [pLng, pLat] = data.features[0].center;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not geocode pickup address:", e);
+        }
+      }
+
+      // Resolve real drop coordinates
+      let dLat = drop.lat && !isNaN(drop.lat) ? drop.lat : null;
+      let dLng = drop.lng && !isNaN(drop.lng) ? drop.lng : null;
+
+      if ((!dLat || !dLng) && mapboxToken && drop.address) {
+        try {
+          const res = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(drop.address)}.json?access_token=${mapboxToken}&country=in&limit=1`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (data.features && data.features.length > 0) {
+              [dLng, dLat] = data.features[0].center;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not geocode drop address:", e);
+        }
+      }
+
+      // Fallbacks only if geocoding completely fails
+      const finalPickupLat = pLat ?? 12.9716;
+      const finalPickupLng = pLng ?? 77.5946;
+      const finalDropLat = dLat ?? (finalPickupLat + 0.015);
+      const finalDropLng = dLng ?? (finalPickupLng + 0.018);
+
+      const pickupCoord: [number, number] = [finalPickupLat, finalPickupLng];
+      const dropCoord: [number, number] = [finalDropLat, finalDropLng];
 
       // 1. Pickup Marker (Kitchen - Saffron)
       const pickupIcon = createCustomMarkerIcon(L, {
@@ -89,15 +129,14 @@ export default function DeliveryRouteMap({
       const dropMarker = L.marker(dropCoord, { icon: dropIcon }).bindPopup(dropPopupContent);
       dropMarker.addTo(map);
 
-      // 3. Real Road Routing via Mapbox Directions API (with fallback)
-      const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      // 3. Real Road Routing via Mapbox Directions API
       let routePoints: [number, number][] = [];
-      let roadDistanceKm = 4.8;
-      let roadDurationMins = 16;
+      let roadDistanceKm = 0;
+      let roadDurationMins = 0;
 
       if (mapboxToken) {
         try {
-          const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickupLng},${pickupLat};${dropLng},${dropLat}?geometries=geojson&overview=full&access_token=${mapboxToken}`;
+          const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${finalPickupLng},${finalPickupLat};${finalDropLng},${finalDropLat}?geometries=geojson&overview=full&access_token=${mapboxToken}`;
           const res = await fetch(directionsUrl);
           if (res.ok) {
             const data = await res.json();
@@ -117,12 +156,9 @@ export default function DeliveryRouteMap({
         }
       }
 
-      // Fallback path if Directions API unavailable
+      // Direct corridor if Directions API unavailable
       if (routePoints.length === 0) {
-        const midLat = (pickupLat + dropLat) / 2 + 0.005;
-        const midLng = (pickupLng + dropLng) / 2 - 0.008;
-        routePoints = [pickupCoord, [midLat, midLng], dropCoord];
-        setRouteInfo({ distanceKm: roadDistanceKm, durationMins: roadDurationMins });
+        routePoints = [pickupCoord, dropCoord];
       }
 
       if (polylineRef.current) {
@@ -162,7 +198,7 @@ export default function DeliveryRouteMap({
       boundsRef.current = bounds;
       map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
     },
-    [pickupLat, pickupLng, dropLat, dropLng, pickup.name, pickup.address, drop.name, drop.address, drop.contactPhone, status]
+    [pickup.lat, pickup.lng, pickup.name, pickup.address, drop.lat, drop.lng, drop.name, drop.address, drop.contactPhone, status]
   );
 
   const handleRecenter = () => {
@@ -171,12 +207,19 @@ export default function DeliveryRouteMap({
     }
   };
 
-  const gmapsDirectionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${pickupLat},${pickupLng}&destination=${dropLat},${dropLng}&travelmode=driving`;
+  const initialLat = pickup.lat && !isNaN(pickup.lat) ? pickup.lat : 12.9716;
+  const initialLng = pickup.lng && !isNaN(pickup.lng) ? pickup.lng : 77.5946;
+
+  const gmapsDirectionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+    pickup.address || `${initialLat},${initialLng}`
+  )}&destination=${encodeURIComponent(
+    drop.address || `${initialLat},${initialLng}`
+  )}&travelmode=driving`;
 
   return (
     <div className="relative border border-[#3B362E] rounded-[6px] overflow-hidden group">
       <LeafletMapBase
-        center={[pickupLat, pickupLng]}
+        center={[initialLat, initialLng]}
         zoom={13}
         theme={theme}
         className={className}
@@ -209,7 +252,7 @@ export default function DeliveryRouteMap({
         <span className="w-1.5 h-1.5 rounded-full bg-[#86C29B] animate-pulse" />
         <span className="text-[#F3EEE2] font-semibold">Real-Road Corridor</span>
         <span>•</span>
-        <span>{routeInfo ? `${routeInfo.distanceKm} km (~${routeInfo.durationMins} mins)` : "Computing..."}</span>
+        <span>{routeInfo ? `${routeInfo.distanceKm} km (~${routeInfo.durationMins} mins)` : "Active Logistics Line"}</span>
       </div>
     </div>
   );

@@ -68,22 +68,10 @@ export default function MarketplaceMap({
 
     const bounds = L.latLngBounds([]);
 
-    listings.forEach((item, index) => {
-      // Default to slightly staggered NCR coordinates if coordinates missing
-      const baseLat = 28.6139;
-      const baseLng = 77.209;
-      const angle = (index * 2 * Math.PI) / Math.max(listings.length, 1);
-      const radius = 0.035 + (index % 3) * 0.015;
+    listings.forEach((item) => {
+      if (!item.pickupLocation?.lat || !item.pickupLocation?.lng) return;
 
-      const lat = item.pickupLocation?.lat && !isNaN(item.pickupLocation.lat)
-        ? item.pickupLocation.lat
-        : baseLat + Math.sin(angle) * radius;
-
-      const lng = item.pickupLocation?.lng && !isNaN(item.pickupLocation.lng)
-        ? item.pickupLocation.lng
-        : baseLng + Math.cos(angle) * radius;
-
-      const coord: [number, number] = [lat, lng];
+      const coord: [number, number] = [item.pickupLocation.lat, item.pickupLocation.lng];
       bounds.extend(coord);
 
       const color = CATEGORY_COLORS[item.category] || "#D9A441";
@@ -177,11 +165,18 @@ export default function MarketplaceMap({
     }
   }, [selectedId]);
 
+  const pLat = listings[0]?.pickupLocation?.lat;
+  const pLng = listings[0]?.pickupLocation?.lng;
+  const initialCenter: [number, number] =
+    typeof pLat === "number" && typeof pLng === "number"
+      ? [pLat, pLng]
+      : [12.9716, 77.5946];
+
   return (
     <div className="relative border border-line rounded-[6px] overflow-hidden shadow-sm">
       <LeafletMapBase
-        center={[28.6139, 77.209]}
-        zoom={12}
+        center={initialCenter}
+        zoom={listings.length > 0 ? 12 : 5}
         theme="light"
         className={className}
         onMapReady={handleMapReady}

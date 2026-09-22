@@ -53,22 +53,10 @@ export default function NetworkDirectoryMap({
 
     const bounds = L.latLngBounds([]);
 
-    entities.forEach((entity, index) => {
-      // Base location spread if coordinates are missing or clustered
-      const baseLat = 28.6139;
-      const baseLng = 77.209;
-      const angle = (index * 2 * Math.PI) / Math.max(entities.length, 1);
-      const radius = 0.04 + (index % 4) * 0.015;
+    entities.forEach((entity) => {
+      if (!entity.location?.lat || !entity.location?.lng) return;
 
-      const lat = entity.location?.lat && !isNaN(entity.location.lat)
-        ? entity.location.lat
-        : baseLat + Math.sin(angle) * radius;
-
-      const lng = entity.location?.lng && !isNaN(entity.location.lng)
-        ? entity.location.lng
-        : baseLng + Math.cos(angle) * radius;
-
-      const coord: [number, number] = [lat, lng];
+      const coord: [number, number] = [entity.location.lat, entity.location.lng];
       bounds.extend(coord);
 
       const isSelected = selectedId === entity._id;
@@ -153,11 +141,18 @@ export default function NetworkDirectoryMap({
     }
   }, [selectedId]);
 
+  const eLat = entities[0]?.location?.lat;
+  const eLng = entities[0]?.location?.lng;
+  const initialCenter: [number, number] =
+    typeof eLat === "number" && typeof eLng === "number"
+      ? [eLat, eLng]
+      : [12.9716, 77.5946];
+
   return (
     <div className="relative border border-line rounded-[6px] overflow-hidden shadow-sm">
       <LeafletMapBase
-        center={[28.6139, 77.209]}
-        zoom={12}
+        center={initialCenter}
+        zoom={entities.length > 0 ? 12 : 5}
         theme={theme}
         className={className}
         onMapReady={handleMapReady}

@@ -90,7 +90,7 @@ export function createCustomMarkerIcon(
 }
 
 export default function LeafletMapBase({
-  center = [28.6139, 77.209], // Default Delhi NCR
+  center = [12.9716, 77.5946], // Default center
   zoom = 12,
   theme = "light",
   className = "w-full h-full min-h-[300px]",

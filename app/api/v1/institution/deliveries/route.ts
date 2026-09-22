@@ -117,15 +117,15 @@ export async function GET(request: NextRequest) {
         pickup: {
           name: institution?.name || listing?.institutionName || "Donor Kitchen",
           address: listing?.pickupLocation?.address || institution?.address || "Main Dispatch Bay",
-          lat: listing?.pickupLocation?.lat || institution?.location?.lat || 28.6139,
-          lng: listing?.pickupLocation?.lng || institution?.location?.lng || 77.209,
+          lat: listing?.pickupLocation?.lat || institution?.location?.lat,
+          lng: listing?.pickupLocation?.lng || institution?.location?.lng,
         },
         drop: {
           name: ngo?.orgName || listing?.claimedByNgoName || "Verified NGO Recipient",
           address: ngo?.location?.address || ngo?.serviceArea || "Recipient Center",
           contactPhone: ngo?.contactPhone || "",
-          lat: ngo?.location?.lat || 28.58,
-          lng: ngo?.location?.lng || 77.24,
+          lat: ngo?.location?.lat,
+          lng: ngo?.location?.lng,
         },
         recipient: {
           name: ngo?.orgName || listing?.claimedByNgoName || "Verified NGO Recipient",

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { ObjectId } from "mongodb";
 import { getRoleDashboardPath } from "@/lib/auth-helpers";
+import { geocodeAddress } from "@/lib/geocoding";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized. Please log in first." },
+        { error: "Unauthorized. Please log in." },
         { status: 401 }
       );
     }
@@ -21,9 +22,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { role, details } = body;
 
-    if (!role || !["institution_admin", "ngo", "delivery_partner", "platform_admin"].includes(role)) {
+    if (!role) {
       return NextResponse.json(
-        { error: "A valid role must be selected." },
+        { error: "Role is required." },
         { status: 400 }
       );
     }
@@ -42,14 +43,28 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      let resolvedLat = Number(lat);
+      let resolvedLng = Number(lng);
+
+      if (!resolvedLat || !resolvedLng || isNaN(resolvedLat) || isNaN(resolvedLng)) {
+        const geo = await geocodeAddress(address);
+        if (geo) {
+          resolvedLat = geo.lat;
+          resolvedLng = geo.lng;
+        } else {
+          resolvedLat = 12.9716;
+          resolvedLng = 77.5946;
+        }
+      }
+
       await db.collection("institutions").insertOne({
         userId: userObjectId,
         name,
         type: type || "college",
         address,
         location: {
-          lat: Number(lat) || 28.6139,
-          lng: Number(lng) || 77.209,
+          lat: resolvedLat,
+          lng: resolvedLng,
         },
         plan: plan === "premium" ? "premium" : "free",
         createdAt: new Date(),
@@ -63,6 +78,20 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      let resolvedLat = Number(lat);
+      let resolvedLng = Number(lng);
+
+      if (!resolvedLat || !resolvedLng || isNaN(resolvedLat) || isNaN(resolvedLng)) {
+        const geo = await geocodeAddress(serviceArea || orgName);
+        if (geo) {
+          resolvedLat = geo.lat;
+          resolvedLng = geo.lng;
+        } else {
+          resolvedLat = 12.9716;
+          resolvedLng = 77.5946;
+        }
+      }
+
       await db.collection("ngos").insertOne({
         userId: userObjectId,
         orgName,
@@ -73,8 +102,8 @@ export async function POST(request: NextRequest) {
         kycStatus: "pending", // PRD Section 12.8: starts pending until platform admin approval
         reliabilityScore: 100,
         location: {
-          lat: Number(lat) || 28.6139,
-          lng: Number(lng) || 77.209,
+          lat: resolvedLat,
+          lng: resolvedLng,
         },
         createdAt: new Date(),
       });

@@ -6,6 +6,7 @@ import { ObjectId } from "mongodb";
 import { evaluateSafetyGating } from "@/lib/safety-gating";
 import { rankAndCreateMatches } from "@/lib/matching";
 import { createNotification } from "@/lib/notifications";
+import { geocodeAddress } from "@/lib/geocoding";
 
 async function getAuthContext() {
   const session = await auth.api.getSession({
@@ -135,10 +136,22 @@ export async function POST(request: NextRequest) {
       ? new Date(pickupWindow.end)
       : new Date(Date.now() + 3 * 60 * 60 * 1000); // 3h default
 
+    const pickupAddr = pickupLocation?.address || institution.address || "Main Dispatch Gate";
+    let pLat = Number(pickupLocation?.lat) || institution.location?.lat;
+    let pLng = Number(pickupLocation?.lng) || institution.location?.lng;
+
+    if (!pLat || !pLng || isNaN(pLat) || isNaN(pLng)) {
+      const geo = await geocodeAddress(pickupAddr);
+      if (geo) {
+        pLat = geo.lat;
+        pLng = geo.lng;
+      }
+    }
+
     const locationData = {
-      address: pickupLocation?.address || institution.address || "Main Dispatch Gate",
-      lat: Number(pickupLocation?.lat) || institution.location?.lat || 28.6139,
-      lng: Number(pickupLocation?.lng) || institution.location?.lng || 77.209,
+      address: pickupAddr,
+      lat: pLat ?? 12.9716,
+      lng: pLng ?? 77.5946,
     };
 
     // Run Server-Side Safety Gating Engine (Functional PRD Section 12.3)
