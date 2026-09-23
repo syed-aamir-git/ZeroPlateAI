@@ -1,123 +1,110 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
   <defs>
-    <!-- Background Deep Obsidian-Emerald Luxury Gradient -->
-    <radialGradient id="luxBg" cx="40%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#0F5132"/>
-      <stop offset="45%" stop-color="#073B22"/>
-      <stop offset="85%" stop-color="#032314"/>
-      <stop offset="100%" stop-color="#01140B"/>
+    <!-- Deep Obsidian-Emerald Luxury Medallion Backdrop -->
+    <radialGradient id="luxPlate" cx="42%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#0E4A2B"/>
+      <stop offset="50%" stop-color="#072F1B"/>
+      <stop offset="85%" stop-color="#031A0F"/>
+      <stop offset="100%" stop-color="#010E07"/>
     </radialGradient>
 
-    <!-- Polished 24K Champagne Gold Gradient -->
-    <linearGradient id="gold24k" x1="20" y1="16" x2="108" y2="112" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFF8DC"/>
-      <stop offset="25%" stop-color="#FDE047"/>
-      <stop offset="50%" stop-color="#D97706"/>
-      <stop offset="75%" stop-color="#F59E0B"/>
-      <stop offset="100%" stop-color="#92400E"/>
+    <!-- 24K Polished Gold Gradient for the 'Z' Emblem -->
+    <linearGradient id="goldStroke" x1="36" y1="36" x2="94" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF8DB"/>
+      <stop offset="20%" stop-color="#FDE047"/>
+      <stop offset="60%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
     </linearGradient>
 
-    <!-- Vibrant Emerald-Cyan Jewel Leaf Gradient -->
-    <linearGradient id="jewelLeaf" x1="45" y1="28" x2="96" y2="88" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#6EE7B7"/>
+    <!-- Vibrant Imperial Emerald & Cyan Gradient for the Outer Plate Circle -->
+    <linearGradient id="emeraldStroke" x1="18" y1="18" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399"/>
       <stop offset="35%" stop-color="#10B981"/>
-      <stop offset="70%" stop-color="#059669"/>
-      <stop offset="100%" stop-color="#0891B2"/>
+      <stop offset="75%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#0D9488"/>
     </linearGradient>
 
-    <!-- Secondary Bright Mint / Cyan Leaf Highlight -->
-    <linearGradient id="mintHighlight" x1="42" y1="46" x2="68" y2="82" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#A7F3D0"/>
-      <stop offset="50%" stop-color="#34D399"/>
-      <stop offset="100%" stop-color="#059669"/>
+    <!-- Jewel-tone Emerald & Mint Leaf Gradient -->
+    <linearGradient id="leafFill" x1="92" y1="42" x2="114" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="45%" stop-color="#10B981"/>
+      <stop offset="85%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#6EE7B7"/>
     </linearGradient>
 
-    <!-- Luxury Pure Porcelain Arc (Zero Plate) -->
-    <linearGradient id="porcelainArc" x1="24" y1="24" x2="88" y2="104" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="40%" stop-color="#F4EFE6"/>
-      <stop offset="80%" stop-color="#E2D7C5"/>
-      <stop offset="100%" stop-color="#C5B79F"/>
-    </linearGradient>
-
-    <!-- Glowing Star Flare Gradient -->
-    <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FFFBEB"/>
-      <stop offset="40%" stop-color="#FDE047"/>
-      <stop offset="80%" stop-color="#F59E0B"/>
-      <stop offset="100%" stop-color="#D97706" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Glass Rim Highlight -->
-    <linearGradient id="glassRim" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.45"/>
-      <stop offset="30%" stop-color="#FDE047" stop-opacity="0.3"/>
-      <stop offset="70%" stop-color="#10B981" stop-opacity="0.2"/>
+    <!-- Beveled Medallion Rim -->
+    <linearGradient id="rimGlint" x1="10" y1="10" x2="118" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDE047" stop-opacity="0.45"/>
+      <stop offset="50%" stop-color="#10B981" stop-opacity="0.25"/>
       <stop offset="100%" stop-color="#000000" stop-opacity="0.6"/>
     </linearGradient>
 
-    <!-- Luxury Drop Shadow -->
-    <filter id="luxuryGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.55"/>
-      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#F59E0B" flood-opacity="0.3"/>
-    </filter>
-
-    <filter id="starBloom" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FDE047" flood-opacity="0.8"/>
+    <!-- Subtle Ambient Glow -->
+    <filter id="premiumGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.6"/>
+      <feDropShadow dx="0" dy="0.5" stdDeviation="1" flood-color="#10B981" flood-opacity="0.3"/>
     </filter>
   </defs>
 
-  <!-- Base Medallion: Luxury Rounded Squircle (Apple/Michelin Standard) -->
-  <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#luxBg)" filter="url(#luxuryGlow)"/>
-  <rect x="6.75" y="6.75" width="114.5" height="114.5" rx="27.25" stroke="url(#glassRim)" stroke-width="1.5"/>
+  <!-- Circular Medallion Base (Guarantees perfect visibility & luxury contrast on light & dark browser tabs) -->
+  <circle cx="64" cy="64" r="59" fill="url(#luxPlate)"/>
+  <circle cx="64" cy="64" r="58.5" stroke="url(#rimGlint)" stroke-width="1.2"/>
+  <circle cx="64" cy="64" r="53" stroke="#FAF7F2" stroke-opacity="0.07" stroke-width="1" stroke-dasharray="2.5 2.5"/>
 
-  <!-- Concentric Gold Filigree Rim (Represents the Michelin Dining Plate) -->
-  <circle cx="64" cy="64" r="50" stroke="url(#gold24k)" stroke-width="1.75" stroke-opacity="0.9"/>
-  <circle cx="64" cy="64" r="46.5" stroke="#FFFFFF" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="3 3"/>
-  <circle cx="64" cy="64" r="41" fill="#042214" fill-opacity="0.6"/>
+  <!-- Logo Graphics Group with Soft Dimensional Glow -->
+  <g filter="url(#premiumGlow)">
+    <!-- ========================================================================= -->
+    <!-- 1. The Outer Plate Circle Arc (As in logo image, opening at top-right)    -->
+    <!-- Center (61, 65), radius = 43.                                             -->
+    <!-- Top arc starts near (87, 30), wraps counter-clockwise to bottom-left      -->
+    <!-- ========================================================================= -->
+    <path d="M 87 31 A 43 43 0 0 0 18 65 A 43 43 0 0 0 40 100"
+          stroke="url(#emeraldStroke)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
 
-  <!-- The ZeroPlate "0" Motif: Sculptural Porcelain & Gold Rim Arc -->
-  <path d="M64 25 C43 25 28 39 28 64 C28 89 43 103 64 103 C74 103 82.5 98.5 88.5 91 C80 94.5 72 95 64 95 C49 95 38 82 38 64 C38 46 49 33 64 33 C72 33 79 36 85 41 C80 30.5 72.5 25 64 25 Z"
-        fill="url(#porcelainArc)" filter="url(#luxuryGlow)"/>
+    <!-- Bottom-right arc of the circle: wraps from (50, 107) up to (103, 51) -->
+    <path d="M 50 107 A 43 43 0 0 0 104 52"
+          stroke="url(#emeraldStroke)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
 
-  <!-- Gold Accent Lining the Inner Curve of the "0" -->
-  <path d="M64 25 C72.5 25 80 30.5 85 41 C81 37.5 75.5 35 69.5 35 C56.5 35 46.5 45.5 45 59 C44.5 54 46 47 50.5 41 C54 36.5 58.8 33 64 25 Z"
-        fill="url(#gold24k)" opacity="0.9"/>
+    <!-- ========================================================================= -->
+    <!-- 2. The Stylized 'Z' Emblem                                                -->
+    <!-- Matching the exact monoline flow and double-stroke diagonal of the image  -->
+    <!-- ========================================================================= -->
 
-  <!-- The Emerald & Cyan Jewel Sprout (Zero Food Waste & Planetary Renewal) -->
-  <!-- Primary Regal Leaf -->
-  <path d="M63 87 C63 56 82 42 94 36 C94 51 86 78 63 87 Z"
-        fill="url(#jewelLeaf)"/>
+    <!-- Top Horizontal Bar of 'Z' (Capsule with rounded left tip) -->
+    <path d="M 46 44 L 80 44 C 83.5 44 85.5 46.5 84.5 49.5 L 80 54 L 46 54 C 43 54 41 51.8 41 49 C 41 46.2 43 44 46 44 Z"
+          fill="url(#goldStroke)" stroke="url(#goldStroke)" stroke-width="0.8" stroke-linejoin="round"/>
 
-  <!-- Central Leaf Vein in 24K Gold -->
-  <path d="M64 86 C72 73 80 58 93 37"
-        stroke="url(#gold24k)" stroke-width="1.8" stroke-linecap="round"/>
+    <!-- Primary Diagonal of 'Z' -->
+    <path d="M 81 48 L 47 91"
+          stroke="url(#goldStroke)" stroke-width="6" stroke-linecap="round" fill="none"/>
 
-  <!-- Secondary Counter-Leaf in Luminous Mint & Turquoise -->
-  <path d="M63 76 C67 60 54 51 47 53 C50 63 58 72 63 76 Z"
-        fill="url(#mintHighlight)"/>
+    <!-- Parallel Inner Diagonal Line (Creates the signature outlined ribbon appearance) -->
+    <path d="M 73 53 L 45 88"
+          stroke="#FAF7F2" stroke-width="2.2" stroke-linecap="round" stroke-opacity="0.92" fill="none"/>
 
-  <!-- Delicate Leaf Accent Highlight -->
-  <path d="M64 75 C60 67 55 60 48 55"
-        stroke="#FFFFFF" stroke-opacity="0.6" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- Bottom Horizontal Bar of 'Z' with upward curved hook terminal -->
+    <path d="M 47 91 L 81 91 C 85 91 87.5 89 86.5 85"
+          stroke="url(#goldStroke)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
 
-  <!-- Bottom Sprout Root / Calibrated Stem -->
-  <path d="M63 87 C63 92 64 95 65.5 98"
-        stroke="url(#gold24k)" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Fluid Loop: Curves from bottom-left of 'Z' into the bottom outer circle -->
+    <path d="M 47 91 C 38 91 32 97 40 104"
+          stroke="url(#emeraldStroke)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
 
-  <!-- AI Intelligence 8-Point Diamond Sparkle Star (Top Right) -->
-  <g transform="translate(96, 26)" filter="url(#starBloom)">
-    <!-- Star Outer Glow Ring -->
-    <circle cx="0" cy="0" r="10" fill="url(#starGlow)" opacity="0.8"/>
-    <!-- 8-Point AI Diamond Facet -->
-    <path d="M0 -14 L3 -4 L14 0 L3 4 L0 14 L-3 4 L-14 0 L-3 -4 Z" fill="url(#gold24k)"/>
-    <path d="M0 -11 L2.2 -3.2 L11 0 L2.2 3.2 L0 11 L-2.2 3.2 L-11 0 L-2.2 -3.2 Z" fill="#FFFFFF"/>
-    <!-- Diagonal micro rays -->
-    <path d="M-6 -6 L6 6 M-6 6 L6 -6" stroke="url(#gold24k)" stroke-width="1.2" stroke-linecap="round" opacity="0.8"/>
-  </g>
+    <!-- ========================================================================= -->
+    <!-- 3. Rising AI Growth Stem & Botanical Leaf (Top-Right)                     -->
+    <!-- Branches off the 'Z' diagonal, shoots upward through the circle opening  -->
+    <!-- ========================================================================= -->
 
-  <!-- Micro AI Pulse Star (Bottom Left) for balance -->
-  <g transform="translate(24, 76)" opacity="0.75">
-    <path d="M0 -6 L1.5 -1.5 L6 0 L1.5 1.5 L0 6 L-1.5 1.5 L-6 0 L-1.5 -1.5 Z" fill="url(#gold24k)"/>
+    <!-- Branching Stem: (64, 70) -> (79, 70) -> (97, 44) -->
+    <path d="M 64 70 L 80 70 L 97 44"
+          stroke="url(#goldStroke)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+    <!-- The Botanical Leaf blooming towards top-right at 45° -->
+    <path d="M 97 44 C 98 33 109 22 116 18 C 114 27 107 40 97 44 Z"
+          fill="url(#leafFill)" stroke="#10B981" stroke-width="0.8"/>
+
+    <!-- Leaf Centerline Vein in Pure White/Gold Glint -->
+    <path d="M 98 42 C 103 34 110 26 115 19"
+          stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round" stroke-opacity="0.85"/>
   </g>
 </svg>
