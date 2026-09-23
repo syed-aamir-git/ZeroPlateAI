@@ -29,23 +29,32 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
 
   const fetchNotifications = useCallback(async (signal?: AbortSignal) => {
     if (isFetchingRef.current) return;
+    if (typeof window !== "undefined" && (!window.navigator.onLine || document.visibilityState === "hidden")) {
+      return;
+    }
     isFetchingRef.current = true;
 
     try {
       setIsLoading(true);
       const res = await fetch("/api/v1/notifications", {
         signal,
+        headers: { Accept: "application/json" },
       });
 
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
+      } else if (res.status === 401) {
+        // User session inactive or logged out
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") return;
-      // Log as warning rather than console.error to avoid throwing Next.js dev overlay on transient drops
-      console.warn("Notifications sync paused:", err);
+      if ((err instanceof Error || (typeof DOMException !== "undefined" && err instanceof DOMException)) && err.name === "AbortError") {
+        return;
+      }
+      console.warn("Notice: Notification sync paused:", err);
     } finally {
       isFetchingRef.current = false;
       setIsLoading(false);
@@ -54,19 +63,29 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
 
   useEffect(() => {
     let isMounted = true;
-    const abortController = new AbortController();
+    const controller = new AbortController();
 
-    fetchNotifications(abortController.signal);
+    fetchNotifications(controller.signal);
+
     const interval = setInterval(() => {
-      if (isMounted) {
-        fetchNotifications(abortController.signal);
+      if (isMounted && typeof window !== "undefined" && window.navigator.onLine && document.visibilityState === "visible") {
+        fetchNotifications(controller.signal);
       }
-    }, 60000);
+    }, 45000);
+
+    const handleVisibilityChange = () => {
+      if (isMounted && document.visibilityState === "visible" && window.navigator.onLine) {
+        fetchNotifications(controller.signal);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       isMounted = false;
-      abortController.abort();
+      controller.abort();
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [fetchNotifications]);
 
@@ -98,7 +117,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
         setUnreadCount(0);
       }
     } catch (err) {
-      console.error("Error marking all read:", err);
+      console.warn("Notice: Error marking all read:", err);
     }
   };
 
@@ -114,7 +133,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
       );
       setUnreadCount((c) => Math.max(0, c - 1));
     } catch (err) {
-      console.error("Error marking item read:", err);
+      console.warn("Notice: Error marking item read:", err);
     }
   };
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TicketStrip } from "@/components/public/ticket-strip";
 import { ImpactCounter } from "@/components/public/impact-counter";
 import { PublicNetworkMap } from "@/components/public/public-network-map";
+import { PublicImpactCharts } from "@/components/public/public-impact-charts";
 import { getPlatformStats, getLiveRedistributionTickets, getPublicNetworkData } from "@/lib/platform-stats";
 import {
   CrateIcon,
@@ -160,6 +161,13 @@ export default async function HomePage() {
               As institutions add inventory and complete verified deliveries, this aggregate updates live.
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Interactive Visual Impact & Redistribution Analytics */}
+      <section className="border-b border-line bg-[#FAF7F2] py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <PublicImpactCharts stats={stats} />
         </div>
       </section>
 

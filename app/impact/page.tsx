@@ -4,6 +4,7 @@ import { PublicFooter } from "@/components/layouts/public-footer";
 import { Button } from "@/components/ui/button";
 import { ImpactCounter } from "@/components/public/impact-counter";
 import { PublicNetworkMap } from "@/components/public/public-network-map";
+import { PublicImpactCharts } from "@/components/public/public-impact-charts";
 import { getPlatformStats, getPublicNetworkData } from "@/lib/platform-stats";
 
 export const dynamic = "force-dynamic";
@@ -98,6 +99,13 @@ export default async function PublicImpactPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Visual Analytics & Trajectory Section */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-line bg-[#FAF7F2]">
+        <div className="max-w-5xl mx-auto">
+          <PublicImpactCharts stats={stats} />
         </div>
       </section>
 

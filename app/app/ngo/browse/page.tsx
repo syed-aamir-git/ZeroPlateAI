@@ -61,13 +61,13 @@ export default function NgoBrowsePage() {
   const fetchBrowseData = React.useCallback(async () => {
     try {
       const res = await fetch("/api/v1/ngo/browse");
-      const json = await res.json();
       if (res.ok) {
+        const json = await res.json();
         setListings(json.listings || []);
         setNgo(json.ngo || null);
       }
     } catch (err) {
-      console.error("Failed to fetch available surplus listings:", err);
+      console.warn("Notice: Failed to fetch available surplus listings:", err);
     } finally {
       setLoading(false);
     }

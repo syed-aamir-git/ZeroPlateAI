@@ -16,6 +16,9 @@ import {
   Bar,
   Line,
   Area,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -113,6 +116,11 @@ export default function InstitutionAnalyticsPage() {
   const [bufferMode, setBufferMode] = useState<"lean" | "balanced" | "generous">("balanced");
   const [copiedBatch, setCopiedBatch] = useState(false);
   const [ledgerView, setLedgerView] = useState<"items" | "days">("items");
+
+  // Cursor-following Pie Chart Tooltip State
+  const [hoveredCatIndex, setHoveredCatIndex] = useState<number | null>(null);
+  const [pieMousePos, setPieMousePos] = useState<{ x: number; y: number } | null>(null);
+  const pieContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadAnalytics() {
@@ -893,12 +901,15 @@ ${calculation.categoryAllocation.map((c) => `  - ${c.name}: ${c.kg} kg`).join("\
                       unit=" kg"
                     />
                     <Tooltip
+                      cursor={{ fill: "rgba(47, 75, 58, 0.08)", radius: 4 }}
+                      wrapperStyle={{ zIndex: 100, pointerEvents: "none", outline: "none" }}
                       contentStyle={{
                         backgroundColor: "#FAF7F2",
                         borderColor: "#D3CBBF",
                         fontSize: "12px",
                         fontFamily: "var(--font-plex-sans)",
-                        borderRadius: "4px",
+                        borderRadius: "6px",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                       }}
                     />
                     <Bar
@@ -957,12 +968,15 @@ ${calculation.categoryAllocation.map((c) => `  - ${c.name}: ${c.kg} kg`).join("\
                       unit=" kg"
                     />
                     <Tooltip
+                      cursor={{ fill: "rgba(47, 75, 58, 0.08)", radius: 4 }}
+                      wrapperStyle={{ zIndex: 100, pointerEvents: "none", outline: "none" }}
                       contentStyle={{
                         backgroundColor: "#FAF7F2",
                         borderColor: "#D3CBBF",
                         fontSize: "12px",
                         fontFamily: "var(--font-plex-sans)",
-                        borderRadius: "4px",
+                        borderRadius: "6px",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                       }}
                     />
                     <Bar
@@ -980,6 +994,271 @@ ${calculation.categoryAllocation.map((c) => `  - ${c.name}: ${c.kg} kg`).join("\
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+          </div>
+
+          {/* Colourful Category Visual Intelligence (Pie & Bar Charts) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Pie / Donut Chart: Food Consumption Distribution by Category */}
+            <div className="lg:col-span-6 border border-line bg-gradient-to-b from-[#FAF7F2] to-[#F5EFE4] p-5 rounded-md space-y-4 shadow-xs">
+              <div className="border-b border-line pb-3 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-mono font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Category Allocation
+                  </div>
+                  <h3 className="font-serif font-bold text-lg text-ink mt-0.5">
+                    Consumption Share by Food Category
+                  </h3>
+                </div>
+                <span className="text-[11px] font-mono bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-medium">
+                  {data.categoryStats.length} Categories
+                </span>
+              </div>
+
+              <div
+                ref={pieContainerRef}
+                onMouseMove={(e) => {
+                  if (!pieContainerRef.current) return;
+                  const rect = pieContainerRef.current.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const y = e.clientY - rect.top;
+
+                  // Center coordinates of the donut chart
+                  const cx = rect.width / 2;
+                  const cy = rect.height / 2;
+                  const dx = x - cx;
+                  const dy = y - cy;
+                  const dist = Math.sqrt(dx * dx + dy * dy);
+
+                  // Strictly verify cursor is within the color-coded ring (innerRadius 68, outerRadius 98)
+                  const isOnRing = dist >= 65 && dist <= 101;
+
+                  const target = e.target as HTMLElement | SVGElement | null;
+                  const isOverSector = Boolean(
+                    target &&
+                    typeof target.closest === "function" &&
+                    (target.closest(".recharts-pie-sector") ||
+                      target.closest(".recharts-sector") ||
+                      (target.tagName?.toLowerCase() === "path" && !target.closest("button")))
+                  );
+
+                  if (isOnRing && isOverSector) {
+                    setPieMousePos({ x, y });
+                  } else {
+                    // Cursor is outside the pie chart color-coded bar -> disappear immediately
+                    setHoveredCatIndex(null);
+                    setPieMousePos(null);
+                  }
+                }}
+                onMouseLeave={() => {
+                  setHoveredCatIndex(null);
+                  setPieMousePos(null);
+                }}
+                className="h-64 w-full relative flex items-center justify-center overflow-visible"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={data.categoryStats}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={68}
+                      outerRadius={98}
+                      paddingAngle={4}
+                      dataKey="consumedKg"
+                      nameKey="label"
+                      tabIndex={-1}
+                      style={{ outline: "none" }}
+                      onMouseEnter={(_, index) => setHoveredCatIndex(index)}
+                      onMouseMove={(_, index) => setHoveredCatIndex(index)}
+                      onMouseLeave={() => {
+                        setHoveredCatIndex(null);
+                        setPieMousePos(null);
+                      }}
+                    >
+                      {data.categoryStats.map((entry, idx) => {
+                        const colors = ["#10B981", "#3B82F6", "#F59E0B", "#EC4899", "#8B5CF6", "#14B8A6"];
+                        return (
+                          <Cell
+                            key={`cat-cell-${entry.category}`}
+                            fill={colors[idx % colors.length]}
+                            stroke="#FAF7F2"
+                            strokeWidth={hoveredCatIndex === idx ? 3 : 2}
+                            tabIndex={-1}
+                            style={{ outline: "none" }}
+                            className="outline-none focus:outline-none focus-visible:outline-none cursor-pointer"
+                          />
+                        );
+                      })}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+
+                {/* Floating Tooltip Positioned Right Where the Cursor Is Placed */}
+                {hoveredCatIndex !== null && pieMousePos && data.categoryStats[hoveredCatIndex] && (() => {
+                  const item = data.categoryStats[hoveredCatIndex];
+                  const total = data.summary.totalFoodConsumedKg || 1;
+                  const pct = Math.round((item.consumedKg / total) * 100);
+                  const colors = ["#10B981", "#3B82F6", "#F59E0B", "#EC4899", "#8B5CF6", "#14B8A6"];
+                  const color = colors[hoveredCatIndex % colors.length];
+
+                  // Smart flip so the box is placed right next to the cursor and never overflows
+                  const isRightSide = pieMousePos.x > 140;
+                  const isBottomSide = pieMousePos.y > 130;
+
+                  return (
+                    <div
+                      className="absolute pointer-events-none z-50 transition-transform duration-75 ease-out"
+                      style={{
+                        left: `${pieMousePos.x}px`,
+                        top: `${pieMousePos.y}px`,
+                        transform: `translate(${isRightSide ? "calc(-100% - 14px)" : "14px"}, ${isBottomSide ? "calc(-100% - 14px)" : "14px"})`,
+                      }}
+                    >
+                      <div className="bg-[#1C2420] text-[#FAF7F2] p-3 rounded-lg shadow-2xl text-xs border border-white/15 min-w-[175px] space-y-1 text-left backdrop-blur-xs">
+                        <div className="font-semibold text-stone-200 border-b border-white/10 pb-1 flex items-center gap-1.5">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: color }}
+                          />
+                          <span>{item.label}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-emerald-300 font-mono font-bold text-sm pt-0.5">
+                          <span>{item.consumedKg.toLocaleString()} kg</span>
+                          <span className="text-white/80 text-xs font-normal">({pct}%)</span>
+                        </div>
+                        <div className="flex items-center justify-between text-stone-300 font-mono text-[11px]">
+                          <span>Surplus Diverted:</span>
+                          <span className="font-semibold text-amber-300">{item.surplusKg} kg</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Centered Donut KPI - Structured & constrained so it never touches the ring */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center select-none">
+                  <div className="flex flex-col items-center justify-center max-w-[105px] px-1 space-y-0.5">
+                    <span
+                      className="text-[9px] uppercase font-mono tracking-wider text-ink-soft truncate max-w-[100px] leading-tight block text-center"
+                      title={hoveredCatIndex !== null ? data.categoryStats[hoveredCatIndex]?.label : "Total Consumed"}
+                    >
+                      {hoveredCatIndex !== null ? data.categoryStats[hoveredCatIndex]?.label : "Consumed"}
+                    </span>
+                    <span className="font-display text-xl sm:text-2xl font-bold text-ink leading-tight">
+                      {hoveredCatIndex !== null
+                        ? `${data.categoryStats[hoveredCatIndex]?.consumedKg.toLocaleString()}`
+                        : `${data.summary.totalFoodConsumedKg.toLocaleString()}`}
+                      <span className="text-[11px] font-sans font-normal text-ink-soft ml-0.5">kg</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-700 font-semibold bg-emerald-50/90 px-2 py-0.5 rounded-full border border-emerald-200/60 leading-none">
+                      {hoveredCatIndex !== null
+                        ? `${Math.round(((data.categoryStats[hoveredCatIndex]?.consumedKg || 0) / (data.summary.totalFoodConsumedKg || 1)) * 100)}% share`
+                        : "total logged"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Color legend pills */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-line/60">
+                {data.categoryStats.map((cat, idx) => {
+                  const colors = ["#10B981", "#3B82F6", "#F59E0B", "#EC4899", "#8B5CF6", "#14B8A6"];
+                  return (
+                    <div key={cat.category} className="flex items-center gap-1.5 text-xs text-ink-soft">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: colors[idx % colors.length] }}
+                      />
+                      <span className="truncate">{cat.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bar Chart: Consumption vs Surplus Comparison by Category */}
+            <div className="lg:col-span-6 border border-line bg-gradient-to-b from-[#FAF7F2] to-[#F5EFE4] p-5 rounded-md space-y-4 shadow-xs">
+              <div className="border-b border-line pb-3 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-blue-700 text-xs font-mono font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    Wastage Risk Assessment
+                  </div>
+                  <h3 className="font-serif font-bold text-lg text-ink mt-0.5">
+                    Consumed vs. Surplus Diverted (Kg)
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] font-mono">
+                  <span className="flex items-center gap-1 text-emerald-700">
+                    <span className="w-2 h-2 rounded-xs bg-emerald-500" />
+                    Consumed
+                  </span>
+                  <span className="flex items-center gap-1 text-amber-700">
+                    <span className="w-2 h-2 rounded-xs bg-amber-500" />
+                    Surplus
+                  </span>
+                </div>
+              </div>
+
+              <div className="h-64 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.categoryStats} margin={{ top: 10, right: 10, left: -15, bottom: 25 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2DCD0" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fill: "#6B655C", fontSize: 10 }}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                      axisLine={{ stroke: "#D3CBBF" }}
+                    />
+                    <YAxis
+                      tick={{ fill: "#6B655C", fontSize: 11 }}
+                      axisLine={{ stroke: "#D3CBBF" }}
+                      unit=" kg"
+                    />
+                    <Tooltip
+                      cursor={{ fill: "rgba(47, 75, 58, 0.08)", radius: 4 }}
+                      wrapperStyle={{ zIndex: 100, pointerEvents: "none", outline: "none" }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const item = payload[0].payload;
+                          return (
+                            <div className="bg-[#24211C] text-[#FAF7F2] p-2.5 rounded shadow-lg text-xs border border-white/10 space-y-1">
+                              <div className="font-semibold text-stone-200">{item.label}</div>
+                              <div className="text-emerald-300 font-mono">
+                                Consumed: {item.consumedKg} kg
+                              </div>
+                              <div className="text-amber-300 font-mono">
+                                Surplus: {item.surplusKg} kg
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar
+                      dataKey="consumedKg"
+                      name="Consumed (kg)"
+                      fill="#10B981"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="surplusKg"
+                      name="Surplus (kg)"
+                      fill="#F59E0B"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <p className="text-[11px] text-ink-soft pt-1 border-t border-line/60">
+                Identifies categories where prep buffer requires tighter adjustment to reduce surplus generation.
+              </p>
             </div>
           </div>
 

@@ -36,12 +36,12 @@ export default function AdminNgoVerificationPage() {
   const fetchNgos = React.useCallback(async () => {
     try {
       const res = await fetch(`/api/v1/admin/ngo-verification?status=${statusFilter}`);
-      const json = await res.json();
       if (res.ok) {
+        const json = await res.json();
         setNgos(json.ngos || []);
       }
     } catch (err) {
-      console.error("Failed to fetch NGO queue:", err);
+      console.warn("Notice: Failed to fetch NGO queue:", err);
     } finally {
       setLoading(false);
     }
