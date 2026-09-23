@@ -19,6 +19,7 @@ interface DeliveryRouteMapProps {
     lng?: number;
   };
   status?: "assigned" | "accepted" | "picked_up" | "delivered" | "confirmed";
+  urgencyTier?: "critical_red" | "urgent_yellow" | "safe_green";
   theme?: MapTheme;
   className?: string;
 }
@@ -27,6 +28,7 @@ export default function DeliveryRouteMap({
   pickup,
   drop,
   status = "assigned",
+  urgencyTier,
   theme = "dark",
   className = "w-full h-72 sm:h-80",
 }: DeliveryRouteMapProps) {
@@ -193,11 +195,18 @@ export default function DeliveryRouteMap({
         polylineRef.current.remove();
       }
 
+      const isRed = urgencyTier === "critical_red";
+      const lineColor = isRed
+        ? "#DC2626"
+        : status === "confirmed" || status === "delivered"
+        ? "#2F4B3A"
+        : "#D9A441";
+
       const polyline = L.polyline(routePoints, {
-        color: status === "confirmed" || status === "delivered" ? "#2F4B3A" : "#D9A441",
-        weight: 4,
-        opacity: 0.9,
-        dashArray: status === "confirmed" ? undefined : "6, 6",
+        color: lineColor,
+        weight: isRed ? 5 : 4,
+        opacity: 0.95,
+        dashArray: status === "confirmed" ? undefined : isRed ? "4, 4" : "6, 6",
         lineCap: "round",
       }).addTo(map);
       polylineRef.current = polyline;
@@ -277,8 +286,14 @@ export default function DeliveryRouteMap({
 
       {/* Route Distance & Timing Indicator powered by Mapbox */}
       <div className="absolute bottom-2 left-2 z-[400] bg-[#1D1B17]/90 backdrop-blur-sm border border-[#3B362E] px-2.5 py-1 rounded-[4px] text-[11px] font-mono-numeral text-[#9E9587] flex items-center gap-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#86C29B] animate-pulse" />
-        <span className="text-[#F3EEE2] font-semibold">Real-Road Corridor</span>
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${
+            urgencyTier === "critical_red" ? "bg-red-500 animate-ping" : "bg-[#86C29B] animate-pulse"
+          }`}
+        />
+        <span className="text-[#F3EEE2] font-semibold">
+          {urgencyTier === "critical_red" ? "🔴 Critical Priority Corridor" : "Real-Road Corridor"}
+        </span>
         <span>•</span>
         <span>{routeInfo ? `${routeInfo.distanceKm} km (~${routeInfo.durationMins} mins)` : "Active Logistics Line"}</span>
       </div>

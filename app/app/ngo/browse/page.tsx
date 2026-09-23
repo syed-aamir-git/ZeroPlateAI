@@ -14,6 +14,8 @@ import {
 } from "@/components/icons/ledger-icons";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import MarketplaceMap from "@/components/maps/marketplace-map";
+import { calculatePiecesToPlates, evaluateSurplusUrgency } from "@/lib/surplus-engine";
+import { Clock, Utensils, AlertCircle, Sparkles } from "lucide-react";
 
 interface SurplusListing {
   _id: string;
@@ -125,6 +127,40 @@ export default function NgoBrowsePage() {
     if (filterCategory === "all") return true;
     return item.category === filterCategory;
   });
+
+  // Sort listings with 🔴 Critical Red items (<2 hours) prioritized at the top
+  const sortedListings = React.useMemo(() => {
+    return [...filteredListings].sort((a, b) => {
+      const urgencyA = evaluateSurplusUrgency({
+        category: a.category,
+        quantity: a.quantity,
+        unit: a.unit,
+        expiryDeadline: a.pickupWindow?.end || new Date(),
+      });
+      const urgencyB = evaluateSurplusUrgency({
+        category: b.category,
+        quantity: b.quantity,
+        unit: b.unit,
+        expiryDeadline: b.pickupWindow?.end || new Date(),
+      });
+      const rank: Record<string, number> = { critical_red: 3, urgent_yellow: 2, safe_green: 1 };
+      const diff = (rank[urgencyB.urgencyTier] || 0) - (rank[urgencyA.urgencyTier] || 0);
+      if (diff !== 0) return diff;
+      return new Date(a.pickupWindow?.end || 0).getTime() - new Date(b.pickupWindow?.end || 0).getTime();
+    });
+  }, [filteredListings]);
+
+  const criticalCount = React.useMemo(() => {
+    return sortedListings.filter((item) => {
+      const u = evaluateSurplusUrgency({
+        category: item.category,
+        quantity: item.quantity,
+        unit: item.unit,
+        expiryDeadline: item.pickupWindow?.end || new Date(),
+      });
+      return u.urgencyTier === "critical_red";
+    }).length;
+  }, [sortedListings]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 text-left">
@@ -291,10 +327,10 @@ export default function NgoBrowsePage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs text-ink-soft font-mono-numeral bg-[#FAF6EE] p-3 rounded-[6px] border border-line">
             <span>Click any map pin to inspect batch details, pickup window, and claim directly.</span>
-            <span className="font-semibold text-basil">{filteredListings.length} Active Listings Mapped</span>
+            <span className="font-semibold text-basil">{sortedListings.length} Active Listings Mapped</span>
           </div>
           <MarketplaceMap
-            listings={filteredListings}
+            listings={sortedListings}
             selectedId={selectedMapId}
             onSelect={(id) => setSelectedMapId(id)}
             onClaim={handleClaim}
@@ -304,6 +340,24 @@ export default function NgoBrowsePage() {
         </div>
       ) : (
         <>
+      {/* Critical Surplus Alert Banner */}
+      {criticalCount > 0 && (
+        <div className="p-3.5 rounded-[6px] border border-red-500/40 bg-red-500/10 text-xs text-red-950 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="px-1.5 py-0.5 rounded bg-red-600 text-white font-bold font-mono text-[10px] tracking-wide animate-pulse">
+              RESCUE PRIORITY
+            </span>
+            <span className="font-semibold">
+              {criticalCount} surplus batch{criticalCount > 1 ? "es have" : " has"} &lt; 2 hours remaining!
+            </span>
+            <span className="text-red-800/80 hidden sm:inline">
+              Prioritized at the top of the marketplace for immediate pickup.
+            </span>
+          </div>
+          <span className="text-[11px] font-mono font-bold text-red-700">🔴 Critical Tier</span>
+        </div>
+      )}
+
       {/* Ticket Card Grid (Design PRD Section 5.3) */}
       {loading ? (
         <div className="p-12 text-center text-xs font-mono-numeral text-ink-soft">
@@ -324,38 +378,103 @@ export default function NgoBrowsePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredListings.map((item) => {
+          {sortedListings.map((item) => {
             const startDate = new Date(item.pickupWindow.start);
             const endDate = new Date(item.pickupWindow.end);
             const isClaiming = claimingId === item._id;
 
+            const urgency = evaluateSurplusUrgency({
+              category: item.category,
+              quantity: item.quantity,
+              unit: item.unit,
+              expiryDeadline: item.pickupWindow?.end || new Date(),
+            });
+            const plates = calculatePiecesToPlates(item.quantity, item.unit, item.category);
+            const isRed = urgency.urgencyTier === "critical_red";
+            const isYellow = urgency.urgencyTier === "urgent_yellow";
+
             return (
               <TicketCard
                 key={item._id}
-                className="flex flex-col justify-between hover:border-basil/60 transition-colors"
+                className={`flex flex-col justify-between transition-all relative ${
+                  isRed
+                    ? "border-red-500/60 bg-red-500/[0.02] shadow-sm hover:border-red-600 ring-1 ring-red-500/20"
+                    : isYellow
+                    ? "hover:border-amber-500/60"
+                    : "hover:border-basil/60"
+                }`}
               >
                 <div>
-                  {/* Top stamp and Category */}
+                  {/* Top stamp and Urgency Badge */}
                   <div className="flex items-start justify-between gap-2 border-b border-line pb-3 mb-3">
-                    <span className="text-[11px] font-mono-numeral uppercase tracking-wider text-ink-soft">
-                      {item.category.replace("_", " ")}
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${urgency.tierColor.bg} ${urgency.tierColor.text} ${urgency.tierColor.border}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${urgency.tierColor.dot} ${isRed ? "animate-ping" : ""}`} />
+                      {isRed
+                        ? "🔴 Critical Tier"
+                        : isYellow
+                        ? "🟡 Urgent Tier"
+                        : "🟢 Safe Buffer"}
                     </span>
                     <StatusBadge variant="verified_safe" label="Verified Safe" />
                   </div>
 
-                  {/* Title & Quantity */}
+                  {/* Title & Quantity + Pieces-to-Plates Analogy */}
                   <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-mono-numeral uppercase tracking-wider text-ink-soft">
+                        {item.category.replace("_", " ")}
+                      </span>
+                      {isRed && (
+                        <span className="px-1.5 py-0.2 bg-red-600 text-white rounded text-[10px] font-mono font-bold uppercase tracking-wider">
+                          PRIORITY RESCUE
+                        </span>
+                      )}
+                    </div>
                     <h3 className="font-display text-xl font-normal text-ink leading-snug">
                       {item.itemName}
                     </h3>
-                    <div className="font-mono-numeral text-2xl font-normal text-basil">
-                      {item.quantity}{" "}
-                      <span className="text-sm text-ink-soft font-normal">{item.unit}</span>
+                    <div className="flex items-baseline justify-between pt-0.5">
+                      <div className="font-mono-numeral text-2xl font-normal text-basil">
+                        {item.quantity}{" "}
+                        <span className="text-sm text-ink-soft font-normal">{item.unit}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono-numeral text-xs font-bold text-ink flex items-center gap-1 justify-end">
+                          <Utensils className="w-3 h-3 text-basil" />
+                          ≈ {plates.plates} plates
+                        </span>
+                        <span className="text-[10px] text-ink-soft font-mono-numeral block">
+                          {plates.analogyText}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
+                  {/* Time Remaining Strip */}
+                  <div
+                    className={`mt-3 p-2 rounded text-xs flex items-center justify-between font-mono-numeral ${
+                      isRed
+                        ? "bg-red-500/10 text-red-900 border border-red-500/30"
+                        : isYellow
+                        ? "bg-amber-500/10 text-amber-900 border border-amber-500/30"
+                        : "bg-black/5 text-ink-soft"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Clock className="w-3.5 h-3.5" />
+                      Window Status:
+                    </span>
+                    <span className="font-bold">
+                      {urgency.timeRemainingHours <= 0
+                        ? "Window Expiring"
+                        : `${urgency.timeRemainingHours.toFixed(1)}h remaining`}
+                    </span>
+                  </div>
+
                   {/* Donor & Dispatch Details */}
-                  <div className="mt-4 pt-3 border-t border-line text-xs space-y-2">
+                  <div className="mt-3 pt-3 border-t border-line text-xs space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-ink-soft">Donor Kitchen:</span>
                       <span className="font-medium text-ink text-right">
@@ -384,13 +503,17 @@ export default function NgoBrowsePage() {
                 <div className="mt-5 pt-3 border-t border-line">
                   {isKycApproved ? (
                     <Button
-                      variant="default"
+                      variant={isRed ? "destructive" : "default"}
                       size="sm"
-                      className="w-full"
+                      className="w-full cursor-pointer"
                       onClick={() => handleClaim(item._id)}
                       disabled={isClaiming}
                     >
-                      {isClaiming ? "Locking Claim..." : "Claim Surplus Batch"}
+                      {isClaiming
+                        ? "Locking Claim..."
+                        : isRed
+                        ? "🚨 Urgent Claim Surplus Batch"
+                        : "Claim Surplus Batch"}
                     </Button>
                   ) : (
                     <div className="space-y-1.5">

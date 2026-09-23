@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { inventoryItemId, quantity, pickupWindow, pickupLocation } = body;
+    const { inventoryItemId, quantity, pickupWindow, pickupLocation, storageCondition = "ambient" } = body;
 
     if (!inventoryItemId || !ObjectId.isValid(inventoryItemId)) {
       return NextResponse.json(
@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
         unit: item.unit,
         pickupWindow: { start: startWindow, end: endWindow },
         pickupLocation: locationData,
+        storageCondition,
         safetyStatus: "rejected",
         status: "expired",
         rejectionReason: gatingVerdict.rejectionMessage || gatingVerdict.reason,
@@ -208,6 +209,7 @@ export async function POST(request: NextRequest) {
       category: item.category,
       quantity: listingQty,
       unit: item.unit,
+      storageCondition,
       pickupWindow: {
         start: startWindow,
         end: endWindow,

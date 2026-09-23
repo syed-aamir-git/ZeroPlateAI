@@ -169,6 +169,13 @@ export default function InstitutionOverviewPage() {
             <span>List surplus batch</span>
           </Link>
           <Link
+            href="/app/institution/forecast"
+            className="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-emerald-300/80 bg-emerald-50 hover:bg-emerald-100/80 active:scale-[0.98] text-emerald-800 text-xs font-semibold shadow-2xs hover:shadow-xs transition-all whitespace-nowrap"
+          >
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>MealBalance &amp; Forecast</span>
+          </Link>
+          <Link
             href="/app/institution/analytics"
             className="group inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-stone-200/90 bg-stone-50 hover:bg-stone-100 active:scale-[0.98] text-stone-700 text-xs font-semibold shadow-2xs transition-all whitespace-nowrap"
           >

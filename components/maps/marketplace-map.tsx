@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import type * as LeafletType from "leaflet";
 import LeafletMapBase, { createCustomMarkerIcon } from "./leaflet-map-base";
+import { evaluateSurplusUrgency } from "@/lib/surplus-engine";
 
 export interface MarketplaceListingItem {
   _id: string;
@@ -74,12 +75,19 @@ export default function MarketplaceMap({
       const coord: [number, number] = [item.pickupLocation.lat, item.pickupLocation.lng];
       bounds.extend(coord);
 
-      const color = CATEGORY_COLORS[item.category] || "#D9A441";
+      const urgency = evaluateSurplusUrgency({
+        category: item.category,
+        quantity: item.quantity,
+        unit: item.unit,
+        expiryDeadline: item.pickupWindow?.end || new Date(),
+      });
+      const isRed = urgency.urgencyTier === "critical_red";
+      const color = isRed ? "#DC2626" : CATEGORY_COLORS[item.category] || "#D9A441";
       const icon = createCustomMarkerIcon(L, {
         type: "surplus",
         label: `${item.quantity} ${item.unit}`,
         color,
-        pulsing: selectedId === item._id,
+        pulsing: isRed || selectedId === item._id,
       });
 
       const start = item.pickupWindow?.start ? new Date(item.pickupWindow.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Immediate";
@@ -89,7 +97,7 @@ export default function MarketplaceMap({
         <div class="p-3.5 space-y-2 text-left" style="min-width: 220px;">
           <div class="flex items-center justify-between border-b border-[#DCD3BE] pb-1.5">
             <span class="text-[9px] uppercase font-mono-numeral font-bold px-1.5 py-0.5 rounded text-white" style="background-color: ${color};">
-              ${item.category.replace("_", " ")}
+              ${isRed ? "🔴 CRITICAL RESCUE" : item.category.replace("_", " ")}
             </span>
             <span class="text-xs font-mono-numeral font-bold text-[#2F4B3A]">
               ${item.quantity} ${item.unit}
@@ -104,13 +112,15 @@ export default function MarketplaceMap({
           <div class="bg-[#EDE6D6] p-2 rounded text-[11px] space-y-0.5 text-[#24211C]">
             <div class="font-mono-numeral text-[10px] text-[#5A5548] uppercase">Pickup Bay</div>
             <div class="truncate text-[11px]">${item.pickupLocation?.address || "Main Dispatch Gate"}</div>
-            <div class="text-[10px] text-[#2F4B3A] font-mono-numeral">Window: ${start} - ${end}</div>
+            <div class="text-[10px] ${isRed ? "text-[#DC2626] font-bold" : "text-[#2F4B3A]"} font-mono-numeral">
+              ${isRed ? `⚠️ Window Closes in ${urgency.timeRemainingHours.toFixed(1)}h!` : `Window: ${start} - ${end}`}
+            </div>
           </div>
 
           ${
             isKycApproved
-              ? `<button id="claim-btn-${item._id}" class="w-full mt-2 py-2 px-3 rounded-[4px] bg-[#2F4B3A] hover:bg-[#23382c] text-white font-semibold text-xs transition-colors cursor-pointer text-center block">
-                  ✓ Claim This Listing
+              ? `<button id="claim-btn-${item._id}" class="w-full mt-2 py-2 px-3 rounded-[4px] ${isRed ? "bg-[#DC2626] hover:bg-[#b91c1c]" : "bg-[#2F4B3A] hover:bg-[#23382c]"} text-white font-semibold text-xs transition-colors cursor-pointer text-center block">
+                  ${isRed ? "🚨 Urgent Claim" : "✓ Claim This Listing"}
                 </button>`
               : `<div class="text-[10px] text-[#B85C38] text-center pt-1 font-mono-numeral">KYC approval required to claim</div>`
           }

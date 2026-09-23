@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TicketIcon, ShieldCheckIcon, AlertTriangleIcon, CrateIcon, RouteIcon } from "@/components/icons/ledger-icons";
 import LocationPickerMap from "@/components/maps/location-picker-map";
+import { calculatePiecesToPlates, evaluateSurplusUrgency } from "@/lib/surplus-engine";
+import ManualMatchmakerModal from "@/components/surplus/manual-matchmaker-modal";
+import { HeartHandshake, Sparkles, Utensils } from "lucide-react";
 
 interface SurplusListing {
   _id: string;
@@ -64,6 +67,8 @@ function SurplusListingsContent() {
     lat: 28.6139,
     lng: 77.209,
   });
+  const [storageCondition, setStorageCondition] = React.useState<string>("ambient");
+  const [matchmakingListing, setMatchmakingListing] = React.useState<SurplusListing | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
   // Quick Add Form state
@@ -250,6 +255,7 @@ function SurplusListingsContent() {
         body: JSON.stringify({
           inventoryItemId: targetItemId,
           quantity: finalQty,
+          storageCondition,
           pickupWindow: {
             start: startTime.toISOString(),
             end: endTime.toISOString(),
@@ -312,6 +318,50 @@ function SurplusListingsContent() {
     if (statusFilter === "rejected") return l.safetyStatus === "rejected";
     return l.status === statusFilter;
   });
+
+  // Sort with 🔴 Critical Red items (<2 hours remaining) pinned to the top
+  const sortedListings = React.useMemo(() => {
+    return [...filteredListings].sort((a, b) => {
+      const urgencyA = evaluateSurplusUrgency({
+        category: a.category,
+        quantity: a.quantity,
+        unit: a.unit,
+        expiryDeadline: a.pickupWindow?.end || new Date(),
+      });
+      const urgencyB = evaluateSurplusUrgency({
+        category: b.category,
+        quantity: b.quantity,
+        unit: b.unit,
+        expiryDeadline: b.pickupWindow?.end || new Date(),
+      });
+      const rank: Record<string, number> = { critical_red: 3, urgent_yellow: 2, safe_green: 1 };
+      const diff = (rank[urgencyB.urgencyTier] || 0) - (rank[urgencyA.urgencyTier] || 0);
+      if (diff !== 0) return diff;
+      return new Date(a.pickupWindow?.end || 0).getTime() - new Date(b.pickupWindow?.end || 0).getTime();
+    });
+  }, [filteredListings]);
+
+  // Live previews for creation modal
+  const effectiveQty = Number(modalMode === "select" ? listingQty : quickQuantity) || 0;
+  const effectiveUnit = modalMode === "select" ? (inventoryItems.find((i) => i._id === selectedItemId)?.unit || "kg") : quickUnit;
+  const effectiveCategory = modalMode === "select" ? (inventoryItems.find((i) => i._id === selectedItemId)?.category || "cooked_food") : quickCategory;
+
+  const livePlatePreview = React.useMemo(() => {
+    if (effectiveQty <= 0) return null;
+    return calculatePiecesToPlates(effectiveQty, effectiveUnit, effectiveCategory);
+  }, [effectiveQty, effectiveUnit, effectiveCategory]);
+
+  const liveUrgencyPreview = React.useMemo(() => {
+    const hours = Number(windowDurationHours) || 2;
+    const deadline = new Date(Date.now() + hours * 60 * 60 * 1000);
+    return evaluateSurplusUrgency({
+      category: effectiveCategory,
+      quantity: effectiveQty || 10,
+      unit: effectiveUnit,
+      expiryDeadline: deadline,
+      storageCondition,
+    });
+  }, [effectiveCategory, effectiveQty, effectiveUnit, windowDurationHours, storageCondition]);
 
   const verifiedCount = listings.filter((l) => l.safetyStatus === "verified_safe").length;
   const pendingCount = listings.filter((l) => l.status === "pending").length;
@@ -463,37 +513,74 @@ function SurplusListingsContent() {
           <table className="w-full text-left text-sm">
             <thead className="bg-[#EAE3D4] border-b border-line text-xs uppercase tracking-wider text-ink font-mono-numeral">
               <tr>
-                <th className="px-4 py-3 font-semibold">Item & Category</th>
-                <th className="px-4 py-3 font-semibold">Quantity</th>
+                <th className="px-4 py-3 font-semibold">Urgency Tier</th>
+                <th className="px-4 py-3 font-semibold">Item &amp; Category</th>
+                <th className="px-4 py-3 font-semibold">Quantity &amp; Plates</th>
                 <th className="px-4 py-3 font-semibold">Pickup Window</th>
                 <th className="px-4 py-3 font-semibold">Dispatch Address</th>
                 <th className="px-4 py-3 font-semibold">Safety Gating</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Created</th>
+                <th className="px-4 py-3 font-semibold text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {filteredListings.map((item) => {
+              {sortedListings.map((item) => {
                 const isRejected = item.safetyStatus === "rejected";
                 const startDate = new Date(item.pickupWindow.start);
                 const endDate = new Date(item.pickupWindow.end);
+                const urgency = evaluateSurplusUrgency({
+                  category: item.category,
+                  quantity: item.quantity,
+                  unit: item.unit,
+                  expiryDeadline: item.pickupWindow.end,
+                });
+                const isRed = urgency.urgencyTier === "critical_red";
 
                 return (
                   <tr
                     key={item._id}
                     className={`hover:bg-[#F3EDE0]/80 transition-colors ${
-                      isRejected ? "bg-clay-rust/5" : ""
+                      isRejected
+                        ? "bg-clay-rust/5"
+                        : isRed
+                        ? "bg-red-500/5 font-medium"
+                        : ""
                     }`}
                   >
                     <td className="px-4 py-3">
-                      <div className="font-medium text-ink">{item.itemName}</div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${urgency.tierColor.bg} ${urgency.tierColor.text} ${urgency.tierColor.border}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${urgency.tierColor.dot} ${isRed ? "animate-ping" : ""}`} />
+                        {urgency.urgencyTier === "critical_red"
+                          ? "🔴 Critical"
+                          : urgency.urgencyTier === "urgent_yellow"
+                          ? "🟡 Urgent"
+                          : "🟢 Safe"}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-ink flex items-center gap-1.5">
+                        {item.itemName}
+                        {isRed && (
+                          <span className="text-[10px] uppercase font-mono px-1 py-0.2 bg-red-600 text-white rounded font-bold">
+                            PRIORITY
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[11px] text-ink-soft capitalize">
                         {item.category.replace("_", " ")}
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 font-mono-numeral font-medium text-ink">
-                      {item.quantity} <span className="text-xs text-ink-soft">{item.unit}</span>
+                    <td className="px-4 py-3 font-mono-numeral text-ink">
+                      <div className="font-semibold">
+                        {item.quantity} <span className="text-xs text-ink-soft font-normal">{item.unit}</span>
+                      </div>
+                      <div className="text-[11px] text-basil font-medium">
+                        ≈ {urgency.estimatedMeals} meals
+                      </div>
                     </td>
 
                     <td className="px-4 py-3 font-mono-numeral text-xs text-ink">
@@ -506,7 +593,7 @@ function SurplusListingsContent() {
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 text-xs text-ink-soft max-w-[200px] truncate" title={item.pickupLocation?.address}>
+                    <td className="px-4 py-3 text-xs text-ink-soft max-w-[180px] truncate" title={item.pickupLocation?.address}>
                       {item.pickupLocation?.address || "Main Dispatch"}
                     </td>
 
@@ -552,13 +639,23 @@ function SurplusListingsContent() {
                       )}
                     </td>
 
-                    <td className="px-4 py-3 font-mono-numeral text-xs text-ink-soft">
-                      {new Date(item.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                    <td className="px-4 py-3 text-right">
+                      {!isRejected && item.status === "pending" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setMatchmakingListing(item)}
+                          className="h-7 px-2.5 text-xs text-basil border-basil/40 hover:bg-basil/10 flex items-center gap-1 ml-auto cursor-pointer"
+                        >
+                          <HeartHandshake className="w-3.5 h-3.5" />
+                          <span>Match NGO</span>
+                        </Button>
+                      ) : (
+                        <span className="text-[11px] font-mono text-ink-soft">
+                          {item.status === "matched" ? "Matched ✓" : item.status === "claimed" ? "Claimed ✓" : "—"}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -894,6 +991,58 @@ function SurplusListingsContent() {
                 </div>
               </div>
 
+              {/* Storage Condition & Engine Evaluation */}
+              <div className="space-y-2 pt-1 border-t border-line">
+                <div>
+                  <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                    Storage &amp; Holding Condition
+                  </label>
+                  <select
+                    value={storageCondition}
+                    onChange={(e) => setStorageCondition(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                  >
+                    <option value="ambient">Ambient (Room Temperature)</option>
+                    <option value="refrigerated">Refrigerated / Chilled (&lt; 5°C)</option>
+                    <option value="hot_hold">Hot-Held (&gt; 60°C Warmer)</option>
+                  </select>
+                </div>
+
+                {/* Live Surplus Engine Feedback */}
+                {effectiveQty > 0 && liveUrgencyPreview && (
+                  <div className="p-2.5 rounded border border-line bg-[#FAF6EE] flex items-center justify-between gap-2 text-xs">
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-ink flex items-center gap-1.5">
+                        <Utensils className="w-3.5 h-3.5 text-basil" />
+                        <span>Estimated Impact:</span>
+                        <span className="font-mono text-basil font-bold">
+                          ~{livePlatePreview?.plates || 0} meal portions
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-ink-soft font-mono">
+                        {livePlatePreview?.analogyText}
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${liveUrgencyPreview.tierColor.bg} ${liveUrgencyPreview.tierColor.text} ${liveUrgencyPreview.tierColor.border}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${liveUrgencyPreview.tierColor.dot}`} />
+                        {liveUrgencyPreview.urgencyTier === "critical_red"
+                          ? "🔴 Critical Tier"
+                          : liveUrgencyPreview.urgencyTier === "urgent_yellow"
+                          ? "🟡 Urgent Tier"
+                          : "🟢 Safe Tier"}
+                      </span>
+                      <span className="text-[10px] text-ink-soft block font-mono mt-0.5">
+                        {liveUrgencyPreview.timeRemainingHours.toFixed(1)}h window
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
                   Dispatch Point / Gate & Location Pin
@@ -951,6 +1100,30 @@ function SurplusListingsContent() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Manual Recipient NGO Matchmaking Engine Modal */}
+      {matchmakingListing && (
+        <ManualMatchmakerModal
+          listingId={matchmakingListing._id}
+          itemName={matchmakingListing.itemName}
+          quantity={matchmakingListing.quantity}
+          unit={matchmakingListing.unit}
+          urgencyTier={
+            evaluateSurplusUrgency({
+              category: matchmakingListing.category,
+              quantity: matchmakingListing.quantity,
+              unit: matchmakingListing.unit,
+              expiryDeadline: matchmakingListing.pickupWindow.end,
+            }).urgencyTier
+          }
+          isOpen={!!matchmakingListing}
+          onClose={() => setMatchmakingListing(null)}
+          onMatchedSuccess={() => {
+            fetchListings();
+            setMatchmakingListing(null);
+          }}
+        />
       )}
     </div>
   );
