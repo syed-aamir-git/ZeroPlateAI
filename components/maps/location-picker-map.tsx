@@ -132,8 +132,8 @@ export default function LocationPickerMap({
   }, [safeLat, safeLng, updateMarkerAndCircle]);
 
   // Mapbox Geocoding Address Search
-  const handleSearchSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearchSubmit = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
 
     const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -178,16 +178,16 @@ export default function LocationPickerMap({
   };
 
   const handleSelectSuggestion = (item: GeocodeSuggestion) => {
-    const [sLng, sLat] = item.center;
-    const roundedLat = Number(sLat.toFixed(6));
-    const roundedLng = Number(sLng.toFixed(6));
+    const [lng, lat] = item.center;
+    const roundedLat = parseFloat(lat.toFixed(6));
+    const roundedLng = parseFloat(lng.toFixed(6));
 
-    updateMarkerAndCircle(roundedLat, roundedLng);
     if (mapRef.current) {
-      mapRef.current.flyTo([roundedLat, roundedLng], 15);
-    }
-    if (onChange) {
-      onChange({ lat: roundedLat, lng: roundedLng });
+      mapRef.current.setView([roundedLat, roundedLng], 15);
+      updateMarkerAndCircle(roundedLat, roundedLng);
+      if (onChange) {
+        onChange({ lat: roundedLat, lng: roundedLng });
+      }
     }
     setSearchQuery(item.place_name);
     setShowDropdown(false);
@@ -198,7 +198,7 @@ export default function LocationPickerMap({
       {/* Mapbox Powered Address Search Bar (if not read-only) */}
       {!readOnly && (
         <div className="relative z-[500] bg-[#FAF6EE] border-b border-line p-2">
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center gap-2">
+          <div className="relative flex items-center gap-2">
             <div className="relative flex-1">
               <input
                 type="text"
@@ -210,6 +210,12 @@ export default function LocationPickerMap({
                 onFocus={() => {
                   if (suggestions.length > 0) setShowDropdown(true);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearchSubmit(e);
+                  }
+                }}
                 placeholder="Search address, landmark, locality to position pin..."
                 className="w-full bg-white border border-line rounded-[4px] px-3 py-1.5 text-xs text-ink placeholder:text-ink-soft/70 focus:outline-none focus:ring-1 focus:ring-saffron"
               />
@@ -220,13 +226,14 @@ export default function LocationPickerMap({
               )}
             </div>
             <button
-              type="submit"
+              type="button"
+              onClick={() => handleSearchSubmit()}
               disabled={isSearching || !searchQuery.trim()}
               className="px-3 py-1.5 bg-saffron text-white rounded-[4px] text-xs font-semibold hover:bg-saffron/90 disabled:opacity-50 cursor-pointer"
             >
               Locate
             </button>
-          </form>
+          </div>
 
           {/* Autocomplete Suggestions Dropdown */}
           {showDropdown && suggestions.length > 0 && (
