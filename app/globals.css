@@ -210,6 +210,8 @@
   display: none; /* Safari and Chrome */
   width: 0;
   height: 0;
+}
+
 /* Custom ZeroPlate Leaflet Overrides */
 .leaflet-container {
   font-family: inherit;
