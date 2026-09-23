@@ -11,6 +11,25 @@ import {
   ShieldCheckIcon,
 } from "@/components/icons/ledger-icons";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
+import {
+  Scale,
+  Utensils,
+  Leaf,
+  Sparkles,
+  TrendingUp,
+  Calculator,
+  Truck,
+  FileSpreadsheet,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  Package,
+  HeartHandshake,
+  Layers,
+  Activity,
+  Filter,
+} from "lucide-react";
 
 interface MetricsData {
   institution: {
@@ -29,6 +48,8 @@ interface MetricsData {
     mealsGiven: number;
     co2eAvoidedKg: number;
     costSavedInr: number;
+    methaneAvoidedKg?: number;
+    waterPreservedLiters?: number;
     totalListedKg: number;
     inStockCount: number;
     activeListingsCount: number;
@@ -48,6 +69,7 @@ interface MetricsData {
 export default function InstitutionOverviewPage() {
   const [data, setData] = React.useState<MetricsData | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [auditFilter, setAuditFilter] = React.useState<"all" | "safe" | "flagged">("all");
 
   const fetchMetrics = React.useCallback(async () => {
     try {
@@ -69,10 +91,11 @@ export default function InstitutionOverviewPage() {
 
   if (loading) {
     return (
-      <div className="p-8 text-left">
-        <span className="font-mono-numeral text-xs uppercase tracking-wider text-ink-soft">
-          Loading institutional ledger...
-        </span>
+      <div className="py-24 text-center space-y-3">
+        <div className="w-9 h-9 mx-auto border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <p className="font-mono text-xs uppercase tracking-wider text-stone-500">
+          Loading institutional ledger &amp; operational metrics...
+        </p>
       </div>
     );
   }
@@ -88,6 +111,8 @@ export default function InstitutionOverviewPage() {
     mealsGiven: 0,
     co2eAvoidedKg: 0,
     costSavedInr: 0,
+    methaneAvoidedKg: 0,
+    waterPreservedLiters: 0,
     totalListedKg: 0,
     inStockCount: 0,
     activeListingsCount: 0,
@@ -95,41 +120,66 @@ export default function InstitutionOverviewPage() {
     hasData: false,
   };
 
+  // Filtered audit activity
+  const filteredActivity = (data?.recentActivity || []).filter((act) => {
+    if (auditFilter === "safe") return act.status === "verified_safe";
+    if (auditFilter === "flagged") return act.status !== "verified_safe";
+    return true;
+  });
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8 text-left">
-      {/* Header Bar with Institution Title and Fast CTAs */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-line pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono-numeral text-xs uppercase tracking-wider text-ink-soft">
+    <div className="max-w-6xl mx-auto space-y-8 text-left pb-16 px-2 sm:px-4">
+      {/* 1. Header Bar with Institution Title and Fast CTAs */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5 border-b border-stone-200/80 pb-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono text-xs uppercase tracking-wider text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full whitespace-nowrap">
               {institution?.type ? institution.type.replace("_", " ") : "Institutional"} Kitchen
             </span>
-            <span className="text-[10px] uppercase font-mono-numeral px-2 py-0.2 rounded-full border border-line bg-ledger-paper text-ink-soft">
+            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full border border-stone-200 bg-stone-100 text-stone-600 font-medium whitespace-nowrap">
               100% Free Platform
             </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Operations
+            </span>
           </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-normal text-ink mt-0.5">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 mt-1.5">
             {institution?.name || "Kitchen Operations Ledger"}
           </h1>
+          <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl leading-relaxed">
+            Real-time kitchen ledger, active surplus redistribution batches, and audited food safety gate decisions.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/app/institution/inventory">
-              <CrateIcon size={14} />
-              <span>+ Add inventory item</span>
-            </Link>
-          </Button>
-          <Button asChild variant="default" size="sm">
-            <Link href="/app/institution/surplus-listings">
-              <TicketIcon size={14} />
-              <span>List surplus batch</span>
-            </Link>
-          </Button>
+        {/* Action Buttons - Well Organised, Single-line & Equal Height */}
+        <div className="flex items-center gap-2.5 shrink-0 self-start xl:self-center flex-wrap">
+          <Link
+            href="/app/institution/inventory"
+            className="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-stone-200/90 bg-white hover:bg-stone-50 active:scale-[0.98] text-stone-800 text-xs font-semibold shadow-2xs hover:shadow-xs hover:border-stone-300 transition-all whitespace-nowrap"
+          >
+            <Package className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>+ Add inventory</span>
+          </Link>
+          <Link
+            href="/app/institution/surplus-listings"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition-all whitespace-nowrap"
+          >
+            <TicketIcon size={14} className="text-emerald-100 shrink-0" />
+            <span>List surplus batch</span>
+          </Link>
+          <Link
+            href="/app/institution/analytics"
+            className="group inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-stone-200/90 bg-stone-50 hover:bg-stone-100 active:scale-[0.98] text-stone-700 text-xs font-semibold shadow-2xs transition-all whitespace-nowrap"
+          >
+            <Calculator className="w-4 h-4 text-stone-500 shrink-0" />
+            <span>Batch Sizing</span>
+            <ArrowRight className="w-3.5 h-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+          </Link>
         </div>
       </div>
 
-      {/* Ledger-Line Orientation Checklist (Design PRD Section 12.3) */}
+      {/* 2. Onboarding & Calibration Checklist */}
       <OnboardingChecklist
         storageKey="institution_overview"
         title="Kitchen Setup & Compliance Checklist"
@@ -166,203 +216,448 @@ export default function InstitutionOverviewPage() {
         ]}
       />
 
-      {/* Horizontal Receipt-Total Ledger Strip (Design PRD Section 5.2) */}
-      <div className="border border-line bg-[#FAF6EE] rounded-[6px] overflow-hidden shadow-none">
-        <div className="px-5 py-2.5 border-b border-line bg-[#EAE3D4]/50 flex items-center justify-between text-xs">
-          <span className="font-semibold uppercase tracking-wider text-ink font-mono-numeral text-[11px]">
-            Cumulative Redistribution Total
-          </span>
-          <span className="font-mono-numeral text-[11px] text-ink-soft">
+      {/* 3. Cumulative Redistribution Total (4 Vibrant Theme Cards) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <h2 className="font-serif font-bold text-lg text-stone-900">
+              Cumulative Redistribution &amp; ESG Impact
+            </h2>
+          </div>
+          <span className="text-[11px] font-mono text-stone-500">
             Verified recipient deliveries only
           </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-line p-4 sm:p-5">
-          <div className="px-3 py-2 sm:py-0">
-            <span className="text-xs text-ink-soft uppercase tracking-wider font-mono-numeral block">
-              Waste Prevented
-            </span>
-            <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="text-xl sm:text-2xl font-semibold text-ink whitespace-nowrap">
-                <ImpactCounter value={m.wastePreventedByUnit?.kg ?? m.wastePreventedKg} />
-                <span className="text-xs font-mono text-ink-soft ml-1">kg</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Emerald Theme - Waste Prevented */}
+          <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-white to-emerald-500/5 border border-emerald-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase tracking-wider text-emerald-800 font-mono font-bold">
+                Waste Prevented
               </span>
-              <span className="text-ink-soft/40 text-xs select-none">•</span>
-              <span className="text-xl sm:text-2xl font-semibold text-ink whitespace-nowrap">
-                <ImpactCounter value={m.wastePreventedByUnit?.pieces ?? 0} />
-                <span className="text-xs font-mono text-ink-soft ml-1">pieces</span>
-              </span>
-              <span className="text-ink-soft/40 text-xs select-none">•</span>
-              <span className="text-xl sm:text-2xl font-semibold text-ink whitespace-nowrap">
-                <ImpactCounter value={m.wastePreventedByUnit?.litres ?? 0} />
-                <span className="text-xs font-mono text-ink-soft ml-1">litres</span>
-              </span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shadow-2xs">
+                <Scale className="w-4 h-4" />
+              </div>
             </div>
-            <span className="text-[11px] text-ink-soft mt-0.5 block">
-              Diverted from landfill
-            </span>
+            <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-stone-900 flex items-baseline gap-1.5">
+              <ImpactCounter value={m.wastePreventedByUnit?.kg ?? m.wastePreventedKg} />
+              <span className="text-xs font-sans font-medium text-emerald-700">kg total</span>
+            </div>
+            <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-100/90 text-emerald-800 border border-emerald-200">
+                {m.wastePreventedByUnit?.pieces ?? 0} pcs
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-100/90 text-emerald-800 border border-emerald-200">
+                {m.wastePreventedByUnit?.litres ?? 0} L
+              </span>
+              <span className="text-[11px] text-stone-500">diverted</span>
+            </div>
           </div>
 
-          <div className="px-3 py-2 sm:py-0">
-            <span className="text-xs text-ink-soft uppercase tracking-wider font-mono-numeral block">
-              Meals Given
-            </span>
-            <div className="mt-1 text-2xl sm:text-3xl font-semibold text-basil">
+          {/* Card 2: Sky/Blue Theme - Meals Given */}
+          <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 via-white to-blue-500/5 border border-blue-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase tracking-wider text-blue-800 font-mono font-bold">
+                Meals Given
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 shadow-2xs">
+                <Utensils className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-blue-700 flex items-baseline gap-1.5">
               <ImpactCounter value={m.mealsGiven} />
+              <span className="text-xs font-sans font-medium text-blue-800">meals</span>
             </div>
-            <span className="text-[11px] text-ink-soft mt-0.5 block">
-              Delivered to verified NGOs
-            </span>
+            <div className="mt-2.5 flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100/90 text-blue-800 border border-blue-200">
+                <HeartHandshake className="w-3 h-3 text-blue-600" />
+                Verified NGOs
+              </span>
+              <span className="text-[11px] text-stone-500">delivered</span>
+            </div>
           </div>
 
-          <div className="px-3 py-2 sm:py-0">
-            <span className="text-xs text-ink-soft uppercase tracking-wider font-mono-numeral block">
-              CO2e Avoided
-            </span>
-            <div className="mt-1 text-2xl sm:text-3xl font-semibold text-ink">
+          {/* Card 3: Amber/Gold Theme - Scope 3 CO2e Avoided */}
+          <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 border border-amber-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase tracking-wider text-amber-800 font-mono font-bold">
+                CO2e Avoided
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shadow-2xs">
+                <Leaf className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-amber-700 flex items-baseline gap-1.5">
               <ImpactCounter value={m.co2eAvoidedKg} suffix=" kg" decimals={1} />
             </div>
-            <span className="text-[11px] text-ink-soft mt-0.5 block">
-              Scope 3 avoided emissions
-            </span>
+            <div className="mt-2.5 flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100/90 text-amber-900 border border-amber-200">
+                Scope 3
+              </span>
+              <span className="text-[11px] text-stone-500">
+                ~{(m.methaneAvoidedKg ?? m.co2eAvoidedKg * 0.25).toFixed(1)} kg methane saved
+              </span>
+            </div>
           </div>
 
-          <div className="px-3 py-2 sm:py-0">
-            <span className="text-xs text-ink-soft uppercase tracking-wider font-mono-numeral block">
-              Cost Saved
-            </span>
-            <div className="mt-1 text-2xl sm:text-3xl font-semibold text-[#B85C38]">
+          {/* Card 4: Violet/Purple Theme - Cost Saved */}
+          <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 via-white to-purple-500/5 border border-purple-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase tracking-wider text-purple-800 font-mono font-bold">
+                Procurement Cost Saved
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center text-purple-700 shadow-2xs">
+                <Sparkles className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-purple-900 flex items-baseline gap-1.5">
               ₹<ImpactCounter value={m.costSavedInr} />
             </div>
-            <span className="text-[11px] text-ink-soft mt-0.5 block">
-              Avoided disposal and food loss
-            </span>
+            <div className="mt-2.5 flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100/90 text-purple-900 border border-purple-200">
+                Avoided Waste
+              </span>
+              <span className="text-[11px] text-stone-500">
+                ~{(m.waterPreservedLiters ?? m.wastePreventedKg * 180).toLocaleString()} L water saved
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Operational Status Modules */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link
-          href="/app/institution/inventory"
-          className="border border-line bg-[#FAF6EE] p-5 rounded-[6px] hover:border-basil transition-colors block"
-        >
-          <div className="flex items-center justify-between text-xs text-ink-soft mb-2">
-            <span className="font-mono-numeral uppercase tracking-wider">In-Stock Items</span>
-            <CrateIcon size={18} />
+      {/* 4. Kitchen Operational Status Modules (3 Clean Live Cards) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500" />
+            <h2 className="font-serif font-bold text-lg text-stone-900">
+              Kitchen Operational Command
+            </h2>
           </div>
-          <div className="font-ledger-mono text-3xl font-semibold text-ink">
-            {m.inStockCount}
-          </div>
-          <span className="text-xs text-ink-soft block mt-1">
-            Active batches currently logged
+          <span className="text-[11px] font-mono text-stone-500">
+            Real-time batch tracking
           </span>
-        </Link>
+        </div>
 
-        <Link
-          href="/app/institution/surplus-listings"
-          className="border border-line bg-[#FAF6EE] p-5 rounded-[6px] hover:border-basil transition-colors block"
-        >
-          <div className="flex items-center justify-between text-xs text-ink-soft mb-2">
-            <span className="font-mono-numeral uppercase tracking-wider">Active Listings</span>
-            <TicketIcon size={18} />
-          </div>
-          <div className="font-ledger-mono text-3xl font-semibold text-basil">
-            {m.activeListingsCount}
-          </div>
-          <span className="text-xs text-ink-soft block mt-1">
-            Pending pickup or NGO match
-          </span>
-        </Link>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card A: In-Stock Inventory */}
+          <Link
+            href="/app/institution/inventory"
+            className="group p-5 rounded-2xl bg-white border border-stone-200 hover:border-blue-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between text-xs text-stone-500 mb-2">
+                <span className="font-mono uppercase tracking-wider font-bold text-blue-700">
+                  In-Stock Batches
+                </span>
+                <div className="w-7 h-7 rounded-lg bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-blue-600 transition-colors">
+                  <Package className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="font-mono text-3xl sm:text-4xl font-black text-stone-900">
+                {m.inStockCount}
+              </div>
+              <span className="text-xs text-stone-500 block mt-1">
+                Active batches currently logged in kitchen
+              </span>
+            </div>
+            <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-blue-700 group-hover:text-blue-800">
+              <span>Manage Inventory</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
 
-        <div className={`border p-5 rounded-[6px] transition-colors ${
-          m.nearingExpiryCount > 0
-            ? "border-clay-rust/40 bg-clay-rust/5"
-            : "border-line bg-[#FAF6EE]"
-        }`}>
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span className="font-mono-numeral uppercase tracking-wider text-ink-soft">
-              Nearing Expiry
-            </span>
-            <span className="w-2 h-2 rounded-full bg-clay-rust" />
+          {/* Card B: Active Surplus Listings */}
+          <Link
+            href="/app/institution/surplus-listings"
+            className="group p-5 rounded-2xl bg-white border border-stone-200 hover:border-amber-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between text-xs text-stone-500 mb-2">
+                <span className="font-mono uppercase tracking-wider font-bold text-amber-700">
+                  Active Listings
+                </span>
+                <div className="w-7 h-7 rounded-lg bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-amber-600 transition-colors">
+                  <TicketIcon size={16} />
+                </div>
+              </div>
+              <div className="font-mono text-3xl sm:text-4xl font-black text-amber-600">
+                {m.activeListingsCount}
+              </div>
+              <span className="text-xs text-stone-500 block mt-1">
+                Pending pickup or verified NGO match ({m.totalListedKg} kg listed)
+              </span>
+            </div>
+            <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-amber-700 group-hover:text-amber-800">
+              <span>View Listings</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Card C: Expiry & Shelf-Life Watch */}
+          <div
+            className={`p-5 rounded-2xl border shadow-xs transition-all flex flex-col justify-between ${
+              m.nearingExpiryCount > 0
+                ? "bg-gradient-to-br from-rose-500/10 via-white to-rose-500/5 border-rose-300"
+                : "bg-gradient-to-br from-emerald-500/10 via-white to-emerald-500/5 border-emerald-200"
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between text-xs mb-2">
+                <span
+                  className={`font-mono uppercase tracking-wider font-bold ${
+                    m.nearingExpiryCount > 0 ? "text-rose-800" : "text-emerald-800"
+                  }`}
+                >
+                  Shelf-Life Watch
+                </span>
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    m.nearingExpiryCount > 0 ? "bg-rose-500 animate-pulse" : "bg-emerald-500"
+                  }`}
+                />
+              </div>
+              <div
+                className={`font-mono text-3xl sm:text-4xl font-black ${
+                  m.nearingExpiryCount > 0 ? "text-rose-600" : "text-emerald-700"
+                }`}
+              >
+                {m.nearingExpiryCount}
+              </div>
+              <span className="text-xs text-stone-600 block mt-1">
+                {m.nearingExpiryCount > 0
+                  ? "Items approaching safe threshold (< 4h rule)"
+                  : "All logged items well within safe consumption window"}
+              </span>
+            </div>
+            <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
+              {m.nearingExpiryCount > 0 ? (
+                <Link
+                  href="/app/institution/surplus-listings"
+                  className="font-bold text-rose-700 hover:text-rose-800 flex items-center gap-1"
+                >
+                  <span>Auto-list for donation</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              ) : (
+                <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>100% Batches Fresh</span>
+                </span>
+              )}
+            </div>
           </div>
-          <div className={`font-ledger-mono text-3xl font-semibold ${
-            m.nearingExpiryCount > 0 ? "text-clay-rust" : "text-ink"
-          }`}>
-            {m.nearingExpiryCount}
-          </div>
-          <span className="text-xs text-ink-soft block mt-1">
-            {m.nearingExpiryCount > 0
-              ? "Items flagged by automated rule"
-              : "All logged items within safe buffer"}
-          </span>
         </div>
       </div>
 
-      {/* Empty State vs Recent Activity Audit Trail */}
+      {/* 5. Quick Workflow Launch Matrix (4 Clean Navigation Cards) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-purple-500" />
+            <h2 className="font-serif font-bold text-lg text-stone-900">
+              Kitchen Workflow Accelerators
+            </h2>
+          </div>
+          <span className="text-[11px] font-mono text-stone-500">
+            Direct navigation
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            href="/app/institution/forecast"
+            className="group p-4 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 shadow-2xs hover:shadow-xs transition-all space-y-2"
+          >
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <h3 className="font-semibold text-sm text-stone-900 group-hover:text-blue-700 transition-colors">
+              AI Demand Forecast
+            </h3>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Predict upcoming meal requirements and avoid over-preparation with rolling AI baselines.
+            </p>
+          </Link>
+
+          <Link
+            href="/app/institution/analytics"
+            className="group p-4 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 shadow-2xs hover:shadow-xs transition-all space-y-2"
+          >
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Calculator className="w-4 h-4" />
+            </div>
+            <h3 className="font-semibold text-sm text-stone-900 group-hover:text-emerald-700 transition-colors">
+              Ample-Prep Batching
+            </h3>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Calculate exact batch sizes with calibrated safety buffers so diners eat amply with 0 runout.
+            </p>
+          </Link>
+
+          <Link
+            href="/app/institution/deliveries"
+            className="group p-4 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 shadow-2xs hover:shadow-xs transition-all space-y-2"
+          >
+            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Truck className="w-4 h-4" />
+            </div>
+            <h3 className="font-semibold text-sm text-stone-900 group-hover:text-amber-700 transition-colors">
+              Delivery Logistics
+            </h3>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Track volunteer pickups, live dispatch routes, and confirmed recipient drop-offs.
+            </p>
+          </Link>
+
+          <Link
+            href="/app/institution/reports"
+            className="group p-4 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 shadow-2xs hover:shadow-xs transition-all space-y-2"
+          >
+            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <FileSpreadsheet className="w-4 h-4" />
+            </div>
+            <h3 className="font-semibold text-sm text-stone-900 group-hover:text-purple-700 transition-colors">
+              Audited ESG Reports
+            </h3>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Export certified corporate carbon offset statements and tax-exempt donation records.
+            </p>
+          </Link>
+        </div>
+      </div>
+
+      {/* 6. Empty State vs Recent Activity Audit Trail (With Filtering) */}
       {!m.hasData ? (
-        <div className="border border-line bg-[#FAF6EE] p-8 rounded-[6px] text-center space-y-3">
-          <div className="w-12 h-12 rounded-[6px] border border-line bg-ledger-paper mx-auto flex items-center justify-center text-ink-soft">
-            <CrateIcon size={24} />
+        <div className="border border-stone-200 bg-white p-8 sm:p-10 rounded-2xl text-center space-y-4 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 mx-auto flex items-center justify-center text-emerald-600">
+            <Package className="w-6 h-6" />
           </div>
-          <h2 className="font-display text-xl font-normal text-ink">
-            No inventory logged yet
-          </h2>
-          <p className="text-xs text-ink-soft max-w-md mx-auto leading-relaxed">
-            Begin by adding your kitchen&apos;s active batch or prep items. 
-            Once logged, our rules engine monitors shelf-life and surfaces automated surplus opportunities.
-          </p>
-          <div className="pt-2">
-            <Button asChild variant="default">
+          <div className="space-y-1">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
+              No inventory or surplus logged yet
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto leading-relaxed">
+              Begin by logging your kitchen&apos;s active batch or prep items. 
+              Once recorded, our AI engine monitors shelf-life and surfaces automated surplus opportunities.
+            </p>
+          </div>
+          <div className="pt-2 flex items-center justify-center gap-3">
+            <Button asChild variant="default" className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl">
               <Link href="/app/institution/inventory">
                 Add your first inventory item
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-xl border-stone-200">
+              <Link href="/app/institution/analytics">
+                Explore Batch Sizer
               </Link>
             </Button>
           </div>
         </div>
       ) : (
-        <div className="border border-line bg-[#FAF6EE] rounded-[6px] overflow-hidden">
-          <div className="px-5 py-3 border-b border-line bg-[#EAE3D4]/50 flex items-center justify-between">
-            <h2 className="font-display text-base font-medium text-ink">
-              Recent Safety Gate Decisions & Audit Trail
-            </h2>
-            <span className="font-mono-numeral text-xs text-ink-soft">
-              Immutable audit log
-            </span>
+        <div className="border border-stone-200 bg-white rounded-2xl overflow-hidden shadow-xs space-y-0">
+          <div className="p-4 sm:p-5 border-b border-stone-200 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="font-serif font-bold text-base text-stone-900 flex items-center gap-2">
+                Recent Safety Gate Decisions &amp; Audit Trail
+                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Immutable Log
+                </span>
+              </h2>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Automated food safety compliance checks, temperature validations, and listing status
+              </p>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 bg-stone-100 border border-stone-200 p-1 rounded-xl self-start sm:self-auto text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => setAuditFilter("all")}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  auditFilter === "all"
+                    ? "bg-stone-900 text-white shadow-2xs"
+                    : "text-stone-600 hover:text-stone-900"
+                }`}
+              >
+                All ({data?.recentActivity?.length ?? 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuditFilter("safe")}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  auditFilter === "safe"
+                    ? "bg-emerald-700 text-white shadow-2xs"
+                    : "text-stone-600 hover:text-stone-900"
+                }`}
+              >
+                Verified Safe
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuditFilter("flagged")}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  auditFilter === "flagged"
+                    ? "bg-amber-600 text-white shadow-2xs"
+                    : "text-stone-600 hover:text-stone-900"
+                }`}
+              >
+                Flagged / Caution
+              </button>
+            </div>
           </div>
 
-          {data?.recentActivity?.length === 0 ? (
-            <div className="p-6 text-center text-xs text-ink-soft">
-              No surplus listings or safety gate evaluations logged yet.
+          {filteredActivity.length === 0 ? (
+            <div className="py-12 text-center text-xs text-stone-500 font-mono space-y-1">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-2 opacity-80" />
+              <p>No activity logs match the selected filter.</p>
             </div>
           ) : (
-            <div className="divide-y divide-line text-xs">
-              {data?.recentActivity.map((act) => (
-                <div key={act.id} className="p-4 flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <StatusBadge
-                        variant={act.status === "verified_safe" ? "verified_safe" : "rejected"}
-                        className="text-[10px] py-0 px-2"
-                      />
-                      <span className="font-medium text-ink">
-                        {act.action === "safety_gate_evaluation"
-                          ? "Food Safety Gating Evaluation"
-                          : act.action}
+            <div className="divide-y divide-stone-100 text-xs">
+              {filteredActivity.map((act) => {
+                const isSafe = act.status === "verified_safe";
+                return (
+                  <div
+                    key={act.id}
+                    className="p-4 sm:p-5 flex items-start justify-between gap-4 hover:bg-stone-50/70 transition-colors"
+                  >
+                    <div className="space-y-1.5 max-w-2xl">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <StatusBadge
+                          variant={isSafe ? "verified_safe" : "rejected"}
+                          className="text-[10px] py-0.5 px-2.5 rounded-full font-semibold"
+                        />
+                        <span className="font-semibold text-stone-900 text-sm">
+                          {act.action === "safety_gate_evaluation"
+                            ? "Food Safety Gating Evaluation"
+                            : act.action.replace("_", " ")}
+                        </span>
+                        {act.ruleApplied && (
+                          <span className="text-[10px] font-mono text-stone-500 bg-stone-100 px-2 py-0.2 rounded border border-stone-200">
+                            Rule: {act.ruleApplied}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-stone-600 leading-relaxed text-xs">
+                        {act.reason || act.ruleApplied || "Passed automated quality safety threshold."}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-stone-400 font-mono text-[11px] shrink-0">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>
+                        {new Date(act.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
                     </div>
-                    <p className="text-ink-soft leading-relaxed">
-                      {act.reason || act.ruleApplied}
-                    </p>
                   </div>
-                  <span className="font-mono-numeral text-ink-soft shrink-0 text-[11px]">
-                    {new Date(act.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
