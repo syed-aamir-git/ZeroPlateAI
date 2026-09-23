@@ -3,9 +3,24 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { TicketIcon, ShieldCheckIcon, AlertTriangleIcon, CrateIcon, RouteIcon } from "@/components/icons/ledger-icons";
+import {
+  Ticket,
+  ShieldCheck,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Plus,
+  Search,
+  X,
+  MapPin,
+  Layers,
+  ArrowRight,
+  Package,
+  Route,
+  Info,
+  Calendar,
+  Sparkles,
+} from "lucide-react";
 import LocationPickerMap from "@/components/maps/location-picker-map";
 
 interface SurplusListing {
@@ -39,7 +54,13 @@ interface InventoryItem {
   unit: string;
   preparedOrReceivedAt: string;
   expiryEstimateAt: string;
-  status: "in_stock" | "surplus" | "listed" | "expired" | "delivered" | "in_progress";
+  status:
+    | "in_stock"
+    | "surplus"
+    | "listed"
+    | "expired"
+    | "delivered"
+    | "in_progress";
   rawStatus?: string;
 }
 
@@ -51,6 +72,7 @@ function SurplusListingsContent() {
   const [inventoryItems, setInventoryItems] = React.useState<InventoryItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
 
   // Create Listing Modal
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -265,7 +287,7 @@ function SurplusListingsContent() {
       const data = await res.json();
 
       if (res.status === 422) {
-        // Safety Gating Rejection!
+        // Safety Gating Rejection
         setGatingResult({
           type: "rejection",
           message: data.reason || "Safety gating criteria not satisfied.",
@@ -283,7 +305,7 @@ function SurplusListingsContent() {
         return;
       }
 
-      // 201 Verified Safe!
+      // 201 Verified Safe
       setGatingResult({
         type: "success",
         message: "Verified Safe to List. Listing published to active NGO redistribution network.",
@@ -307,303 +329,487 @@ function SurplusListingsContent() {
   };
 
   const filteredListings = listings.filter((l) => {
-    if (statusFilter === "all") return true;
-    if (statusFilter === "verified_safe") return l.safetyStatus === "verified_safe";
-    if (statusFilter === "rejected") return l.safetyStatus === "rejected";
-    return l.status === statusFilter;
+    const matchesFilter = (() => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "verified_safe") return l.safetyStatus === "verified_safe";
+      if (statusFilter === "rejected") return l.safetyStatus === "rejected";
+      return l.status === statusFilter;
+    })();
+
+    const matchesSearch =
+      !searchQuery ||
+      l.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      l.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (l.pickupLocation?.address || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesFilter && matchesSearch;
   });
 
   const verifiedCount = listings.filter((l) => l.safetyStatus === "verified_safe").length;
-  const pendingCount = listings.filter((l) => l.status === "pending").length;
-  const claimedCount = listings.filter((l) => l.status === "claimed" || l.status === "delivered").length;
+  const pendingCount = listings.filter((l) => l.status === "pending" && l.safetyStatus !== "rejected").length;
+  const claimedCount = listings.filter(
+    (l) => (l.status === "claimed" || l.status === "delivered" || l.status === "matched") && l.safetyStatus !== "rejected"
+  ).length;
   const rejectedCount = listings.filter((l) => l.safetyStatus === "rejected").length;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 text-left">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-line pb-4">
-        <div>
-          <span className="font-mono-numeral text-xs uppercase tracking-wider text-ink-soft">
-            Redistribution Dispatch Control
-          </span>
-          <h1 className="font-display text-2xl sm:text-3xl font-normal text-ink mt-0.5">
-            Surplus Listings & Gating
-          </h1>
+    <div className="space-y-8 max-w-7xl mx-auto pb-16 px-2 sm:px-4 text-left">
+      {/* 1. Header Bar with Operations Title & Fast Action Buttons */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5 border-b border-stone-200/80 pb-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="font-serif text-2xl sm:text-3xl text-stone-900 font-bold tracking-tight">
+              Surplus Listings &amp; Safety Gating
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Fail-Closed FSSAI Gating Active
+            </span>
+          </div>
+          <p className="text-sm text-stone-600 mt-1 max-w-3xl leading-relaxed">
+            Publish verified surplus batches for instant NGO claiming with automated time-decay validation and real-time logistics coordination.
+          </p>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-stone-100 text-stone-700 border border-stone-200 whitespace-nowrap">
+              <Layers className="w-3 h-3 text-stone-500" />
+              {listings.length} Total Listings Recorded
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-blue-50 text-blue-800 border border-blue-200 whitespace-nowrap">
+              <Route className="w-3 h-3 text-blue-600" />
+              Real-Time NGO Matching
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap">
+              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+              MongoDB Audited
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="default"
-            size="sm"
+        {/* Action Buttons - Well Organised, Single-line & Equal Height */}
+        <div className="flex items-center gap-2.5 shrink-0 self-start xl:self-center flex-wrap">
+          <Link
+            href="/app/institution/inventory"
+            className="group inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-stone-200/90 bg-white hover:bg-stone-50 active:scale-[0.98] text-stone-800 text-xs font-semibold shadow-2xs hover:shadow-xs hover:border-stone-300 transition-all whitespace-nowrap"
+          >
+            <Package className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>Kitchen Inventory Ledger</span>
+          </Link>
+          <button
             onClick={() => {
               setGatingResult(null);
               setIsCreateOpen(true);
             }}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition-all whitespace-nowrap cursor-pointer"
           >
-            <TicketIcon size={14} />
-            <span>+ Create surplus listing</span>
-          </Button>
+            <Plus className="w-4 h-4 text-emerald-100 shrink-0" />
+            <span>+ Create Surplus Listing</span>
+          </button>
         </div>
       </div>
 
-      {/* Real-time Ledger Strip for Listings */}
-      <div className="border border-line bg-[#FAF6EE] rounded-[6px] grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-line text-ink">
-        <div className="p-4">
-          <div className="text-xs uppercase tracking-wider text-ink-soft font-mono-numeral">
-            Total Published
+      {/* 2. 4 Vibrant Theme KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Emerald Theme - Verified Safe & Published */}
+        <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-white to-emerald-500/5 border border-emerald-200/80 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-emerald-800 font-mono font-bold">
+              Verified Safe
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shadow-2xs">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
           </div>
-          <div className="font-mono-numeral text-2xl font-normal text-ink mt-1">
+          <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-emerald-950 flex items-baseline gap-1.5">
             {verifiedCount}
+            <span className="text-xs font-sans font-medium text-emerald-700">batches</span>
           </div>
-          <div className="text-[11px] text-ink-soft mt-0.5">verified safe items</div>
+          <div className="mt-2.5 flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100/90 text-emerald-800 border border-emerald-200">
+              Passed FSSAI Gating
+            </span>
+          </div>
         </div>
 
-        <div className="p-4">
-          <div className="text-xs uppercase tracking-wider text-ink-soft font-mono-numeral">
-            Pending Claims
+        {/* Card 2: Amber Theme - Pending NGO Claims */}
+        <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 border border-amber-200/80 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-amber-800 font-mono font-bold">
+              Pending Claims
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shadow-2xs">
+              <Clock className="w-4 h-4" />
+            </div>
           </div>
-          <div className="font-mono-numeral text-2xl font-normal text-saffron mt-1">
+          <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-amber-700 flex items-baseline gap-1.5">
             {pendingCount}
+            <span className="text-xs font-sans font-medium text-amber-800">batches</span>
           </div>
-          <div className="text-[11px] text-ink-soft mt-0.5">live for NGO matching</div>
+          <div className="mt-2.5 flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100/90 text-amber-900 border border-amber-200">
+              Live for NGO matching
+            </span>
+          </div>
         </div>
 
-        <div className="p-4">
-          <div className="text-xs uppercase tracking-wider text-ink-soft font-mono-numeral">
-            Claimed / Delivered
+        {/* Card 3: Blue Theme - Claimed & Delivered */}
+        <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 via-white to-blue-500/5 border border-blue-200/80 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-blue-800 font-mono font-bold">
+              Claimed / Delivered
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 shadow-2xs">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
           </div>
-          <div className="font-mono-numeral text-2xl font-normal text-basil mt-1">
+          <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-stone-900 flex items-baseline gap-1.5">
             {claimedCount}
+            <span className="text-xs font-sans font-medium text-blue-700">rescued</span>
           </div>
-          <div className="text-[11px] text-ink-soft mt-0.5">successful pickups</div>
+          <div className="mt-2.5 flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100/90 text-blue-800 border border-blue-200">
+              Zero Waste Impact
+            </span>
+          </div>
         </div>
 
-        <div className="p-4">
-          <div className="text-xs uppercase tracking-wider text-ink-soft font-mono-numeral">
-            Safety Gated (Blocked)
+        {/* Card 4: Rose Theme - Safety Gated / Blocked */}
+        <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-rose-500/10 via-white to-rose-500/5 border border-rose-200/80 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-rose-800 font-mono font-bold">
+              Safety Blocked
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center text-rose-700 shadow-2xs">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
           </div>
-          <div className="font-mono-numeral text-2xl font-normal text-clay-rust mt-1">
+          <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-rose-700 flex items-baseline gap-1.5">
             {rejectedCount}
+            <span className="text-xs font-sans font-medium text-rose-800">blocked</span>
           </div>
-          <div className="text-[11px] text-ink-soft mt-0.5">failed safety threshold</div>
+          <div className="mt-2.5 flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100/90 text-rose-900 border border-rose-200">
+              Biogas / Compost diverted
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Safety Gating Notice Banner */}
-      <div className="border border-line bg-ledger-paper p-4 rounded-[6px] text-xs text-ink-soft flex items-start gap-3">
-        <div className="p-1 rounded bg-basil/10 text-basil shrink-0 mt-0.5">
-          <ShieldCheckIcon size={16} />
+      {/* 3. Safety Gating Informational Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-white to-emerald-500/5 border border-emerald-200/90 text-xs text-stone-700 flex items-start gap-3.5 shadow-2xs">
+        <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800 shrink-0 mt-0.5 shadow-2xs">
+          <ShieldCheck className="w-5 h-5 text-emerald-700" />
         </div>
         <div className="space-y-1">
-          <div className="font-semibold text-ink">
-            Server-Side FSSAI Safety Gating Active (Fail-Closed)
+          <div className="font-semibold text-stone-900 text-sm flex items-center gap-2">
+            <span>Server-Side FSSAI Safety Gating Active (Fail-Closed Architecture)</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold">
+              SECURE
+            </span>
           </div>
-          <p>
-            All listings are evaluated against elapsed time and temperature window thresholds prior
-            to being published to NGOs. Cooked meals older than 4 hours or listings with expired
-            pickup windows are strictly rejected. Every evaluation is recorded to the MongoDB
-            audit log.
+          <p className="text-stone-600 leading-relaxed max-w-4xl">
+            All surplus postings are evaluated against elapsed time and temperature window thresholds prior to being published to NGOs. Cooked meals older than 4 hours or listings with expired pickup windows are strictly rejected. Every evaluation is recorded into the immutable MongoDB audit log for ESG compliance.
           </p>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto border border-line bg-[#FAF6EE] p-2.5 rounded-[6px]">
-        {[
-          { id: "all", label: `All Listings (${listings.length})` },
-          { id: "verified_safe", label: `Verified Safe (${verifiedCount})` },
-          { id: "pending", label: `Pending Matching (${pendingCount})` },
-          { id: "claimed", label: `Claimed (${claimedCount})` },
-          { id: "rejected", label: `Safety Blocked (${rejectedCount})` },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setStatusFilter(tab.id)}
-            className={`px-3 py-1 text-xs rounded-[4px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
-              statusFilter === tab.id
-                ? "bg-basil text-ledger-paper"
-                : "bg-ledger-paper text-ink-soft border border-line hover:text-ink"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* 4. Filter Tabs and Search Bar */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white border border-stone-200/90 p-2.5 rounded-2xl shadow-xs">
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+          {[
+            { id: "all", label: "All Listings", count: listings.length },
+            { id: "verified_safe", label: "Verified Safe", count: verifiedCount },
+            { id: "pending", label: "Pending Matching", count: pendingCount },
+            { id: "claimed", label: "Claimed & Rescued", count: claimedCount },
+            { id: "rejected", label: "Safety Blocked", count: rejectedCount },
+          ].map((tab) => {
+            const isActive = statusFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3.5 py-1.5 text-xs rounded-xl font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-2 ${
+                  isActive
+                    ? "bg-emerald-700 text-white font-semibold shadow-xs"
+                    : "bg-stone-50 hover:bg-stone-100 text-stone-600 border border-stone-200/80"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    isActive
+                      ? "bg-emerald-800 text-emerald-100 font-bold"
+                      : "bg-stone-200/80 text-stone-600"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative shrink-0 w-full lg:w-64">
+          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search listings..."
+            className="w-full pl-9 pr-8 py-2 text-xs bg-stone-50/70 hover:bg-white focus:bg-white border border-stone-200 rounded-xl text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Listings Ledger Table */}
+      {/* 5. Listings Ledger Table */}
       {loading ? (
-        <div className="p-8 text-center text-xs font-mono-numeral text-ink-soft">
-          Loading surplus listings ledger...
+        <div className="py-24 text-center space-y-3 bg-white border border-stone-200/80 rounded-2xl">
+          <div className="w-9 h-9 mx-auto border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          <p className="font-mono text-xs uppercase tracking-wider text-stone-500">
+            Loading surplus listings ledger &amp; safety validations...
+          </p>
         </div>
       ) : filteredListings.length === 0 ? (
-        <div className="border border-line bg-[#FAF6EE] p-10 rounded-[6px] text-center space-y-3">
-          <div className="w-12 h-12 rounded-[6px] border border-line bg-ledger-paper mx-auto flex items-center justify-center text-ink-soft">
-            <TicketIcon size={24} />
+        <div className="border border-stone-200 bg-white p-12 rounded-2xl text-center space-y-4 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-stone-100 border border-stone-200/80 mx-auto flex items-center justify-center text-stone-500 shadow-2xs">
+            <Ticket className="w-7 h-7 text-stone-400" />
           </div>
-          <h2 className="font-display text-lg font-normal text-ink">
-            No surplus listings match this ledger filter
-          </h2>
-          <p className="text-xs text-ink-soft max-w-md mx-auto">
-            When you mark items from your inventory as surplus and specify a pickup window, our
-            safety engine validates the food before notifying verified recipient NGOs.
-          </p>
-          <Button
-            variant="default"
-            size="sm"
+          <div className="space-y-1">
+            <h2 className="font-serif text-xl font-bold text-stone-900">
+              No surplus listings match this ledger filter
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto leading-relaxed">
+              {searchQuery
+                ? `No listings match "${searchQuery}". Try clearing your search query.`
+                : "When you mark items from your inventory as surplus and specify a pickup window, our safety engine validates the food before notifying verified recipient NGOs."}
+            </p>
+          </div>
+          <button
             onClick={() => {
               setGatingResult(null);
               setIsCreateOpen(true);
             }}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
           >
-            + Create first surplus listing
-          </Button>
+            <Plus className="w-4 h-4 text-emerald-100" />
+            <span>+ Create first surplus listing</span>
+          </button>
         </div>
       ) : (
-        <div className="border border-line bg-[#FAF6EE] rounded-[6px] overflow-x-auto shadow-none">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[#EAE3D4] border-b border-line text-xs uppercase tracking-wider text-ink font-mono-numeral">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Item & Category</th>
-                <th className="px-4 py-3 font-semibold">Quantity</th>
-                <th className="px-4 py-3 font-semibold">Pickup Window</th>
-                <th className="px-4 py-3 font-semibold">Dispatch Address</th>
-                <th className="px-4 py-3 font-semibold">Safety Gating</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {filteredListings.map((item) => {
-                const isRejected = item.safetyStatus === "rejected";
-                const startDate = new Date(item.pickupWindow.start);
-                const endDate = new Date(item.pickupWindow.end);
+        <div className="border border-stone-200 bg-white rounded-2xl overflow-hidden shadow-xs">
+          <div className="p-4 sm:p-5 border-b border-stone-100 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="font-serif font-bold text-base text-stone-900">
+                Surplus Redistribution Ledger ({filteredListings.length})
+              </h3>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Real-time dispatch batches verified through server-side safety checks
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono text-stone-500">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+              <span>Broadcast Active</span>
+            </div>
+          </div>
 
-                return (
-                  <tr
-                    key={item._id}
-                    className={`hover:bg-[#F3EDE0]/80 transition-colors ${
-                      isRejected ? "bg-clay-rust/5" : ""
-                    }`}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-ink">{item.itemName}</div>
-                      <div className="text-[11px] text-ink-soft capitalize">
-                        {item.category.replace("_", " ")}
-                      </div>
-                    </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-stone-200/80 bg-stone-50/80 text-[11px] uppercase tracking-wider text-stone-500">
+                  <th className="py-3 px-4 font-sans font-semibold">Item &amp; Category</th>
+                  <th className="py-3 px-4 font-mono text-right font-semibold">Quantity</th>
+                  <th className="py-3 px-4 font-sans font-semibold">Pickup Window</th>
+                  <th className="py-3 px-4 font-sans font-semibold">Dispatch Address</th>
+                  <th className="py-3 px-4 font-sans font-semibold">Safety Gating</th>
+                  <th className="py-3 px-4 font-sans font-semibold">Fulfillment Status</th>
+                  <th className="py-3 px-4 font-sans font-semibold">Created</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100 text-xs font-sans">
+                {filteredListings.map((item) => {
+                  const isRejected = item.safetyStatus === "rejected";
+                  const startDate = new Date(item.pickupWindow.start);
+                  const endDate = new Date(item.pickupWindow.end);
 
-                    <td className="px-4 py-3 font-mono-numeral font-medium text-ink">
-                      {item.quantity} <span className="text-xs text-ink-soft">{item.unit}</span>
-                    </td>
-
-                    <td className="px-4 py-3 font-mono-numeral text-xs text-ink">
-                      <div>
-                        {startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
-                        {startDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-                      </div>
-                      <div className="text-ink-soft text-[11px]">
-                        until {endDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3 text-xs text-ink-soft max-w-[200px] truncate" title={item.pickupLocation?.address}>
-                      {item.pickupLocation?.address || "Main Dispatch"}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      {isRejected ? (
-                        <div className="space-y-1">
-                          <StatusBadge variant="rejected" label="Safety Blocked" />
-                          <div className="text-[10px] text-clay-rust font-mono-numeral leading-tight max-w-[180px]">
-                            {item.rejectionReason || "Threshold exceeded"}
+                  return (
+                    <tr
+                      key={item._id}
+                      className={`hover:bg-stone-50/90 transition-colors ${
+                        isRejected ? "bg-rose-50/40" : ""
+                      }`}
+                    >
+                      {/* 1. Item & Category */}
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          {isRejected ? (
+                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                          ) : (
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          )}
+                          <div>
+                            <div className="font-semibold text-stone-900">{item.itemName}</div>
+                            <div className="text-[11px] text-stone-500 capitalize">
+                              {item.category.replace("_", " ")}
+                            </div>
                           </div>
                         </div>
-                      ) : (
-                        <StatusBadge variant="verified_safe" label="Verified Safe" />
-                      )}
-                    </td>
+                      </td>
 
-                    <td className="px-4 py-3">
-                      {isRejected ? (
-                        <span className="text-xs font-mono-numeral text-ink-soft">Non-distributable</span>
-                      ) : (
-                        <StatusBadge
-                          variant={
-                            item.status === "delivered"
-                              ? "delivered"
-                              : item.status === "claimed" || item.status === "matched"
-                              ? "in_transit"
-                              : item.status === "expired"
-                              ? "expired"
-                              : "pending"
-                          }
-                          label={
-                            item.status === "delivered"
-                              ? "Delivered"
-                              : item.status === "claimed"
-                              ? "Claimed (In Progress)"
-                              : item.status === "matched"
-                              ? "Matched"
-                              : item.status === "pending"
-                              ? "Pending Match"
-                              : item.status.charAt(0).toUpperCase() + item.status.slice(1)
-                          }
-                        />
-                      )}
-                    </td>
+                      {/* 2. Quantity */}
+                      <td className="py-3 px-4 font-mono text-right font-bold text-stone-900">
+                        {item.quantity}{" "}
+                        <span className="text-xs font-sans font-normal text-stone-500">
+                          {item.unit}
+                        </span>
+                      </td>
 
-                    <td className="px-4 py-3 font-mono-numeral text-xs text-ink-soft">
-                      {new Date(item.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      {/* 3. Pickup Window */}
+                      <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
+                        <div className="font-semibold text-stone-800">
+                          {startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
+                          {startDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                        <div className="text-stone-500 text-[11px]">
+                          until {endDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      </td>
+
+                      {/* 4. Dispatch Address */}
+                      <td className="py-3 px-4 text-xs text-stone-600 max-w-[200px] truncate" title={item.pickupLocation?.address}>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                          <span className="truncate">{item.pickupLocation?.address || "Main Dispatch"}</span>
+                        </div>
+                      </td>
+
+                      {/* 5. Safety Gating */}
+                      <td className="py-3 px-4">
+                        {isRejected ? (
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 border border-rose-300">
+                              <AlertTriangle className="w-3 h-3 text-rose-600" />
+                              Safety Blocked
+                            </span>
+                            <div className="text-[10px] text-rose-700 font-mono leading-tight max-w-[200px]">
+                              {item.rejectionReason || "Threshold exceeded"}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Verified Safe
+                          </span>
+                        )}
+                      </td>
+
+                      {/* 6. Fulfillment Status */}
+                      <td className="py-3 px-4">
+                        {isRejected ? (
+                          <span className="text-xs font-mono text-stone-400">Non-distributable</span>
+                        ) : item.status === "delivered" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            Delivered
+                          </span>
+                        ) : item.status === "claimed" || item.status === "matched" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 border border-blue-300">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                            Claimed (In Transit)
+                          </span>
+                        ) : item.status === "expired" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-300">
+                            <span className="w-1.5 h-1.5 rounded-full bg-stone-500" />
+                            Window Expired
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+                            Pending Match
+                          </span>
+                        )}
+                      </td>
+
+                      {/* 7. Created Date */}
+                      <td className="py-3 px-4 font-mono text-xs text-stone-500 whitespace-nowrap">
+                        {new Date(item.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-4 border-t border-stone-100 bg-stone-50/50 flex flex-col sm:flex-row items-center justify-between text-xs text-stone-500 gap-2">
+            <div className="flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+              <span>
+                Safety decisions are cryptographically certified and cannot be overwritten manually.
+              </span>
+            </div>
+            <div className="font-mono text-[11px] text-stone-400">
+              Automated Dispatch Engine
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Create Surplus Listing Modal / Drawer */}
+      {/* 6. Modern Create Surplus Listing Modal / Drawer */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-ledger-paper border border-line rounded-[6px] max-w-lg w-full p-6 space-y-5 text-ink shadow-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-line pb-3">
-              <div>
-                <span className="font-mono-numeral text-xs uppercase tracking-wider text-ink-soft">
-                  FSSAI Compliant Dispatch
-                </span>
-                <h3 className="font-display text-xl font-normal text-ink">
-                  List Surplus Food
-                </h3>
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full p-6 sm:p-7 space-y-5 text-stone-900 shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-stone-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shadow-2xs shrink-0">
+                  <Ticket className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-xl font-bold text-stone-900">
+                    List Surplus Food
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    FSSAI food safety gating verified before NGO broadcast
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => {
                   setIsCreateOpen(false);
                   setGatingResult(null);
                 }}
-                className="text-ink-soft hover:text-ink text-sm font-mono-numeral cursor-pointer"
+                className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
               >
-                [ESC]
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Mode Switcher Tabs */}
-            <div className="flex border border-line rounded-[4px] p-0.5 bg-[#FAF6EE]">
+            <div className="flex border border-stone-200 rounded-xl p-1 bg-stone-50">
               <button
                 type="button"
                 onClick={() => {
                   setModalMode("select");
                   setGatingResult(null);
                 }}
-                className={`flex-1 py-1.5 px-3 text-xs font-medium rounded-[3px] transition-colors cursor-pointer ${
+                className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   modalMode === "select"
-                    ? "bg-basil text-ledger-paper"
-                    : "text-ink-soft hover:text-ink"
+                    ? "bg-white text-stone-900 shadow-xs"
+                    : "text-stone-500 hover:text-stone-800"
                 }`}
               >
                 Choose from Ledger ({availableItems.length})
@@ -614,10 +820,10 @@ function SurplusListingsContent() {
                   setModalMode("quick_add");
                   setGatingResult(null);
                 }}
-                className={`flex-1 py-1.5 px-3 text-xs font-medium rounded-[3px] transition-colors cursor-pointer ${
+                className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   modalMode === "quick_add"
-                    ? "bg-basil text-ledger-paper"
-                    : "text-ink-soft hover:text-ink"
+                    ? "bg-white text-stone-900 shadow-xs"
+                    : "text-stone-500 hover:text-stone-800"
                 }`}
               >
                 + Quick Add New Batch
@@ -627,42 +833,41 @@ function SurplusListingsContent() {
             {/* Gating Feedback Result Banner */}
             {gatingResult && (
               <div
-                className={`p-3 rounded-[4px] border text-xs leading-relaxed ${
+                className={`p-4 rounded-xl border text-xs leading-relaxed space-y-1 ${
                   gatingResult.type === "rejection"
-                    ? "bg-clay-rust/10 border-clay-rust/40 text-clay-rust"
+                    ? "bg-rose-50 border-rose-200 text-rose-900"
                     : gatingResult.type === "success"
-                    ? "bg-basil/10 border-basil/40 text-basil"
-                    : "bg-ink-soft/10 border-line text-ink"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                    : "bg-stone-50 border-stone-200 text-stone-800"
                 }`}
               >
-                <div className="font-semibold flex items-center gap-1.5">
-                  {gatingResult.type === "rejection" && <AlertTriangleIcon size={14} />}
-                  {gatingResult.type === "success" && <ShieldCheckIcon size={14} />}
+                <div className="font-bold flex items-center gap-1.5">
+                  {gatingResult.type === "rejection" && <AlertTriangle className="w-4 h-4 text-rose-600" />}
+                  {gatingResult.type === "success" && <ShieldCheck className="w-4 h-4 text-emerald-600" />}
                   {gatingResult.type === "rejection"
                     ? "Safety Gating Decision: Listing Blocked"
                     : gatingResult.type === "success"
-                    ? "Safety Gating Passed"
+                    ? "Safety Gating Passed: Verified Safe"
                     : "Submission Alert"}
                 </div>
-                <div className="mt-1">{gatingResult.message}</div>
+                <div>{gatingResult.message}</div>
                 {gatingResult.ruleApplied && (
-                  <div className="font-mono-numeral text-[10px] mt-1 opacity-80">
+                  <div className="font-mono text-[10px] pt-1 opacity-80">
                     Rule triggered: {gatingResult.ruleApplied} (Logged to MongoDB auditLogs)
                   </div>
                 )}
                 {gatingResult.type === "success" && (
                   <div className="pt-2">
-                    <Button
+                    <button
                       type="button"
-                      variant="default"
-                      size="sm"
                       onClick={() => {
                         setIsCreateOpen(false);
                         setGatingResult(null);
                       }}
+                      className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold text-xs transition-colors"
                     >
-                      Done & View Listings
-                    </Button>
+                      Done &amp; View Listings
+                    </button>
                   </div>
                 )}
               </div>
@@ -673,29 +878,29 @@ function SurplusListingsContent() {
               {modalMode === "select" && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
                       Select In-Stock Inventory Item *
                     </label>
                     {availableItems.length === 0 ? (
-                      <div className="text-xs border border-line bg-[#FAF6EE] p-3.5 rounded-[4px] space-y-2">
-                        <div className="font-medium text-ink flex items-center gap-1.5">
-                          <CrateIcon size={14} />
+                      <div className="text-xs border border-stone-200 bg-stone-50 p-4 rounded-xl space-y-2">
+                        <div className="font-semibold text-stone-800 flex items-center gap-1.5">
+                          <Package className="w-4 h-4 text-stone-500" />
                           <span>No available ledger items found</span>
                         </div>
-                        <p className="text-ink-soft">
+                        <p className="text-stone-500 text-xs">
                           All logged kitchen items have either expired or been dispatched.
                         </p>
                         <div className="flex items-center gap-2 pt-1">
                           <button
                             type="button"
                             onClick={() => setModalMode("quick_add")}
-                            className="px-2.5 py-1 text-xs bg-basil text-ledger-paper rounded-[4px] font-medium cursor-pointer"
+                            className="px-3 py-1.5 text-xs bg-emerald-700 text-white rounded-lg font-semibold cursor-pointer"
                           >
                             + Quick Add Batch Now
                           </button>
                           <Link
                             href="/app/institution/inventory"
-                            className="px-2.5 py-1 text-xs border border-line rounded-[4px] text-ink hover:bg-black/5 font-medium"
+                            className="px-3 py-1.5 text-xs border border-stone-200 bg-white rounded-lg text-stone-700 hover:bg-stone-50 font-semibold"
                           >
                             Go to Inventory Ledger
                           </Link>
@@ -706,7 +911,7 @@ function SurplusListingsContent() {
                         value={selectedItemId}
                         onChange={(e) => handleItemSelect(e.target.value)}
                         required
-                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none cursor-pointer"
+                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
                       >
                         <option value="">-- Choose item from ledger ({availableItems.length} available) --</option>
                         {availableItems.map((item) => {
@@ -723,19 +928,19 @@ function SurplusListingsContent() {
                   </div>
 
                   {selectedItem && (
-                    <div className="bg-[#FAF6EE] border border-line p-3 rounded-[4px] text-xs space-y-1 font-mono-numeral">
-                      <div className="flex justify-between text-ink-soft">
+                    <div className="bg-stone-50 border border-stone-200 p-3.5 rounded-xl text-xs space-y-1.5 font-mono">
+                      <div className="flex justify-between text-stone-500">
                         <span>Preparation / Logged:</span>
-                        <span className="text-ink">
+                        <span className="text-stone-900 font-semibold">
                           {new Date(selectedItem.preparedOrReceivedAt).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
                         </span>
                       </div>
-                      <div className="flex justify-between text-ink-soft">
+                      <div className="flex justify-between text-stone-500">
                         <span>Expiry Estimate:</span>
-                        <span className="text-ink">
+                        <span className="text-stone-900 font-semibold">
                           {new Date(selectedItem.expiryEstimateAt).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -743,15 +948,16 @@ function SurplusListingsContent() {
                         </span>
                       </div>
                       {selectedItem.category === "cooked_food" && (
-                        <div className="text-saffron text-[11px] pt-1">
-                          ⚠️ Cooked food 4-hour window strictly enforced server-side.
+                        <div className="text-amber-800 text-[11px] pt-1 flex items-center gap-1 font-sans">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>Cooked food 4-hour window strictly enforced server-side.</span>
                         </div>
                       )}
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
                       Surplus Quantity *
                     </label>
                     <input
@@ -762,10 +968,10 @@ function SurplusListingsContent() {
                       placeholder="e.g. 25"
                       required
                       max={selectedItem ? selectedItem.quantity : undefined}
-                      className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink font-mono-numeral focus:ring-1 focus:ring-basil outline-none"
+                      className="w-full px-3.5 py-2.5 text-xs font-mono bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
                     />
                     {selectedItem && (
-                      <span className="text-[10px] text-ink-soft font-mono-numeral">
+                      <span className="text-[11px] text-stone-500 mt-1 block font-mono">
                         Max available: {selectedItem.quantity} {selectedItem.unit}
                       </span>
                     )}
@@ -777,7 +983,7 @@ function SurplusListingsContent() {
               {modalMode === "quick_add" && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
                       Item / Dish Name *
                     </label>
                     <input
@@ -786,36 +992,36 @@ function SurplusListingsContent() {
                       onChange={(e) => setQuickName(e.target.value)}
                       placeholder="e.g. Fresh Palak Paneer & Rice"
                       required
-                      className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                      className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
                         Category *
                       </label>
                       <select
                         value={quickCategory}
                         onChange={(e) => handleQuickCategoryChange(e.target.value)}
-                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
                       >
-                        <option value="cooked_food">Cooked Food (Hot Meals)</option>
-                        <option value="dairy">Dairy & Milk</option>
-                        <option value="bakery">Bakery & Bread</option>
-                        <option value="raw_produce">Raw Produce / Fruits</option>
-                        <option value="packaged">Packaged Goods</option>
+                        <option value="cooked_food">🍲 Cooked Food</option>
+                        <option value="dairy">🥛 Dairy &amp; Milk</option>
+                        <option value="bakery">🍞 Bakery &amp; Bread</option>
+                        <option value="raw_produce">🥦 Raw Produce</option>
+                        <option value="packaged">📦 Packaged Goods</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
-                        Cooked / Prepared Time
+                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                        Prepared Time
                       </label>
                       <select
                         value={quickPrepAgoHours}
                         onChange={(e) => setQuickPrepAgoHours(e.target.value)}
-                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
                       >
                         <option value="0">Just now (Fresh batch)</option>
                         <option value="0.5">30 minutes ago</option>
@@ -827,7 +1033,7 @@ function SurplusListingsContent() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
                         Surplus Quantity *
                       </label>
                       <input
@@ -837,21 +1043,21 @@ function SurplusListingsContent() {
                         onChange={(e) => setQuickQuantity(e.target.value)}
                         placeholder="e.g. 25"
                         required
-                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink font-mono-numeral focus:ring-1 focus:ring-basil outline-none"
+                        className="w-full px-3.5 py-2.5 text-xs font-mono bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
                         Unit *
                       </label>
                       <select
                         value={quickUnit}
                         onChange={(e) => setQuickUnit(e.target.value)}
-                        className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
                       >
                         <option value="kg">kg (Kilograms)</option>
-                        <option value="pcs">pcs (Pieces / Portions)</option>
+                        <option value="pcs">pcs (Pieces)</option>
                         <option value="L">L (Litres)</option>
                       </select>
                     </div>
@@ -860,15 +1066,15 @@ function SurplusListingsContent() {
               )}
 
               {/* Shared Dispatch Window Fields */}
-              <div className="grid grid-cols-2 gap-3 pt-1 border-t border-line">
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-100">
                 <div>
-                  <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
+                  <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
                     Pickup Start *
                   </label>
                   <select
                     value={windowStartHours}
                     onChange={(e) => setWindowStartHours(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                    className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
                   >
                     <option value="0">Immediate (Now)</option>
                     <option value="0.5">In 30 minutes</option>
@@ -878,13 +1084,13 @@ function SurplusListingsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
-                    Pickup Window Duration *
+                  <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                    Window Duration *
                   </label>
                   <select
                     value={windowDurationHours}
                     onChange={(e) => setWindowDurationHours(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                    className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
                   >
                     <option value="1">1 hour window</option>
                     <option value="2">2 hours window</option>
@@ -894,59 +1100,71 @@ function SurplusListingsContent() {
                 </div>
               </div>
 
+              {/* Dispatch Location & Map Picker */}
               <div>
-                <label className="block text-xs font-mono-numeral uppercase tracking-wider text-ink-soft mb-1">
-                  Dispatch Point / Gate & Location Pin
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                  Dispatch Point / Gate &amp; Location Pin
                 </label>
                 <input
                   type="text"
                   value={pickupAddress}
                   onChange={(e) => setPickupAddress(e.target.value)}
                   placeholder="e.g. Loading Dock B, Main Kitchen Gate"
-                  className="w-full px-3 py-2 text-xs bg-[#FAF6EE] border border-line rounded-[4px] text-ink focus:ring-1 focus:ring-basil outline-none"
+                  className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
                 />
-                <div className="mt-2 space-y-1">
-                  <span className="text-[10px] font-mono-numeral text-ink-soft block">
-                    Confirm Pickup Dock Coordinates for Logistics Driver:
+                <div className="mt-2.5 space-y-1.5">
+                  <span className="text-[11px] font-mono text-stone-500 block">
+                    Confirm Pickup Dock Coordinates for Logistics Courier:
                   </span>
-                  <LocationPickerMap
-                    lat={pickupCoords.lat}
-                    lng={pickupCoords.lng}
-                    pinType="kitchen"
-                    theme="light"
-                    label="Pickup Dock"
-                    onChange={({ lat: newLat, lng: newLng }) => {
-                      setPickupCoords({ lat: newLat, lng: newLng });
-                    }}
-                    className="w-full h-44 sm:h-48"
-                  />
+                  <div className="rounded-xl overflow-hidden border border-stone-200">
+                    <LocationPickerMap
+                      lat={pickupCoords.lat}
+                      lng={pickupCoords.lng}
+                      pinType="kitchen"
+                      theme="light"
+                      label="Pickup Dock"
+                      onChange={({ lat: newLat, lng: newLng }) => {
+                        setPickupCoords({ lat: newLat, lng: newLng });
+                      }}
+                      className="w-full h-44 sm:h-48"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-line">
-                <Button
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-100">
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
                   onClick={() => {
                     setIsCreateOpen(false);
                     setGatingResult(null);
                   }}
+                  className="px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-xl border border-stone-200 transition-all cursor-pointer"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   type="submit"
-                  variant="default"
-                  size="sm"
                   disabled={
                     submitting ||
                     (modalMode === "select" && (!selectedItemId || !listingQty)) ||
                     (modalMode === "quick_add" && (!quickName.trim() || !quickQuantity))
                   }
+                  className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 active:scale-95 disabled:opacity-60 rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
                 >
-                  {submitting ? "Evaluating Safety Rules..." : "Run Safety Gating & Publish"}
-                </Button>
+                  {submitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Evaluating Safety Rules...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-emerald-200" />
+                      <span>Run Safety Gating &amp; Publish</span>
+                    </>
+                  )}
+                </button>
               </div>
             </form>
           </div>
@@ -960,7 +1178,7 @@ export default function InstitutionSurplusListingsPage() {
   return (
     <React.Suspense
       fallback={
-        <div className="max-w-6xl mx-auto p-8 text-xs font-mono-numeral text-ink-soft">
+        <div className="max-w-6xl mx-auto p-12 text-center text-xs font-mono text-stone-500">
           Loading surplus redistribution ledger...
         </div>
       }
