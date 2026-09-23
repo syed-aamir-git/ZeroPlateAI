@@ -1,110 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <defs>
-    <!-- Deep Obsidian-Emerald Luxury Medallion Backdrop -->
-    <radialGradient id="luxPlate" cx="42%" cy="38%" r="62%">
-      <stop offset="0%" stop-color="#0E4A2B"/>
-      <stop offset="50%" stop-color="#072F1B"/>
-      <stop offset="85%" stop-color="#031A0F"/>
-      <stop offset="100%" stop-color="#010E07"/>
-    </radialGradient>
+  <!-- Subtle off-white circular background (matching the authentic paper ground in the logo) -->
+  <circle cx="64" cy="64" r="62" fill="#F7F6F2"/>
 
-    <!-- 24K Polished Gold Gradient for the 'Z' Emblem -->
-    <linearGradient id="goldStroke" x1="36" y1="36" x2="94" y2="94" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFF8DB"/>
-      <stop offset="20%" stop-color="#FDE047"/>
-      <stop offset="60%" stop-color="#F59E0B"/>
-      <stop offset="100%" stop-color="#D97706"/>
-    </linearGradient>
+  <!-- Logo Graphics in authentic ZeroPlate forest green (#2E5439) -->
+  <g stroke="#2E5439" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Top arc of the outer circle (from top-right gap around top and left) -->
+    <path d="M 95.5 25.2 A 50 50 0 0 0 23.0 92.7"/>
 
-    <!-- Vibrant Imperial Emerald & Cyan Gradient for the Outer Plate Circle -->
-    <linearGradient id="emeraldStroke" x1="18" y1="18" x2="110" y2="110" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#34D399"/>
-      <stop offset="35%" stop-color="#10B981"/>
-      <stop offset="75%" stop-color="#059669"/>
-      <stop offset="100%" stop-color="#0D9488"/>
-    </linearGradient>
+    <!-- Bottom-right arc of the outer circle (from bottom-left around to the top-right gap) -->
+    <path d="M 31.9 102.3 A 50 50 0 0 0 108.9 42.1"/>
 
-    <!-- Jewel-tone Emerald & Mint Leaf Gradient -->
-    <linearGradient id="leafFill" x1="92" y1="42" x2="114" y2="18" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#059669"/>
-      <stop offset="45%" stop-color="#10B981"/>
-      <stop offset="85%" stop-color="#34D399"/>
-      <stop offset="100%" stop-color="#6EE7B7"/>
-    </linearGradient>
+    <!-- Top horizontal capsule bar of 'Z' with rounded left end -->
+    <path d="M 42 39.5 L 83.5 39.5 C 85.5 39.5 86.8 41.2 86 43.2 L 84 46 L 42 46 C 39.8 46 38 44.5 38 42.75 C 38 41 39.8 39.5 42 39.5 Z" fill="#2E5439" stroke-width="1"/>
 
-    <!-- Beveled Medallion Rim -->
-    <linearGradient id="rimGlint" x1="10" y1="10" x2="118" y2="118" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FDE047" stop-opacity="0.45"/>
-      <stop offset="50%" stop-color="#10B981" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.6"/>
-    </linearGradient>
+    <!-- Primary diagonal of 'Z' -->
+    <path d="M 84 43 L 43.6 85.7"/>
 
-    <!-- Subtle Ambient Glow -->
-    <filter id="premiumGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.6"/>
-      <feDropShadow dx="0" dy="0.5" stdDeviation="1" flood-color="#10B981" flood-opacity="0.3"/>
-    </filter>
-  </defs>
+    <!-- Parallel inner diagonal line of 'Z' -->
+    <path d="M 75 46 L 47 79" stroke-width="2.2"/>
 
-  <!-- Circular Medallion Base (Guarantees perfect visibility & luxury contrast on light & dark browser tabs) -->
-  <circle cx="64" cy="64" r="59" fill="url(#luxPlate)"/>
-  <circle cx="64" cy="64" r="58.5" stroke="url(#rimGlint)" stroke-width="1.2"/>
-  <circle cx="64" cy="64" r="53" stroke="#FAF7F2" stroke-opacity="0.07" stroke-width="1" stroke-dasharray="2.5 2.5"/>
+    <!-- Bottom horizontal bar of 'Z' with upward hook terminal -->
+    <path d="M 43.6 85.7 L 85.7 85.7 C 88 85.7 89.5 84 89 81"/>
 
-  <!-- Logo Graphics Group with Soft Dimensional Glow -->
-  <g filter="url(#premiumGlow)">
-    <!-- ========================================================================= -->
-    <!-- 1. The Outer Plate Circle Arc (As in logo image, opening at top-right)    -->
-    <!-- Center (61, 65), radius = 43.                                             -->
-    <!-- Top arc starts near (87, 30), wraps counter-clockwise to bottom-left      -->
-    <!-- ========================================================================= -->
-    <path d="M 87 31 A 43 43 0 0 0 18 65 A 43 43 0 0 0 40 100"
-          stroke="url(#emeraldStroke)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+    <!-- Monoline loop from bottom of 'Z' into the bottom outer circle -->
+    <path d="M 43.6 85.7 C 33 85.7 24 95 31.9 102.3"/>
 
-    <!-- Bottom-right arc of the circle: wraps from (50, 107) up to (103, 51) -->
-    <path d="M 50 107 A 43 43 0 0 0 104 52"
-          stroke="url(#emeraldStroke)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
-
-    <!-- ========================================================================= -->
-    <!-- 2. The Stylized 'Z' Emblem                                                -->
-    <!-- Matching the exact monoline flow and double-stroke diagonal of the image  -->
-    <!-- ========================================================================= -->
-
-    <!-- Top Horizontal Bar of 'Z' (Capsule with rounded left tip) -->
-    <path d="M 46 44 L 80 44 C 83.5 44 85.5 46.5 84.5 49.5 L 80 54 L 46 54 C 43 54 41 51.8 41 49 C 41 46.2 43 44 46 44 Z"
-          fill="url(#goldStroke)" stroke="url(#goldStroke)" stroke-width="0.8" stroke-linejoin="round"/>
-
-    <!-- Primary Diagonal of 'Z' -->
-    <path d="M 81 48 L 47 91"
-          stroke="url(#goldStroke)" stroke-width="6" stroke-linecap="round" fill="none"/>
-
-    <!-- Parallel Inner Diagonal Line (Creates the signature outlined ribbon appearance) -->
-    <path d="M 73 53 L 45 88"
-          stroke="#FAF7F2" stroke-width="2.2" stroke-linecap="round" stroke-opacity="0.92" fill="none"/>
-
-    <!-- Bottom Horizontal Bar of 'Z' with upward curved hook terminal -->
-    <path d="M 47 91 L 81 91 C 85 91 87.5 89 86.5 85"
-          stroke="url(#goldStroke)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
-
-    <!-- Fluid Loop: Curves from bottom-left of 'Z' into the bottom outer circle -->
-    <path d="M 47 91 C 38 91 32 97 40 104"
-          stroke="url(#emeraldStroke)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
-
-    <!-- ========================================================================= -->
-    <!-- 3. Rising AI Growth Stem & Botanical Leaf (Top-Right)                     -->
-    <!-- Branches off the 'Z' diagonal, shoots upward through the circle opening  -->
-    <!-- ========================================================================= -->
-
-    <!-- Branching Stem: (64, 70) -> (79, 70) -> (97, 44) -->
-    <path d="M 64 70 L 80 70 L 97 44"
-          stroke="url(#goldStroke)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-    <!-- The Botanical Leaf blooming towards top-right at 45° -->
-    <path d="M 97 44 C 98 33 109 22 116 18 C 114 27 107 40 97 44 Z"
-          fill="url(#leafFill)" stroke="#10B981" stroke-width="0.8"/>
-
-    <!-- Leaf Centerline Vein in Pure White/Gold Glint -->
-    <path d="M 98 42 C 103 34 110 26 115 19"
-          stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round" stroke-opacity="0.85"/>
+    <!-- Rising stem branching from diagonal towards top-right -->
+    <path d="M 71 59 L 77.5 59 L 98.5 34.5"/>
   </g>
+
+  <!-- Botanical Leaf at the top-right opening -->
+  <path d="M 98.5 34.5 C 99.5 25.5 107.5 17 114 14 C 112 21.5 106.5 31.5 98.5 34.5 Z" fill="#2E5439" stroke="#2E5439" stroke-width="0.5"/>
+
+  <!-- Leaf center vein -->
+  <path d="M 100 32.5 C 104 26 108.5 20 113 15" stroke="#F7F6F2" stroke-width="1.6" stroke-linecap="round" fill="none"/>
 </svg>
