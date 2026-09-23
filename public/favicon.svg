@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <!-- Plate base gradient -->
+    <linearGradient id="plateGrad" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1B6D42"/>
+      <stop offset="50%" stop-color="#14532D"/>
+      <stop offset="100%" stop-color="#0B381E"/>
+    </linearGradient>
+
+    <!-- Fresh sprout leaf gradient -->
+    <linearGradient id="leafGrad" x1="28" y1="20" x2="48" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+
+    <!-- Warm golden AI sparkle gradient -->
+    <linearGradient id="goldGrad" x1="42" y1="6" x2="56" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+
+    <!-- Inner rim accent -->
+    <linearGradient id="rimGrad" x1="14" y1="14" x2="50" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#34D399" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Circular Plate Base -->
+  <circle cx="32" cy="32" r="30" fill="url(#plateGrad)"/>
+
+  <!-- Elegant Plate Rim / Dish Accent -->
+  <circle cx="32" cy="32" r="26" stroke="#FAF7F2" stroke-opacity="0.22" stroke-width="1.5"/>
+  <circle cx="32" cy="32" r="23" stroke="url(#rimGrad)" stroke-width="1" stroke-dasharray="3 2" stroke-opacity="0.7"/>
+
+  <!-- Inner Plate Cavity -->
+  <circle cx="32" cy="32" r="19" fill="#0A2E1A" fill-opacity="0.5"/>
+
+  <!-- Stylized "0" (Zero Waste Plate) - Outer Arc -->
+  <path d="M32 16 C22 16 15 23 15 32 C15 41 22 48 32 48 C36.5 48 40.5 46.2 43.5 43 C39.5 44.8 35.5 44.8 32 44.8 C24.5 44.8 19 39 19 32 C19 25 24.5 19.2 32 19.2 C35.5 19.2 38.8 20.4 41.5 22.5 C38.8 18.2 35.5 16 32 16 Z" fill="#FAF7F2"/>
+
+  <!-- Organic Sprout / Leaf emerging inside the Zero (Rescued Food & Planet Renewal) -->
+  <path d="M31.5 42 C31.5 28 41 22 46.5 20 C46.5 27 42 38 31.5 42 Z" fill="url(#leafGrad)"/>
+  <path d="M32 37 C33.5 30 27 26.5 24 27.5 C25.8 32.5 29.5 36 32 37 Z" fill="#6EE7B7" fill-opacity="0.9"/>
+
+  <!-- Stem connecting bottom to sprout -->
+  <path d="M31.5 42 C31.5 44.5 32 46 32.5 47" stroke="#34D399" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- AI Intelligence Star (✦) Top Right -->
+  <path d="M49 8 L50.5 13 L55.5 14.5 L50.5 16 L49 21 L47.5 16 L42.5 14.5 L47.5 13 Z" fill="url(#goldGrad)"/>
+</svg>
