@@ -65,8 +65,12 @@ export async function proxy(request: NextRequest) {
     pathname === "/signup";
 
   if (isAuthPage && isAuthenticated) {
-    // Session is present, redirect to role check / onboarding
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    const redirectParam = request.nextUrl.searchParams.get("redirect");
+    const destination =
+      redirectParam && redirectParam !== "/onboarding"
+        ? redirectParam
+        : "/app/institution/overview";
+    return NextResponse.redirect(new URL(destination, request.url));
   }
 
   return NextResponse.next();

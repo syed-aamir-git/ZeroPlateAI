@@ -42,6 +42,10 @@ export default function OnboardingPage() {
   const [adminDepartment, setAdminDepartment] = React.useState("Operations & Food Safety");
   const [adminKey, setAdminKey] = React.useState("");
 
+  const isProfileCompleted = Boolean(
+    session?.user && (session.user as { profileCompleted?: boolean }).profileCompleted
+  );
+
   // Sync role if already chosen at registration
   React.useEffect(() => {
     if (session?.user) {
@@ -51,14 +55,14 @@ export default function OnboardingPage() {
       }
       const isCompleted = (session.user as { profileCompleted?: boolean }).profileCompleted;
       if (isCompleted && userRole) {
-        // Already completed, route to role dashboard
+        // Already completed, route to role dashboard directly
         const dashboardMap: Record<string, string> = {
-          institution_admin: "/dashboard/institution",
-          ngo: "/dashboard/ngo",
-          delivery_partner: "/dashboard/delivery",
-          platform_admin: "/dashboard/admin",
+          institution_admin: "/app/institution/overview",
+          ngo: "/app/ngo/browse",
+          delivery_partner: "/app/delivery/assignments",
+          platform_admin: "/app/admin/overview",
         };
-        router.push(dashboardMap[userRole] || "/dashboard/institution");
+        router.replace(dashboardMap[userRole] || "/app/institution/overview");
       }
     }
   }, [session, selectedRole, router]);
@@ -133,12 +137,17 @@ export default function OnboardingPage() {
     }
   };
 
-  if (isPending) {
+  if (isPending || isProfileCompleted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-ledger-paper text-ink">
-        <span className="font-mono-numeral text-xs uppercase tracking-wider text-ink-soft">
-          Loading authentication session...
-        </span>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-basil border-t-transparent rounded-full animate-spin" />
+          <span className="font-mono-numeral text-xs uppercase tracking-wider text-ink-soft">
+            {isProfileCompleted
+              ? "Directing to your dashboard..."
+              : "Loading authentication session..."}
+          </span>
+        </div>
       </div>
     );
   }

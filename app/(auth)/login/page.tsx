@@ -3,23 +3,57 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "@/lib/auth-client";
+import { signIn, useSession, getSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layouts/public-nav";
 import { PublicFooter } from "@/components/layouts/public-footer";
 import { Eye, EyeOff } from "lucide-react";
 
+function getRoleDashboardPath(role?: string | null): string {
+  switch (role) {
+    case "institution_admin":
+      return "/app/institution/overview";
+    case "ngo":
+      return "/app/ngo/browse";
+    case "delivery_partner":
+      return "/app/delivery/assignments";
+    case "platform_admin":
+      return "/app/admin/overview";
+    default:
+      return "/app/institution/overview";
+  }
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTarget = searchParams.get("redirect") || "/onboarding";
   const emailParam = searchParams.get("email") || "";
+
+  const { data: session } = useSession();
 
   const [email, setEmail] = React.useState(emailParam);
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+
+  // If session already exists, route immediately away from login
+  React.useEffect(() => {
+    if (session?.user) {
+      const explicitRedirect = searchParams.get("redirect");
+      if (explicitRedirect && explicitRedirect !== "/onboarding") {
+        router.replace(explicitRedirect);
+        return;
+      }
+      const userRole = (session.user as { role?: string }).role;
+      const isCompleted = (session.user as { profileCompleted?: boolean }).profileCompleted;
+      if (isCompleted !== false && userRole) {
+        router.replace(getRoleDashboardPath(userRole));
+      } else if (isCompleted === false) {
+        router.replace("/onboarding");
+      }
+    }
+  }, [session, router, searchParams]);
 
   React.useEffect(() => {
     if (emailParam) {
@@ -38,6 +72,7 @@ function LoginForm() {
     try {
       let lastError: { message?: string } | null = null;
       let signedIn = false;
+      let signInData: unknown = null;
 
       for (const pwd of passwordsToTry) {
         const res = await signIn.email({
@@ -47,6 +82,7 @@ function LoginForm() {
 
         if (!res.error) {
           signedIn = true;
+          signInData = res.data;
           break;
         }
         lastError = res.error;
@@ -58,7 +94,33 @@ function LoginForm() {
         return;
       }
 
-      router.push(redirectTarget);
+      // 1. Explicit redirect from URL query parameter
+      const explicitRedirect = searchParams.get("redirect");
+      if (explicitRedirect && explicitRedirect !== "/onboarding") {
+        router.replace(explicitRedirect);
+        return;
+      }
+
+      // 2. Extract authenticated user details
+      let user = (signInData as { user?: { role?: string; profileCompleted?: boolean } })?.user;
+      if (!user) {
+        try {
+          const freshSession = await getSession();
+          user = freshSession?.data?.user as { role?: string; profileCompleted?: boolean };
+        } catch {
+          // ignore session fetch error fallback
+        }
+      }
+
+      // 3. Brand-new incomplete accounts go to onboarding
+      if (user && user.profileCompleted === false) {
+        router.replace("/onboarding");
+        return;
+      }
+
+      // 4. Existing users go directly to their dedicated role dashboard
+      const targetDashboard = getRoleDashboardPath(user?.role);
+      router.replace(targetDashboard);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unexpected error occurred during login.";
       setError(message);
@@ -68,9 +130,15 @@ function LoginForm() {
 
   const handleGoogleLogin = async () => {
     try {
+      const explicitRedirect = searchParams.get("redirect");
+      const target =
+        explicitRedirect && explicitRedirect !== "/onboarding"
+          ? explicitRedirect
+          : "/app/institution/overview";
+
       const res = await signIn.social({
         provider: "google",
-        callbackURL: redirectTarget,
+        callbackURL: target,
       });
       if (res && "data" in res && res.data && (res.data as { url?: string }).url) {
         window.location.href = (res.data as { url: string }).url;

@@ -9,19 +9,19 @@ interface PublicNavProps {
 }
 
 function getDashboardUrl(user?: Record<string, unknown> | null) {
-  if (!user) return "/dashboard/institution";
+  if (!user) return "/login";
   if (!user.profileCompleted) return "/onboarding";
   switch (user.role) {
     case "institution_admin":
-      return "/dashboard/institution";
+      return "/app/institution/overview";
     case "ngo":
-      return "/dashboard/ngo";
+      return "/app/ngo/browse";
     case "delivery_partner":
-      return "/dashboard/delivery";
+      return "/app/delivery/assignments";
     case "platform_admin":
-      return "/dashboard/admin";
+      return "/app/admin/overview";
     default:
-      return "/dashboard/institution";
+      return "/app/institution/overview";
   }
 }
 
