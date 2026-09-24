@@ -47,15 +47,6 @@ import {
   Activity,
 } from "lucide-react";
 
-// Dish Quick Presets to make the calculator instantly user-friendly
-const QUICK_PRESETS = [
-  { name: "Cooked Rice & Dal", category: "cooked_food" as FoodCategory, storage: "ambient" as StorageCondition, unit: "kg", qty: 30, emoji: "🍲" },
-  { name: "Fresh Rotis & Naan", category: "bakery" as FoodCategory, storage: "ambient" as StorageCondition, unit: "pieces", qty: 120, emoji: "🥖" },
-  { name: "Paneer Curry / Gravy", category: "cooked_food" as FoodCategory, storage: "hot_hold" as StorageCondition, unit: "kg", qty: 25, emoji: "🍛" },
-  { name: "Chilled Milk / Dairy", category: "dairy" as FoodCategory, storage: "refrigerated" as StorageCondition, unit: "litres", qty: 40, emoji: "🥛" },
-  { name: "Fresh Fruit & Greens", category: "raw_produce" as FoodCategory, storage: "ambient" as StorageCondition, unit: "kg", qty: 45, emoji: "🥗" },
-  { name: "Sandwiches & Snacks", category: "bakery" as FoodCategory, storage: "refrigerated" as StorageCondition, unit: "pieces", qty: 60, emoji: "🥪" },
-];
 
 const STORAGE_OPTIONS: { id: StorageCondition; label: string; desc: string; icon: string; badgeColor: string }[] = [
   {
@@ -302,42 +293,6 @@ export default function SurplusAiCalculator() {
               </span>
             </div>
 
-            {/* Quick Dish Presets Chips */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-stone-700">
-                  Quick Food Presets:
-                </label>
-                <span className="text-[10px] text-stone-400">1-Click Auto-Fill</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {QUICK_PRESETS.map((preset) => {
-                  const isSelected = foodName.toLowerCase() === preset.name.toLowerCase();
-                  return (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => {
-                        setFoodName(preset.name);
-                        setCategory(preset.category);
-                        setStorageCondition(preset.storage);
-                        setUnit(preset.unit);
-                        setQuantity(preset.qty);
-                        setIsManualOverride(false);
-                      }}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
-                        isSelected
-                          ? "bg-emerald-700 text-white shadow-xs font-semibold ring-2 ring-emerald-500/20"
-                          : "bg-white border border-stone-200 text-stone-700 hover:border-emerald-300 hover:bg-emerald-50/50"
-                      }`}
-                    >
-                      <span>{preset.emoji}</span>
-                      <span>{preset.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
 
             {/* Dish Name Input */}
             <div>
