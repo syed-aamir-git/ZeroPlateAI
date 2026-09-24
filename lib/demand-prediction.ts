@@ -201,7 +201,13 @@ export function calculateContextualDemandPrediction(input: {
     trajectoryLabel,
     trajectoryBadgeColor: badgeColor,
     predictedDemandPlates: predictedPlates,
-    confidencePercent: Math.min(94, Math.max(72, Math.round(82 + Math.random() * 8))),
+    confidencePercent: Math.min(
+      94,
+      Math.max(
+        74,
+        Math.round(88 - Math.abs(weatherFactor - 1.0) * 8 - Math.abs(calendarFactor - 1.0) * 6)
+      )
+    ),
     demandFactorBreakdown: {
       baseBaseline: baseHeadcount,
       weatherImpactFactor: Math.round(weatherFactor * 100) / 100,

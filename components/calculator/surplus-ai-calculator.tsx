@@ -816,7 +816,10 @@ export default function SurplusAiCalculator() {
             </div>
 
             <div className="flex items-baseline gap-3 pt-1">
-              <span className="text-4xl sm:text-5xl font-serif font-extrabold text-emerald-700 tracking-tight">
+              <span
+                className="text-4xl sm:text-5xl font-serif font-extrabold text-emerald-700 tracking-tight"
+                suppressHydrationWarning
+              >
                 ~{urgencyResult.estimatedMeals}
               </span>
               <div className="leading-tight">
@@ -849,7 +852,7 @@ export default function SurplusAiCalculator() {
                 <span className="text-[10px] text-stone-500 font-medium block">
                   Usable Portion Weight
                 </span>
-                <span className="text-xs font-mono font-bold text-emerald-900">
+                <span className="text-xs font-mono font-bold text-emerald-900" suppressHydrationWarning>
                   {urgencyResult.estimatedMeals * 0.45} kg food
                 </span>
               </div>
@@ -857,7 +860,7 @@ export default function SurplusAiCalculator() {
                 <span className="text-[10px] text-stone-500 font-medium block">
                   CO₂e Offset Projected
                 </span>
-                <span className="text-xs font-mono font-bold text-emerald-900">
+                <span className="text-xs font-mono font-bold text-emerald-900" suppressHydrationWarning>
                   ~{(urgencyResult.estimatedMeals * 0.45 * 2.5).toFixed(1)} kg CO₂
                 </span>
               </div>
@@ -891,6 +894,7 @@ export default function SurplusAiCalculator() {
                 </span>
                 <span
                   className={`font-serif text-3xl font-extrabold ${aiSafeComputation.tierColor.text}`}
+                  suppressHydrationWarning
                 >
                   {aiSafeComputation.isExpired
                     ? "Expired (Do Not Distribute)"
@@ -966,7 +970,7 @@ export default function SurplusAiCalculator() {
                 <span className="text-[11px] text-stone-500 block font-medium">
                   Expected Diners Today
                 </span>
-                <span className="font-serif text-2xl font-bold text-stone-900">
+                <span className="font-serif text-2xl font-bold text-stone-900" suppressHydrationWarning>
                   {demandResult.predictedDemandPlates}
                 </span>
                 <span className="text-[10px] text-blue-700 font-semibold block mt-0.5">
@@ -978,7 +982,7 @@ export default function SurplusAiCalculator() {
                 <span className="text-[11px] text-stone-500 block font-medium">
                   Forecast Confidence
                 </span>
-                <span className="font-serif text-2xl font-bold text-emerald-700">
+                <span className="font-serif text-2xl font-bold text-emerald-700" suppressHydrationWarning>
                   {demandResult.confidencePercent}%
                 </span>
                 <span className="text-[10px] text-stone-500 block mt-0.5">
