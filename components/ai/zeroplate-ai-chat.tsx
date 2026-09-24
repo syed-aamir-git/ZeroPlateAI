@@ -345,22 +345,19 @@ export default function ZeroPlateAiChat() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Permanent Context-Aware Recommendations Bar */}
-          <div className="px-3 py-2 border-t border-line/60 bg-[#EAE3D4]/40 flex flex-col gap-1.5 shrink-0">
-            <div className="flex items-center justify-between text-[10px] font-mono-numeral text-ink-soft">
-              <span className="flex items-center gap-1 font-semibold uppercase tracking-wider">
-                <span>💡</span> Suggested Topics
-              </span>
-              <span className="text-[9px] text-ink-soft/70">Tap to ask</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-0.5">
+          {/* Compact Permanent Context-Aware Recommendations Bar */}
+          <div className="px-2.5 py-1 border-t border-line/60 bg-[#EAE3D4]/30 flex items-center gap-1.5 shrink-0 overflow-hidden">
+            <span className="text-[10px] text-ink-soft/60 shrink-0 select-none pl-0.5" title="Suggested questions">
+              💡
+            </span>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
               {recommendations.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
                   onClick={() => handleSendMessage(prompt)}
                   disabled={isLoading}
-                  className="px-2.5 py-1 text-[11px] rounded-full border border-line bg-ledger-paper hover:bg-[#EAE3D4] hover:border-basil/40 active:scale-98 text-ink-soft hover:text-ink transition-all cursor-pointer whitespace-nowrap shadow-2xs disabled:opacity-50"
+                  className="px-2 py-0.5 text-[10px] rounded-full border border-line/80 bg-ledger-paper hover:bg-[#EAE3D4] hover:border-basil/50 active:scale-95 text-ink-soft hover:text-ink transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-2xs disabled:opacity-50"
                 >
                   {prompt}
                 </button>
