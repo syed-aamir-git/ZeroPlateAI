@@ -138,7 +138,7 @@ function SurplusListingsContent() {
     fetchInventory();
   }, [fetchListings, fetchInventory]);
 
-  // Handle URL deep-link with itemId
+  // Handle URL deep-link with itemId or calculator query params
   React.useEffect(() => {
     if (preselectedItemId && inventoryItems.length > 0) {
       const target = inventoryItems.find((i) => i._id === preselectedItemId);
@@ -148,8 +148,24 @@ function SurplusListingsContent() {
         setIsCreateOpen(true);
         setModalMode("select");
       }
+    } else {
+      const paramFoodName = searchParams.get("foodName");
+      const paramQty = searchParams.get("qty");
+      const paramUnit = searchParams.get("unit");
+      const paramCategory = searchParams.get("category");
+      const paramStorage = searchParams.get("storage");
+
+      if (paramFoodName) {
+        setQuickName(paramFoodName);
+        if (paramQty) setQuickQuantity(paramQty);
+        if (paramUnit) setQuickUnit(paramUnit);
+        if (paramCategory) setQuickCategory(paramCategory);
+        if (paramStorage) setStorageCondition(paramStorage);
+        setModalMode("quick_add");
+        setIsCreateOpen(true);
+      }
     }
-  }, [preselectedItemId, inventoryItems]);
+  }, [preselectedItemId, inventoryItems, searchParams]);
 
   // Compute items that are eligible for surplus listing
   const availableItems = React.useMemo(() => {
