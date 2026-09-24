@@ -773,7 +773,7 @@ export function getDefaultFefoBaselineItems(): FefoRawItemInput[] {
       id: "raw_tomatoes_1",
       name: "Fresh Ripe Tomatoes",
       category: "raw_produce",
-      quantity: 5,
+      quantity: 25,
       unit: "kg",
       expiryDate: new Date(now.getTime() + 44 * 60 * 60 * 1000).toISOString(), // 44 hours (2 days) -> Expiring soon (HIGH PRIORITY)
       storage: "ambient",
@@ -806,22 +806,22 @@ export function getDefaultFefoBaselineItems(): FefoRawItemInput[] {
       id: "raw_potatoes_1",
       name: "Farm Potatoes",
       category: "raw_produce",
-      quantity: 35,
+      quantity: 10,
       unit: "kg",
-      expiryDate: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days -> Moderate (MEDIUM PRIORITY)
+      expiryDate: new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days -> Moderate (MEDIUM PRIORITY)
       storage: "ambient",
-      projectedDemandKg: 18,
+      projectedDemandKg: 8,
       unitCostInr: 30,
     },
     {
       id: "raw_onions_1",
       name: "Red Onions",
       category: "raw_produce",
-      quantity: 25,
+      quantity: 8,
       unit: "kg",
-      expiryDate: new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days -> Moderate (MEDIUM PRIORITY)
+      expiryDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days -> Moderate (MEDIUM PRIORITY)
       storage: "ambient",
-      projectedDemandKg: 15,
+      projectedDemandKg: 6,
       unitCostInr: 35,
     },
     {
@@ -837,36 +837,36 @@ export function getDefaultFefoBaselineItems(): FefoRawItemInput[] {
     },
     {
       id: "dry_basmati_rice_1",
-      name: "Basmati Rice (Aged Grain)",
+      name: "Aged Basmati Rice",
       category: "packaged_dry",
-      quantity: 120,
+      quantity: 100,
       unit: "kg",
-      expiryDate: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days -> Long shelf life (LOW PRIORITY)
+      expiryDate: new Date(now.getTime() + 210 * 24 * 60 * 60 * 1000).toISOString(), // 7 months -> Long shelf life (LOW PRIORITY)
       storage: "dry_pantry",
-      projectedDemandKg: 25,
+      projectedDemandKg: 20,
       unitCostInr: 85,
     },
     {
       id: "dry_toor_dal_1",
-      name: "Organic Toor Dal (Pigeon Peas)",
+      name: "Organic Toor Dal",
       category: "packaged_dry",
-      quantity: 80,
+      quantity: 40,
       unit: "kg",
-      expiryDate: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days -> Long shelf life (LOW PRIORITY)
+      expiryDate: new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString(), // 6 months -> Long shelf life (LOW PRIORITY)
       storage: "dry_pantry",
-      projectedDemandKg: 14,
+      projectedDemandKg: 10,
       unitCostInr: 140,
     },
     {
       id: "pantry_sunflower_oil_1",
       name: "Refined Sunflower Cooking Oil",
       category: "packaged_dry",
-      quantity: 50,
+      quantity: 30,
       unit: "litres",
-      expiryDate: new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString(), // 180 days -> Long shelf life (LOW PRIORITY)
+      expiryDate: new Date(now.getTime() + 240 * 24 * 60 * 60 * 1000).toISOString(), // 8 months -> Long shelf life (LOW PRIORITY)
       storage: "dry_pantry",
-      projectedDemandKg: 8,
-      unitCostInr: 120,
+      projectedDemandKg: 5,
+      unitCostInr: 125,
     },
   ];
 }

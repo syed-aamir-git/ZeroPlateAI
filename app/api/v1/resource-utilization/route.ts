@@ -38,12 +38,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 1. Fetch RAW MATERIALS ONLY (strictly exclude ready-to-eat cooked meals!)
+    // 1. Fetch RAW MATERIALS ONLY (strictly exclude ready-to-eat cooked meals and test items!)
     const rawInventoryDocs = await db
       .collection("inventoryItems")
       .find({
         institutionId: institution._id,
         category: { $ne: "cooked_food" }, // Strictly raw materials & ingredients!
+        name: { $not: /aadi|raj|burger|roll|lollipop|coke|pizza|aamir/i },
         status: { $ne: "delivered" },
       })
       .sort({ expiryEstimateAt: 1 })
