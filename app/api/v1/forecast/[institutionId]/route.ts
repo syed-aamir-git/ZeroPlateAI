@@ -251,14 +251,15 @@ export async function GET(
     }
 
     // 4. Inculcate FEFO (First-Expired, First-Out) Central Resource Intelligence Engine
+    // Strictly RAW MATERIALS (produce, dairy ingredients, grains, pulses). Exclude cooked meals!
     const { evaluateFefoInventory, getDefaultFefoBaselineItems } = await import("@/lib/fefo-engine");
     
     const activeInventoryInputs = inventoryItems
-      .filter((i) => i.status !== "delivered")
+      .filter((i) => i.status !== "delivered" && i.category !== "cooked_food")
       .map((i) => ({
         id: String(i._id),
         name: i.name,
-        category: i.category || "cooked_food",
+        category: i.category || "raw_produce",
         quantity: Number(i.quantity) || 0,
         unit: i.unit || "kg",
         expiryDate: i.expiryEstimateAt || new Date(Date.now() + 48 * 3600 * 1000),
