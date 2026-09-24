@@ -27,6 +27,14 @@ export const metadata: Metadata = {
   title: "ZeroPlate.ai — Food Waste Reduction & Redistribution",
   description:
     "AI-powered smart food waste reduction & sustainable redistribution ecosystem for institutional kitchens and food processing units.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 import ZeroPlateAiChat from "@/components/ai/zeroplate-ai-chat";

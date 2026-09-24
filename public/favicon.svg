@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Subtle off-white circular background (matching the authentic paper ground in the logo) -->
+  <circle cx="64" cy="64" r="62" fill="#F7F6F2"/>
+
+  <!-- Logo Graphics in authentic ZeroPlate forest green (#2E5439) -->
+  <g stroke="#2E5439" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Top arc of the outer circle (from top-right gap around top and left) -->
+    <path d="M 95.5 25.2 A 50 50 0 0 0 23.0 92.7"/>
+
+    <!-- Bottom-right arc of the outer circle (from bottom-left around to the top-right gap) -->
+    <path d="M 31.9 102.3 A 50 50 0 0 0 108.9 42.1"/>
+
+    <!-- Top horizontal capsule bar of 'Z' with rounded left end -->
+    <path d="M 42 39.5 L 83.5 39.5 C 85.5 39.5 86.8 41.2 86 43.2 L 84 46 L 42 46 C 39.8 46 38 44.5 38 42.75 C 38 41 39.8 39.5 42 39.5 Z" fill="#2E5439" stroke-width="1"/>
+
+    <!-- Primary diagonal of 'Z' -->
+    <path d="M 84 43 L 43.6 85.7"/>
+
+    <!-- Parallel inner diagonal line of 'Z' -->
+    <path d="M 75 46 L 47 79" stroke-width="2.2"/>
+
+    <!-- Bottom horizontal bar of 'Z' with upward hook terminal -->
+    <path d="M 43.6 85.7 L 85.7 85.7 C 88 85.7 89.5 84 89 81"/>
+
+    <!-- Monoline loop from bottom of 'Z' into the bottom outer circle -->
+    <path d="M 43.6 85.7 C 33 85.7 24 95 31.9 102.3"/>
+
+    <!-- Rising stem branching from diagonal towards top-right -->
+    <path d="M 71 59 L 77.5 59 L 98.5 34.5"/>
+  </g>
+
+  <!-- Botanical Leaf at the top-right opening -->
+  <path d="M 98.5 34.5 C 99.5 25.5 107.5 17 114 14 C 112 21.5 106.5 31.5 98.5 34.5 Z" fill="#2E5439" stroke="#2E5439" stroke-width="0.5"/>
+
+  <!-- Leaf center vein -->
+  <path d="M 100 32.5 C 104 26 108.5 20 113 15" stroke="#F7F6F2" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+</svg>
