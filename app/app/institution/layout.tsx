@@ -13,6 +13,7 @@ export default async function InstitutionLayout({
     { href: "/app/institution/overview", label: "Overview", icon: "overview" },
     { href: "/app/institution/analytics", label: "Analytics", icon: "analytics" },
     { href: "/app/institution/forecast", label: "Forecast", icon: "forecast" },
+    { href: "/app/institution/resource-utilization", label: "Resource Utilization", icon: "utilization" },
     { href: "/app/institution/inventory", label: "Inventory", icon: "inventory" },
     { href: "/app/institution/surplus-listings", label: "Surplus Listings", icon: "ticket" },
     { href: "/app/institution/deliveries", label: "Deliveries", icon: "deliveries" },
