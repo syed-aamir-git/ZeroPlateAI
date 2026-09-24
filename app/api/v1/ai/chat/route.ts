@@ -66,6 +66,13 @@ Welcome them warmly to ZeroPlate AI and provide a structured role-based getting 
 2. Verified NGOs: [Browse Surplus Food](/app/ngo/browse), [My Claims](/app/ngo/my-claims)
 3. Delivery Couriers: [Delivery Dispatches](/app/delivery/assignments)
 4. Next Steps: [Sign Up / Register](/register), [Onboarding](/onboarding), and [How It Works](/how-it-works).
+
+STRICT CLEAN FORMATTING RULE:
+- NEVER output stars or asterisks (do not use * or ** for bolding or bullet lists).
+- NEVER output hashes (do not use #, ##, or ### for headings).
+- For bullet items, use bullet dots (•) or numbers (1., 2.).
+- For headers, use plain text or emojis with clear line breaks.
+- Format all links as [Link Label](/path).
 `;
 
 async function callNvidia(messages: ChatMessage[]): Promise<string | null> {
@@ -193,32 +200,46 @@ export function isIntroductoryQuery(query: string): boolean {
   return triggers.some((t) => clean.includes(t));
 }
 
+// Cleans any markdown stars or hashes from response text
+export function cleanStarsAndHashes(text: string): string {
+  if (!text) return "";
+  return text
+    // Remove markdown heading hashes at the start of lines (e.g. ### Header -> Header)
+    .replace(/^#{1,6}\s+/gm, "")
+    // Replace bullet asterisk * Item with • Item
+    .replace(/^\s*\*\s+/gm, "• ")
+    // Remove bold/italic stars **text** or *text*
+    .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
+    // Remove any remaining stray asterisks or hashes
+    .replace(/[*#]/g, "")
+    .trim();
+}
+
 export function getIntroductoryReply(): string {
-  return `Welcome to **ZeroPlate AI** — the intelligent food surplus redistribution network connecting dining halls, commercial kitchens, verified NGOs, and delivery partners to eliminate food waste! 🍱✨
+  return `Welcome to ZeroPlate AI — the intelligent food surplus redistribution network connecting dining halls, commercial kitchens, verified NGOs, and delivery partners to eliminate food waste! 🍱✨
 
-Here is a quick guide on **how to get started** based on your role:
+Here is a quick guide on how to get started based on your role:
 
-### 1️⃣ Institutional Kitchens & Dining Messes
-* **Post Surplus Batches:** Log excess cooked food or raw items at **[Surplus Listings](/app/institution/surplus-listings)** with pickup windows and food safety temperatures.
-* **Track Dispatches:** Follow real-time couriers transporting your donations in **[Active Deliveries](/app/institution/deliveries)**.
-* **Prevent Overproduction:** Review AI demand predictions in **[Kitchen Forecast](/app/institution/forecast)**.
+1️⃣ Institutional Kitchens & Dining Messes
+• Post Surplus Batches: Log excess cooked food or raw items at [Surplus Listings](/app/institution/surplus-listings) with pickup windows and food safety temperatures.
+• Track Dispatches: Follow real-time couriers transporting your donations in [Active Deliveries](/app/institution/deliveries).
+• Prevent Overproduction: Review AI demand predictions in [Kitchen Forecast](/app/institution/forecast).
 
-### 2️⃣ Verified NGOs & Community Food Banks
-* **Discover Food Batches:** Find available fresh meals nearby in **[Browse Surplus Food](/app/ngo/browse)**.
-* **Claim & Receive:** Tap *Claim Batch* to dispatch a delivery partner; verify receipt in **[My Claims](/app/ngo/my-claims)**.
+2️⃣ Verified NGOs & Community Food Banks
+• Discover Food Batches: Find available fresh meals nearby in [Browse Surplus Food](/app/ngo/browse).
+• Claim & Receive: Tap Claim Batch to dispatch a delivery partner; verify receipt in [My Claims](/app/ngo/my-claims).
 
-### 3️⃣ Logistics Delivery Partners
-* **Pick Up Dispatches:** Claim open broadcast delivery runs in **[Delivery Dispatches](/app/delivery/assignments)**.
-* **Live Road Navigation:** Follow turn-by-turn route coordinates and update status from pickup to NGO handoff.
+3️⃣ Logistics Delivery Partners
+• Pick Up Dispatches: Claim open broadcast delivery runs in [Delivery Dispatches](/app/delivery/assignments).
+• Live Road Navigation: Follow turn-by-turn route coordinates and update status from pickup to NGO handoff.
 
-### 4️⃣ Platform Compliance Admins
-* **City Command:** Monitor regional live operations and verify organizations on the **[Admin Overview](/app/admin/overview)**.
+4️⃣ Platform Compliance Admins
+• City Command: Monitor regional live operations and verify organizations on the [Admin Overview](/app/admin/overview).
 
----
-🚀 **Next Steps to Begin:**
-- Create an account or log in at **[Login / Sign Up](/login)**.
-- Complete your organization setup on **[Onboarding](/onboarding)**.
-- Explore our platform architecture and FAQs on **[How It Works](/how-it-works)**!`;
+🚀 Next Steps to Begin:
+- Create an account or log in at [Login / Sign Up](/login).
+- Complete your organization setup on [Onboarding](/onboarding).
+- Explore our platform architecture and FAQs on [How It Works](/how-it-works)!`;
 }
 
 // Smart rule-based fallback if external APIs ever timeout or fail
@@ -256,25 +277,25 @@ function getFallbackResponse(query: string): string {
   }
 
   if (q.includes("list") || q.includes("surplus") || q.includes("post food") || q.includes("donate") || q.includes("food batch")) {
-    return "To list surplus food from your institutional kitchen, head over to **[Surplus Listings](/app/institution/surplus-listings)**. Tap **'+ New Surplus Batch'**, specify the item category, quantity, safe preparation temperature, and pickup time window. Once logged, matching recipient NGOs will be notified immediately!";
+    return "To list surplus food from your institutional kitchen, head over to [Surplus Listings](/app/institution/surplus-listings). Tap '+ New Surplus Batch', specify the item category, quantity, safe preparation temperature, and pickup time window. Once logged, matching recipient NGOs will be notified immediately!";
   }
   if (q.includes("claim") || q.includes("ngo") || q.includes("receive") || q.includes("browse") || q.includes("donation")) {
-    return "NGOs can browse available surplus batches within their local radius at **[Browse Surplus Food](/app/ngo/browse)**. When you find a suitable batch, tap **'Claim Batch'** to immediately coordinate pickup and dispatch with registered delivery partners.";
+    return "NGOs can browse available surplus batches within their local radius at [Browse Surplus Food](/app/ngo/browse). When you find a suitable batch, tap 'Claim Batch' to immediately coordinate pickup and dispatch with registered delivery partners.";
   }
   if (q.includes("delivery") || q.includes("courier") || q.includes("driver") || q.includes("dispatch") || q.includes("logistics")) {
-    return "Delivery partners can view open broadcast dispatches at **[Delivery Dispatches](/app/delivery/assignments)**. Once an order is accepted, you can track live route coordinates from the kitchen to the recipient NGO with interactive real-road maps and stamp confirmation steps.";
+    return "Delivery partners can view open broadcast dispatches at [Delivery Dispatches](/app/delivery/assignments). Once an order is accepted, you can track live route coordinates from the kitchen to the recipient NGO with interactive real-road maps and stamp confirmation steps.";
   }
   if (q.includes("esg") || q.includes("report") || q.includes("carbon") || q.includes("metric") || q.includes("impact")) {
-    return "You can view your real-time environmental metrics and automated food rescue audits in the **[ESG Reports](/app/institution/reports)** section or check platform-wide metrics on our **[Public Impact Page](/impact)**.";
+    return "You can view your real-time environmental metrics and automated food rescue audits in the [ESG Reports](/app/institution/reports) section or check platform-wide metrics on our [Public Impact Page](/impact).";
   }
   if (q.includes("forecast") || q.includes("predict") || /\bai\b/.test(q) || q.includes("artificial intelligence")) {
-    return "ZeroPlate AI incorporates predictive demand forecasting models in **[Kitchen Forecast](/app/institution/forecast)**. It analyzes past meal consumption and headcount to calculate optimal preparation quantities, preventing surplus before cooking begins.";
+    return "ZeroPlate AI incorporates predictive demand forecasting models in [Kitchen Forecast](/app/institution/forecast). It analyzes past meal consumption and headcount to calculate optimal preparation quantities, preventing surplus before cooking begins.";
   }
   if (q.includes("admin") || q.includes("verify") || q.includes("kyc")) {
-    return "Platform administrators can monitor all regional dispatches on the live command map at **[Admin Overview](/app/admin/overview)** and review pending non-profit registrations in the **[NGO Verification Queue](/app/admin/ngo-verification)**.";
+    return "Platform administrators can monitor all regional dispatches on the live command map at [Admin Overview](/app/admin/overview) and review pending non-profit registrations in the [NGO Verification Queue](/app/admin/ngo-verification).";
   }
   if (q.includes("help") || q.includes("zeroplate") || q.includes("web app") || q.includes("website") || q.includes("portal") || q.includes("features")) {
-    return "I'm here to help you navigate ZeroPlate AI! You can ask me how to list surplus batches, claim meals as an NGO, coordinate delivery dispatches, view ESG carbon savings, or navigate any portal on the platform.";
+    return "I am here to help you navigate ZeroPlate AI! You can ask me how to list surplus batches, claim meals as an NGO, coordinate delivery dispatches, view ESG carbon savings, or navigate any portal on the platform.";
   }
 
   return formalDeflection;
@@ -293,7 +314,7 @@ export async function POST(request: NextRequest) {
     if (isIntroductoryQuery(message)) {
       return NextResponse.json({
         success: true,
-        reply: getIntroductoryReply(),
+        reply: cleanStarsAndHashes(getIntroductoryReply()),
       });
     }
 
@@ -324,7 +345,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      reply,
+      reply: cleanStarsAndHashes(reply || ""),
     });
   } catch (error: unknown) {
     console.error("AI Chat API error:", error);

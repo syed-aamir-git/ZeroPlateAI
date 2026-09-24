@@ -27,7 +27,7 @@ export default function ZeroPlateAiChat() {
       id: "welcome-1",
       role: "assistant",
       content:
-        "Hello! I'm your **ZeroPlate AI Guide**. Ask me anything about logging surplus food, claiming NGO batches, dispatching couriers, or navigating our platforms.",
+        "Hello! I'm your ZeroPlate AI Guide. Ask me anything about logging surplus food, claiming NGO batches, dispatching couriers, or navigating our platforms.",
       timestamp: "Just now",
     },
   ]);
@@ -115,8 +115,15 @@ export default function ZeroPlateAiChat() {
     ]);
   };
 
-  // Render markdown-like links [Text](URL) safely
-  const formatContent = (text: string) => {
+  // Render markdown-like links [Text](URL) safely while removing stars and hashes
+  const formatContent = (rawText: string) => {
+    // Strip markdown hashes and stars so they never show up as raw symbols in the UI
+    const text = rawText
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/^\s*\*\s+/gm, "• ")
+      .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
+      .replace(/[*#]/g, "");
+
     const linkRegex = /\[(.*?)\]\((.*?)\)/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
