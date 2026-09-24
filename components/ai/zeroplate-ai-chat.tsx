@@ -12,6 +12,7 @@ interface ChatMessage {
 }
 
 const STARTER_PROMPTS = [
+  "🚀 How to get started / use this?",
   "🍱 How do I list surplus food?",
   "🤝 How does NGO matching work?",
   "🚚 How do delivery dispatches work?",

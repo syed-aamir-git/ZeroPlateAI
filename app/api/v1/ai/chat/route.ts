@@ -58,6 +58,14 @@ NAVIGATION SHORTCUTS:
 - How NGOs claim food: "Visit [Browse Surplus](/app/ngo/browse), view the batch details, and tap 'Claim Batch'."
 - Where are my deliveries: "Check [Active Deliveries](/app/institution/deliveries) or for couriers: [Delivery Dispatches](/app/delivery/assignments)."
 - How to view impact: "Visit the [Impact Dashboard](/impact) or [ESG Reports](/app/institution/reports)."
+
+GETTING STARTED / HOW TO USE INQUIRIES:
+- If the user asks anything like "how to get started", "how to use this", "how do I use this", or "guide me":
+Welcome them warmly to ZeroPlate AI and provide a structured role-based getting started guide covering:
+1. Kitchens & Messes: [Surplus Listings](/app/institution/surplus-listings), [Active Deliveries](/app/institution/deliveries), [Kitchen Forecast](/app/institution/forecast)
+2. Verified NGOs: [Browse Surplus Food](/app/ngo/browse), [My Claims](/app/ngo/my-claims)
+3. Delivery Couriers: [Delivery Dispatches](/app/delivery/assignments)
+4. Next Steps: [Sign Up / Register](/register), [Onboarding](/onboarding), and [How It Works](/how-it-works).
 `;
 
 async function callNvidia(messages: ChatMessage[]): Promise<string | null> {
@@ -146,9 +154,81 @@ async function callGemini(messages: ChatMessage[]): Promise<string | null> {
   return null;
 }
 
+// Detects questions asking how to get started or how to use the platform
+export function isIntroductoryQuery(query: string): boolean {
+  const q = query.toLowerCase().trim();
+  const clean = q.replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ");
+
+  const triggers = [
+    "how to get started",
+    "how do i get started",
+    "how can i get started",
+    "how to use this",
+    "how do i use this",
+    "how can i use this",
+    "how to use",
+    "how do i use",
+    "how to start",
+    "how do i start",
+    "how does this work",
+    "how does it work",
+    "how it works",
+    "getting started",
+    "get started",
+    "start here",
+    "where do i start",
+    "where to start",
+    "what to do first",
+    "guide me",
+    "tell me how to use",
+    "explain how to use",
+    "walk me through",
+    "introduction",
+    "intro to zeroplate",
+    "help me get started",
+    "how can i start",
+    "what is this platform",
+  ];
+
+  return triggers.some((t) => clean.includes(t));
+}
+
+export function getIntroductoryReply(): string {
+  return `Welcome to **ZeroPlate AI** — the intelligent food surplus redistribution network connecting dining halls, commercial kitchens, verified NGOs, and delivery partners to eliminate food waste! 🍱✨
+
+Here is a quick guide on **how to get started** based on your role:
+
+### 1️⃣ Institutional Kitchens & Dining Messes
+* **Post Surplus Batches:** Log excess cooked food or raw items at **[Surplus Listings](/app/institution/surplus-listings)** with pickup windows and food safety temperatures.
+* **Track Dispatches:** Follow real-time couriers transporting your donations in **[Active Deliveries](/app/institution/deliveries)**.
+* **Prevent Overproduction:** Review AI demand predictions in **[Kitchen Forecast](/app/institution/forecast)**.
+
+### 2️⃣ Verified NGOs & Community Food Banks
+* **Discover Food Batches:** Find available fresh meals nearby in **[Browse Surplus Food](/app/ngo/browse)**.
+* **Claim & Receive:** Tap *Claim Batch* to dispatch a delivery partner; verify receipt in **[My Claims](/app/ngo/my-claims)**.
+
+### 3️⃣ Logistics Delivery Partners
+* **Pick Up Dispatches:** Claim open broadcast delivery runs in **[Delivery Dispatches](/app/delivery/assignments)**.
+* **Live Road Navigation:** Follow turn-by-turn route coordinates and update status from pickup to NGO handoff.
+
+### 4️⃣ Platform Compliance Admins
+* **City Command:** Monitor regional live operations and verify organizations on the **[Admin Overview](/app/admin/overview)**.
+
+---
+🚀 **Next Steps to Begin:**
+- Create an account or log in at **[Login / Sign Up](/login)**.
+- Complete your organization setup on **[Onboarding](/onboarding)**.
+- Explore our platform architecture and FAQs on **[How It Works](/how-it-works)**!`;
+}
+
 // Smart rule-based fallback if external APIs ever timeout or fail
 function getFallbackResponse(query: string): string {
   const q = query.toLowerCase().trim();
+
+  // Check introductory query first
+  if (isIntroductoryQuery(query)) {
+    return getIntroductoryReply();
+  }
 
   // Explicit off-topic check
   const isOffTopic =
@@ -207,6 +287,14 @@ export async function POST(request: NextRequest) {
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "Message is required." }, { status: 400 });
+    }
+
+    // 0. Dedicated check for introductory / getting started inquiries
+    if (isIntroductoryQuery(message)) {
+      return NextResponse.json({
+        success: true,
+        reply: getIntroductoryReply(),
+      });
     }
 
     const cleanHistory: ChatMessage[] = Array.isArray(history)
