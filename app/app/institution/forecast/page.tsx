@@ -28,6 +28,12 @@ import {
   CartesianGrid,
 } from "recharts";
 import SurplusAiCalculator from "@/components/calculator/surplus-ai-calculator";
+import FefoResourceIntelligence from "@/components/forecast/fefo-resource-intelligence";
+import {
+  FefoIntelligenceReport,
+  getDefaultFefoBaselineItems,
+  evaluateFefoInventory,
+} from "@/lib/fefo-engine";
 
 interface DailyPrediction {
   date: string;
@@ -61,6 +67,7 @@ interface ForecastData {
 export default function InstitutionForecastPage() {
   const [institution, setInstitution] = useState<any>(null);
   const [forecast, setForecast] = useState<ForecastData | null>(null);
+  const [fefoReport, setFefoReport] = useState<FefoIntelligenceReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +100,11 @@ export default function InstitutionForecastPage() {
           setForecast(fJson.forecast);
         } else {
           setError("Forecast data unavailable for this institution.");
+        }
+        if (fJson.fefoIntelligence) {
+          setFefoReport(fJson.fefoIntelligence);
+        } else {
+          setFefoReport(evaluateFefoInventory(getDefaultFefoBaselineItems()));
         }
       } catch (err: any) {
         console.error("Forecast page load error:", err);
@@ -510,7 +522,7 @@ export default function InstitutionForecastPage() {
                         cooked_food: "Post to ZeroPlate 1-2 hours before meal ends for quick hot pickup",
                         bakery: "Bundle and schedule pickup for evening distribution",
                         dairy: "Store chilled below 5°C; donate sealed containers before best-by date",
-                        raw_produce: "Inspect daily; prioritize leafy greens for immediate redistribution",
+                        raw_produce: "FEFO Priority: Correlate nearing-expiry produce (tomatoes, greens) into tomorrow's meal prep to mitigate pre-consumption waste",
                         packaged_dry: "Store in cool dry pantry; highly shelf-stable buffer",
                       };
 
@@ -544,6 +556,12 @@ export default function InstitutionForecastPage() {
               </div>
             </div>
           )}
+
+          {/* 7. AI Central Resource Intelligence (FEFO Engine & Pre-consumption Mitigation) */}
+          <FefoResourceIntelligence
+            initialReport={fefoReport || evaluateFefoInventory(getDefaultFefoBaselineItems())}
+            tomorrowDemandKg={forecast.predictions?.[0]?.predicted_demand || 28}
+          />
         </>
       )}
     </div>

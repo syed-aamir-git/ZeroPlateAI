@@ -250,6 +250,28 @@ export async function GET(
       forecastData = generateLocalForecast(institutionId, historyPoints, 7);
     }
 
+    // 4. Inculcate FEFO (First-Expired, First-Out) Central Resource Intelligence Engine
+    const { evaluateFefoInventory, getDefaultFefoBaselineItems } = await import("@/lib/fefo-engine");
+    
+    const activeInventoryInputs = inventoryItems
+      .filter((i) => i.status !== "delivered")
+      .map((i) => ({
+        id: String(i._id),
+        name: i.name,
+        category: i.category || "cooked_food",
+        quantity: Number(i.quantity) || 0,
+        unit: i.unit || "kg",
+        expiryDate: i.expiryEstimateAt || new Date(Date.now() + 48 * 3600 * 1000),
+        storage: (i.storage || (i.category === "dairy" ? "cold_storage" : "ambient")) as any,
+        preparedOrReceivedAt: i.preparedOrReceivedAt || i.createdAt,
+      }));
+
+    const itemsForFefo = activeInventoryInputs.length > 0
+      ? activeInventoryInputs
+      : getDefaultFefoBaselineItems();
+
+    const fefoReport = evaluateFefoInventory(itemsForFefo);
+
     return NextResponse.json({
       success: true,
       institution: {
@@ -261,6 +283,7 @@ export async function GET(
       inventoryItemsLogged: inventoryItems.length,
       surplusListingsLogged: surplusListings.length,
       forecast: forecastData,
+      fefoIntelligence: fefoReport,
     });
   } catch (error: unknown) {
     console.error("Error generating institution forecast:", error);
