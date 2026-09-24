@@ -64,6 +64,37 @@ export async function GET(request: NextRequest) {
       assignmentMap.set(String(a.surplusListingId || a.listingId), a);
     }
 
+    // Collect assigned driver partners and their user accounts
+    const partnerIds = assignments
+      .map((a) => a.assignedToDeliveryPartnerId)
+      .filter(Boolean)
+      .map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id));
+
+    const partners =
+      partnerIds.length > 0
+        ? await db
+            .collection("deliveryPartners")
+            .find({ _id: { $in: partnerIds } })
+            .toArray()
+        : [];
+
+    const partnerMap = new Map(partners.map((p) => [String(p._id), p]));
+
+    const userIds = partners
+      .map((p) => p.userId)
+      .filter(Boolean)
+      .map((uid) => (ObjectId.isValid(uid) ? new ObjectId(uid) : uid));
+
+    const users =
+      userIds.length > 0
+        ? await db
+            .collection("user")
+            .find({ _id: { $in: userIds } })
+            .toArray()
+        : [];
+
+    const userMap = new Map(users.map((u) => [String(u._id), u]));
+
     // Auto-backfill claimedByNgoId on any surplusListings if missing
     for (const listing of claimedListings) {
       if (!listing.claimedByNgoId) {
@@ -84,12 +115,27 @@ export async function GET(request: NextRequest) {
 
     const enrichedClaims = claimedListings.map((listing) => {
       const assignment = assignmentMap.get(String(listing._id));
+      const partner = assignment?.assignedToDeliveryPartnerId
+        ? partnerMap.get(String(assignment.assignedToDeliveryPartnerId))
+        : null;
+      const driverUser = partner?.userId ? userMap.get(String(partner.userId)) : null;
+
+      const courier = partner
+        ? {
+            name: driverUser?.name || "Assigned Driver",
+            phone: partner.phone || "",
+            vehicleType: partner.vehicleType || "two_wheeler",
+            vehicleNumber: partner.vehicleNumber || "",
+          }
+        : null;
+
       return {
         ...listing,
         deliveryAssignment: assignment || null,
         deliveryStatus: assignment?.status || listing.status || "assigned",
         isConfirmed: assignment?.status === "confirmed",
         confirmedAt: assignment?.confirmedAt || null,
+        courier,
       };
     });
 

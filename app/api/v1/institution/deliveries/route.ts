@@ -168,6 +168,7 @@ export async function GET(request: NextRequest) {
           ? {
               name: driverUser?.name || "Delivery Partner",
               vehicleType: driver.vehicleType,
+              vehicleNumber: driver.vehicleNumber || "",
               phone: driver.phone,
               serviceArea: driver.serviceArea,
             }

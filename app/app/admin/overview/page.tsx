@@ -46,6 +46,7 @@ interface DispatchItem {
     name: string;
     phone: string;
     vehicleType: string;
+    vehicleNumber?: string;
   } | null;
 }
 
@@ -316,9 +317,16 @@ export default function AdminOverviewPage() {
                     <td className="px-4 py-3">
                       {d.courier ? (
                         <div className="font-mono-numeral space-y-0.5">
-                          <div className="font-semibold text-[#F3EEE2] flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#86C29B]" />
-                            {d.courier.name}
+                          <div className="font-semibold text-[#F3EEE2] flex items-center justify-between gap-1.5">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#86C29B]" />
+                              {d.courier.name}
+                            </span>
+                            {d.courier.vehicleNumber && (
+                              <span className="px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30 text-[10px] tracking-wider">
+                                🚘 {d.courier.vehicleNumber}
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px] text-[#C9B9C7] capitalize">
                             {d.courier.vehicleType?.replace("_", " ")} · {d.courier.phone}

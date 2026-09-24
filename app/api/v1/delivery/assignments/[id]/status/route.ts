@@ -165,6 +165,7 @@ export async function PATCH(
       const driverUser = await db.collection("user").findOne({ _id: partner.userId as any });
       const driverName = driverUser?.name || "Delivery Partner";
       const vehicleDesc = (partner.vehicleType || "two_wheeler").replace("_", " ");
+      const plateDesc = partner.vehicleNumber ? ` [Plate: ${partner.vehicleNumber}]` : "";
 
       if (nextStatus === "accepted") {
         // 1. Notify Platform Admins that delivery partner has accepted and is now assigned
@@ -179,7 +180,7 @@ export async function PATCH(
             role: "platform_admin",
             type: "delivery_assigned",
             title: "Delivery Partner Assigned",
-            message: `Order for ${itemName} has been assigned to delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}).`,
+            message: `Order for ${itemName} has been assigned to delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}${plateDesc}).`,
             link: "/app/admin/overview",
             metadata: {
               assignmentId,
@@ -187,6 +188,7 @@ export async function PATCH(
               driverName,
               phone: partner.phone,
               vehicleType: partner.vehicleType,
+              vehicleNumber: partner.vehicleNumber || "",
               itemName,
             },
           });
@@ -199,7 +201,7 @@ export async function PATCH(
             role: "institution_admin",
             type: "delivery_status_change",
             title: `Delivery Partner Assigned: ${driverName}`,
-            message: `Order for ${itemName} is assigned to delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}). Driver is en route to pick up.`,
+            message: `Order for ${itemName} is assigned to delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}${plateDesc}). Driver is en route to pick up.`,
             link: "/app/institution/deliveries",
             metadata: {
               assignmentId,
@@ -207,6 +209,7 @@ export async function PATCH(
               driverName,
               phone: partner.phone,
               vehicleType: partner.vehicleType,
+              vehicleNumber: partner.vehicleNumber || "",
             },
           });
         }
@@ -218,12 +221,15 @@ export async function PATCH(
             role: "ngo",
             type: "delivery_status_change",
             title: `Delivery Partner Assigned: ${driverName}`,
-            message: `Delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}) has accepted dispatch for ${itemName} and will deliver to your center.`,
+            message: `Delivery partner ${driverName} (${partner.phone || "No phone"}, ${vehicleDesc}${plateDesc}) has accepted dispatch for ${itemName} and will deliver to your center.`,
             link: "/app/ngo/my-claims",
             metadata: {
               assignmentId,
               partnerId: partner._id,
               driverName,
+              phone: partner.phone,
+              vehicleType: partner.vehicleType,
+              vehicleNumber: partner.vehicleNumber || "",
             },
           });
         }

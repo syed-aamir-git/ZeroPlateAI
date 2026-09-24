@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(),
       });
     } else if (role === "delivery_partner") {
-      const { vehicleType, phone, serviceArea } = details || {};
+      const { vehicleType, vehicleNumber, phone, serviceArea } = details || {};
       if (!phone) {
         return NextResponse.json(
           { error: "Phone number is required for delivery partners." },
@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
       await db.collection("deliveryPartners").insertOne({
         userId: userObjectId,
         vehicleType: vehicleType || "two_wheeler",
+        vehicleNumber: vehicleNumber ? String(vehicleNumber).trim().toUpperCase() : "DL-PENDING",
         phone,
         serviceArea: serviceArea || "Metropolitan Zone",
         active: true,

@@ -11,6 +11,7 @@ interface PartnerProfile {
   email?: string;
   phone: string;
   vehicleType: "two_wheeler" | "four_wheeler" | "van" | "electric_cargo";
+  vehicleNumber?: string;
   serviceArea: string;
   active: boolean;
   totalCompleted: number;
@@ -24,6 +25,7 @@ export default function DeliveryProfilePage() {
   const [saving, setSaving] = React.useState(false);
   const [phone, setPhone] = React.useState("");
   const [vehicleType, setVehicleType] = React.useState<PartnerProfile["vehicleType"]>("two_wheeler");
+  const [vehicleNumber, setVehicleNumber] = React.useState("");
   const [serviceArea, setServiceArea] = React.useState("");
   const [active, setActive] = React.useState(true);
   const [message, setMessage] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -37,6 +39,7 @@ export default function DeliveryProfilePage() {
         setProfile(json.partner);
         setPhone(json.partner.phone || "");
         setVehicleType(json.partner.vehicleType || "two_wheeler");
+        setVehicleNumber(json.partner.vehicleNumber || "");
         setServiceArea(json.partner.serviceArea || "");
         setActive(json.partner.active !== false);
       }
@@ -63,6 +66,7 @@ export default function DeliveryProfilePage() {
         body: JSON.stringify({
           phone,
           vehicleType,
+          vehicleNumber: vehicleNumber.trim().toUpperCase(),
           serviceArea,
           active,
         }),
@@ -200,6 +204,23 @@ export default function DeliveryProfilePage() {
             <option value="four_wheeler">Four Wheeler (Car / Hatchback)</option>
             <option value="van">Commercial Delivery Van</option>
           </select>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-mono-numeral uppercase text-[#9E9587] mb-1">
+            Vehicle Number Plate (Registration) *
+          </label>
+          <input
+            type="text"
+            value={vehicleNumber}
+            onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+            required
+            placeholder="e.g. DL 01 AB 1234"
+            className="w-full px-3 py-2 text-xs bg-[#24211C] border border-[#3B362E] rounded-[4px] text-[#F3EEE2] font-mono uppercase tracking-wider focus:border-[#D9A441] outline-none placeholder:normal-case placeholder:tracking-normal placeholder:font-sans"
+          />
+          <span className="text-[10px] text-[#9E9587] mt-1 block">
+            This plate number is displayed along with your name and phone number on active deliveries.
+          </span>
         </div>
 
         <div>

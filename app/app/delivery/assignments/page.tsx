@@ -59,6 +59,16 @@ interface Assignment {
   };
 }
 
+interface PartnerInfo {
+  _id: string;
+  name?: string;
+  phone: string;
+  vehicleType: string;
+  vehicleNumber?: string;
+  serviceArea: string;
+  active: boolean;
+}
+
 const LIFECYCLE_STAGES: Array<{
   id: Assignment["status"];
   label: string;
@@ -72,6 +82,7 @@ const LIFECYCLE_STAGES: Array<{
 
 export default function DeliveryAssignmentsPage() {
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
+  const [partner, setPartner] = React.useState<PartnerInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [updatingId, setUpdatingId] = React.useState<string | null>(null);
   const [justAdvancedStage, setJustAdvancedStage] = React.useState<{
@@ -99,6 +110,9 @@ export default function DeliveryAssignmentsPage() {
       if (res.ok) {
         const json = await res.json();
         setAssignments(json.assignments || []);
+        if (json.partner) {
+          setPartner(json.partner);
+        }
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
@@ -221,7 +235,7 @@ export default function DeliveryAssignmentsPage() {
   return (
     <div className="space-y-4 text-left">
       {/* Page Title & Status */}
-      <div className="flex items-baseline justify-between border-b border-[#3B362E] pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-[#3B362E] pb-3 gap-2">
         <div>
           <span className="font-mono-numeral text-[11px] uppercase tracking-wider text-[#9E9587]">
             Active Logistics Route
@@ -231,15 +245,35 @@ export default function DeliveryAssignmentsPage() {
           </h1>
         </div>
 
-        <button
-          onClick={() => {
-            setLoading(true);
-            fetchAssignments();
-          }}
-          className="text-xs text-[#D9A441] hover:underline font-mono-numeral cursor-pointer"
-        >
-          ↻ Refresh
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          {partner && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-[6px] bg-[#24211C] border border-[#3B362E] text-xs font-mono-numeral">
+              <span className="text-[#F3EEE2] font-semibold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#86C29B]" />
+                {partner.name || "Driver"}
+              </span>
+              <span className="text-[#9E9587]">·</span>
+              <span className="text-[#D4CBBF]">📞 {partner.phone}</span>
+              {partner.vehicleNumber && (
+                <>
+                  <span className="text-[#9E9587]">·</span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30 text-[11px] tracking-wider">
+                    🚘 {partner.vehicleNumber}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+          <button
+            onClick={() => {
+              setLoading(true);
+              fetchAssignments();
+            }}
+            className="text-xs text-[#D9A441] hover:underline font-mono-numeral cursor-pointer whitespace-nowrap"
+          >
+            ↻ Refresh
+          </button>
+        </div>
       </div>
 
       {/* Feedback Banner */}
@@ -377,10 +411,22 @@ export default function DeliveryAssignmentsPage() {
                         <span className="text-[10px] text-[#9E9587]">First to tap Accept secures order</span>
                       </div>
                     ) : assignment.isAssignedToMe ? (
-                      <div className="mt-1.5 flex items-center gap-2">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono-numeral font-semibold bg-[#2F4B3A]/40 text-[#86C29B] border border-[#2F4B3A]">
                           ✓ Assigned to You
                         </span>
+                        {partner && (
+                          <span className="text-[10px] font-mono-numeral text-[#D4CBBF] flex items-center gap-1.5">
+                            <span>Driver: <strong className="text-[#F3EEE2]">{partner.name || "You"}</strong></span>
+                            <span>·</span>
+                            <span>📞 {partner.phone}</span>
+                            {partner.vehicleNumber && (
+                              <span className="px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30 text-[10px] tracking-wider ml-0.5">
+                                🚘 {partner.vehicleNumber}
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     ) : null}
                   </div>

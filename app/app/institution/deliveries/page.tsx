@@ -68,6 +68,7 @@ interface DeliveryItem {
   courier: {
     name?: string;
     vehicleType: string;
+    vehicleNumber?: string;
     phone: string;
     serviceArea: string;
   } | null;
@@ -151,6 +152,7 @@ export default function InstitutionDeliveriesPage() {
       d.item.name.toLowerCase().includes(q) ||
       d.recipient.name.toLowerCase().includes(q) ||
       (d.courier?.name || "").toLowerCase().includes(q) ||
+      (d.courier?.vehicleNumber || "").toLowerCase().includes(q) ||
       d._id.toLowerCase().includes(q);
 
     return matchesFilter && matchesSearch;
@@ -501,12 +503,17 @@ export default function InstitutionDeliveriesPage() {
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                           Assigned Courier
                         </span>
-                        <div className="font-semibold text-stone-900 text-xs">
-                          {d.courier.name || "Delivery Partner"}
+                        <div className="font-semibold text-stone-900 text-xs flex items-center justify-between gap-2">
+                          <span>{d.courier.name || "Delivery Partner"}</span>
+                          {d.courier.vehicleNumber && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-amber-50 text-stone-900 font-mono text-[10px] font-bold tracking-wider border border-amber-300 shadow-2xs">
+                              {d.courier.vehicleNumber}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-stone-500 capitalize flex items-center gap-1">
                           <Truck className="w-3 h-3 text-stone-400" />
-                          {d.courier.vehicleType.replace("_", " ")}
+                          <span>{d.courier.vehicleType.replace("_", " ")}</span>
                         </div>
                         <a
                           href={`tel:${d.courier.phone}`}

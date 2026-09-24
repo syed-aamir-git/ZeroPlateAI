@@ -6,6 +6,7 @@ export interface DeliveryPartnerCandidate {
   userId: ObjectId;
   phone: string;
   vehicleType: string;
+  vehicleNumber?: string;
   serviceArea: string;
   location?: { lat: number; lng: number };
   active: boolean;

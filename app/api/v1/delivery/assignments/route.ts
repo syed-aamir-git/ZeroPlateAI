@@ -206,8 +206,10 @@ export async function GET(request: NextRequest) {
       success: true,
       partner: {
         _id: partner._id,
+        name: session.user.name,
         phone: partner.phone,
         vehicleType: partner.vehicleType,
+        vehicleNumber: partner.vehicleNumber || "",
         serviceArea: partner.serviceArea,
         active: partner.active,
       },

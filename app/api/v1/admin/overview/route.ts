@@ -157,6 +157,7 @@ export async function GET() {
               name: driverUser?.name || "Delivery Partner",
               phone: driver.phone,
               vehicleType: driver.vehicleType,
+              vehicleNumber: driver.vehicleNumber || "",
             }
           : null,
       };

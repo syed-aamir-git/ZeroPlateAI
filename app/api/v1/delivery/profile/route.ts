@@ -47,6 +47,7 @@ export async function GET() {
         email: session.user.email,
         phone: partner.phone,
         vehicleType: partner.vehicleType || "two_wheeler",
+        vehicleNumber: partner.vehicleNumber || "",
         serviceArea: partner.serviceArea || "Metropolitan Zone",
         active: partner.active !== false,
         createdAt: partner.createdAt,
@@ -96,6 +97,9 @@ export async function PATCH(request: NextRequest) {
     }
     if (body.vehicleType && ["two_wheeler", "four_wheeler", "van", "electric_cargo"].includes(body.vehicleType)) {
       updates.vehicleType = body.vehicleType;
+    }
+    if (body.vehicleNumber !== undefined) {
+      updates.vehicleNumber = String(body.vehicleNumber).trim().toUpperCase();
     }
     if (body.serviceArea?.trim()) {
       updates.serviceArea = body.serviceArea.trim();

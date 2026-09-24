@@ -47,6 +47,12 @@ interface ClaimRecord {
   isConfirmed: boolean;
   confirmedAt?: string;
   claimedAt?: string;
+  courier?: {
+    name: string;
+    phone: string;
+    vehicleType: string;
+    vehicleNumber?: string;
+  } | null;
 }
 
 export default function NgoMyClaimsPage() {
@@ -541,6 +547,26 @@ export default function NgoMyClaimsPage() {
                               Assigning Fleet Courier...
                             </span>
                           )}
+
+                          {claim.courier && (
+                            <div className="mt-1.5 text-[11px] text-stone-600 space-y-0.5 font-mono">
+                              <div className="font-semibold text-stone-900 flex items-center gap-1">
+                                <span>{claim.courier.name}</span>
+                                {claim.courier.vehicleNumber && (
+                                  <span className="px-1.5 py-0.2 rounded bg-amber-50 text-stone-900 font-bold border border-amber-300 text-[10px] tracking-wider ml-1">
+                                    🚘 {claim.courier.vehicleNumber}
+                                  </span>
+                                )}
+                              </div>
+                              {claim.courier.phone && (
+                                <div>
+                                  <a href={`tel:${claim.courier.phone}`} className="text-emerald-700 hover:underline">
+                                    📞 {claim.courier.phone}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </td>
 
                         {/* 6. Receipt Confirmation Action */}
@@ -597,11 +623,28 @@ export default function NgoMyClaimsPage() {
                         <tr className="bg-stone-50/50">
                           <td colSpan={6} className="p-4 border-b border-stone-200">
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between text-xs text-stone-600">
+                              <div className="flex items-center justify-between text-xs text-stone-600 flex-wrap gap-2">
                                 <span className="font-semibold text-stone-900 flex items-center gap-1.5">
                                   <Route className="w-3.5 h-3.5 text-emerald-600" />
                                   <span>Redistribution Route &amp; Pickup Bay Coordinates</span>
                                 </span>
+                                {claim.courier && (
+                                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-stone-100 border border-stone-200 text-xs font-mono">
+                                    <span className="text-stone-900 font-semibold">{claim.courier.name}</span>
+                                    <span>·</span>
+                                    <a href={`tel:${claim.courier.phone}`} className="text-emerald-700 font-semibold hover:underline">
+                                      📞 {claim.courier.phone}
+                                    </a>
+                                    {claim.courier.vehicleNumber && (
+                                      <>
+                                        <span>·</span>
+                                        <span className="px-1.5 py-0.5 rounded bg-amber-50 text-stone-900 font-bold border border-amber-300 text-[10px] tracking-wider">
+                                          🚘 {claim.courier.vehicleNumber}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
                                 <span className="font-mono text-[11px] text-stone-500">
                                   Direct Dispatch Telemetry
                                 </span>

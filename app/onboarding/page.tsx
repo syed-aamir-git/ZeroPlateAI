@@ -36,6 +36,7 @@ export default function OnboardingPage() {
   // Delivery Partner Fields
   const [deliveryPhone, setDeliveryPhone] = React.useState("");
   const [deliveryVehicle, setDeliveryVehicle] = React.useState("two_wheeler");
+  const [deliveryVehicleNumber, setDeliveryVehicleNumber] = React.useState("");
   const [deliveryArea, setDeliveryArea] = React.useState("South Delhi Metro Zone");
 
   // Platform Admin Fields
@@ -102,6 +103,7 @@ export default function OnboardingPage() {
       details = {
         phone: deliveryPhone,
         vehicleType: deliveryVehicle,
+        vehicleNumber: deliveryVehicleNumber.trim().toUpperCase(),
         serviceArea: deliveryArea,
       };
     } else if (selectedRole === "platform_admin") {
@@ -441,6 +443,23 @@ export default function OnboardingPage() {
                       <option value="on_foot_volunteer">Volunteer On-Foot / Bicycle</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-ink uppercase tracking-wider mb-1">
+                    Vehicle Number Plate *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={deliveryVehicleNumber}
+                    onChange={(e) => setDeliveryVehicleNumber(e.target.value.toUpperCase())}
+                    placeholder="e.g. DL 01 AB 1234"
+                    className="w-full px-3 py-2 text-sm bg-ledger-paper border border-line rounded-[6px] text-ink font-mono uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal placeholder:font-sans"
+                  />
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    Displayed alongside your name and contact during active order pickups &amp; deliveries.
+                  </span>
                 </div>
 
                 <div>
