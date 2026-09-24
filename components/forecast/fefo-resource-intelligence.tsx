@@ -30,6 +30,7 @@ import {
   DollarSign,
   AlertOctagon,
   X,
+  Search,
 } from "lucide-react";
 import {
   FefoIntelligenceReport,
@@ -60,6 +61,7 @@ export default function FefoResourceIntelligence({
   const [tierFilter, setTierFilter] = useState<"all" | "expiring_soon" | "moderate" | "long_shelf_life" | "overstocked" | "expired">(
     "all"
   );
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Modal State for adding Raw Material
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -106,8 +108,12 @@ export default function FefoResourceIntelligence({
 
   // Filtered raw material items in matrix
   const filteredItems = report.evaluatedItems.filter((item) => {
-    if (tierFilter === "all") return true;
-    return item.shelfLifeTier === tierFilter;
+    const matchesTier = tierFilter === "all" || item.shelfLifeTier === tierFilter;
+    const matchesSearch =
+      !searchQuery.trim() ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase().trim());
+    return matchesTier && matchesSearch;
   });
 
   const getStorageBadge = (storage: StorageEnvironment) => {
@@ -181,273 +187,318 @@ export default function FefoResourceIntelligence({
 
   return (
     <div className="space-y-6">
-      {/* 1. Symmetrical Section Header */}
-      <div className="border border-stone-200 bg-white p-5 sm:p-6 rounded-2xl shadow-xs space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-100 pb-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="w-3 h-3 rounded-full bg-emerald-600 animate-pulse" />
-              <h2 className="font-serif font-bold text-xl sm:text-2xl text-stone-900 tracking-tight">
-                Raw Materials &amp; Food Resource Utilization
-              </h2>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-                FEFO &amp; NVIDIA NIM Intelligence
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-stone-600 max-w-3xl leading-relaxed">
-              Exclusively optimizes <strong>raw materials &amp; ingredients</strong> (vegetables, dairy, grains, pulses) that make ready-made food.
-              Distinguishes high/low priority ingredients, determines what to cook urgently, and provides exact purchase quantities to <strong>prevent overstocking</strong>.
-            </p>
-          </div>
-
-          {/* Mathematical Blueprint Pill */}
-          <div className="bg-stone-50 border border-stone-200/80 rounded-xl p-3 shrink-0 text-left font-mono text-[11px] text-stone-600 space-y-0.5">
-            <div className="text-[10px] text-stone-400 uppercase tracking-wider font-sans font-bold flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-600" />
-              NVIDIA NIM Engine Active
-            </div>
-            <div className="text-stone-800 font-semibold">
-              inventory = &#123; raw<sub>1</sub>, ..., raw<sub>n</sub> &#125;
-            </div>
-            <div className="text-stone-500 text-[10px]">
-              raw<sub>i</sub> = (quantity, expiry, demand, shelf_life, storage)
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Interactive Navigation Tabs */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="inline-flex p-1 rounded-xl bg-stone-100 border border-stone-200 text-xs font-semibold">
-            <button
-              onClick={() => setActiveTab("live_matrix")}
-              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "live_matrix"
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-800"
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Raw Materials Matrix ({report.evaluatedItems.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("procurement")}
-              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "procurement"
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-800"
-              }`}
-            >
-              <ShoppingCart className="w-3.5 h-3.5 text-blue-600" />
-              <span>Smart Procurement &amp; Reorder Advisor</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("simulator")}
-              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "simulator"
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-800"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-              <span>FEFO AI Simulator (Interactive)</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("correlation")}
-              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "correlation"
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-800"
-              }`}
-            >
-              <Utensils className="w-3.5 h-3.5 text-amber-600" />
-              <span>Urgent Meal Preparation Roadmap</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsAddOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ Inward Raw Material Intake</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Symmetrical 4-Card FEFO Hierarchy KPI Deck */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {/* Card 1: Rose Theme - Priority 1 (Expiring Soon) */}
-        <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-rose-500/10 via-white to-rose-500/5 border border-rose-200/80 shadow-xs hover:shadow-md transition-shadow">
+      {/* 1. Symmetrical 4-Card FEFO Hierarchy KPI Deck with Interactive Filters */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: High Priority (<= 48h) */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("live_matrix");
+            setTierFilter(tierFilter === "expiring_soon" && activeTab === "live_matrix" ? "all" : "expiring_soon");
+          }}
+          className={`text-left p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-rose-500/10 via-white to-rose-500/5 border transition-all cursor-pointer relative overflow-hidden group shadow-xs hover:shadow-md ${
+            activeTab === "live_matrix" && tierFilter === "expiring_soon"
+              ? "border-rose-400 ring-2 ring-rose-400"
+              : "border-rose-200/80 hover:border-rose-300"
+          }`}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-wider text-rose-800 font-mono font-bold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
-              High Priority: Expiring Soon
+            <span className="text-[11px] uppercase tracking-wider text-rose-800 font-mono font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-rose-500 inline-block animate-pulse" />
+              1. High Priority (≤48h)
             </span>
-            <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center text-rose-700 shadow-2xs font-mono font-bold text-xs">
-              &le;48h
-            </div>
+            <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full font-bold">
+              COOK URGENTLY
+            </span>
           </div>
-          <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-rose-900 flex items-baseline gap-1.5">
+          <div className="mt-2.5 font-mono text-2xl sm:text-3xl font-extrabold text-rose-900 flex items-baseline gap-1.5">
             <span>{report.summary.expiringSoonKg}</span>
             <span className="text-xs font-sans text-stone-500 font-normal">kg</span>
-          </div>
-          <div className="mt-2.5 flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100/90 text-rose-900 border border-rose-200">
-              Cook Urgently
+            <span className="text-xs font-mono text-stone-400 ml-auto font-normal">
+              ({report.summary.expiringSoonCount} items)
             </span>
-            <span className="text-[11px] text-stone-500">tomorrow&apos;s meals</span>
           </div>
-        </div>
+          <div className="mt-2 text-[11px] text-stone-600 flex items-center justify-between">
+            <span>Produce &amp; dairy nearing expiry</span>
+            <span className="text-rose-700 font-medium group-hover:underline text-[10px]">
+              {tierFilter === "expiring_soon" && activeTab === "live_matrix" ? "Active Filter" : "Filter stock →"}
+            </span>
+          </div>
+        </button>
 
-        {/* Card 2: Amber Theme - Priority 2 (Moderate Shelf Life) */}
-        <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 border border-amber-200/80 shadow-xs hover:shadow-md transition-shadow">
+        {/* Card 2: Medium Priority (3-7d) */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("live_matrix");
+            setTierFilter(tierFilter === "moderate" && activeTab === "live_matrix" ? "all" : "moderate");
+          }}
+          className={`text-left p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 border transition-all cursor-pointer relative overflow-hidden group shadow-xs hover:shadow-md ${
+            activeTab === "live_matrix" && tierFilter === "moderate"
+              ? "border-amber-400 ring-2 ring-amber-400"
+              : "border-amber-200/80 hover:border-amber-300"
+          }`}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-wider text-amber-800 font-mono font-bold flex items-center gap-1">
+            <span className="text-[11px] uppercase tracking-wider text-amber-800 font-mono font-bold flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-              Medium Priority: Moderate
+              2. Medium Priority (3–7d)
             </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shadow-2xs font-mono font-bold text-xs">
-              3–7d
-            </div>
+            <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+              STAGE NEXT
+            </span>
           </div>
-          <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-amber-900 flex items-baseline gap-1.5">
+          <div className="mt-2.5 font-mono text-2xl sm:text-3xl font-extrabold text-amber-900 flex items-baseline gap-1.5">
             <span>{report.summary.moderateShelfLifeKg}</span>
             <span className="text-xs font-sans text-stone-500 font-normal">kg</span>
-          </div>
-          <div className="mt-2.5 flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100/90 text-amber-900 border border-amber-200">
-              Stage Next
+            <span className="text-xs font-mono text-stone-400 ml-auto font-normal">
+              ({report.summary.moderateShelfLifeCount} items)
             </span>
-            <span className="text-[11px] text-stone-500">mid-week rotation</span>
           </div>
-        </div>
+          <div className="mt-2 text-[11px] text-stone-600 flex items-center justify-between">
+            <span>Staples for mid-week meals</span>
+            <span className="text-amber-800 font-medium group-hover:underline text-[10px]">
+              {tierFilter === "moderate" && activeTab === "live_matrix" ? "Active Filter" : "Filter stock →"}
+            </span>
+          </div>
+        </button>
 
-        {/* Card 3: Emerald Theme - Priority 3 (Long Shelf Life) */}
-        <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-white to-emerald-500/5 border border-emerald-200/80 shadow-xs hover:shadow-md transition-shadow">
+        {/* Card 3: Low Priority (>7d) */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("live_matrix");
+            setTierFilter(tierFilter === "long_shelf_life" && activeTab === "live_matrix" ? "all" : "long_shelf_life");
+          }}
+          className={`text-left p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-white to-emerald-500/5 border transition-all cursor-pointer relative overflow-hidden group shadow-xs hover:shadow-md ${
+            activeTab === "live_matrix" && tierFilter === "long_shelf_life"
+              ? "border-emerald-400 ring-2 ring-emerald-400"
+              : "border-emerald-200/80 hover:border-emerald-300"
+          }`}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-wider text-emerald-800 font-mono font-bold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-              Low Priority: Pantry Buffer
+            <span className="text-[11px] uppercase tracking-wider text-emerald-800 font-mono font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block" />
+              3. Low Priority (&gt;7d)
             </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shadow-2xs font-mono font-bold text-xs">
-              &gt;7d
-            </div>
+            <span className="text-[10px] bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-full font-bold">
+              PRESERVE BUFFER
+            </span>
           </div>
-          <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-emerald-900 flex items-baseline gap-1.5">
+          <div className="mt-2.5 font-mono text-2xl sm:text-3xl font-extrabold text-emerald-900 flex items-baseline gap-1.5">
             <span>{report.summary.longShelfLifeKg}</span>
             <span className="text-xs font-sans text-stone-500 font-normal">kg</span>
-          </div>
-          <div className="mt-2.5 flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100/90 text-emerald-800 border border-emerald-200">
-              Preserve
+            <span className="text-xs font-mono text-stone-400 ml-auto font-normal">
+              ({report.summary.longShelfLifeCount} items)
             </span>
-            <span className="text-[11px] text-stone-500">safe pantry stock</span>
           </div>
+          <div className="mt-2 text-[11px] text-stone-600 flex items-center justify-between">
+            <span>Safe dry pantry &amp; grains</span>
+            <span className="text-emerald-800 font-medium group-hover:underline text-[10px]">
+              {tierFilter === "long_shelf_life" && activeTab === "live_matrix" ? "Active Filter" : "Filter stock →"}
+            </span>
+          </div>
+        </button>
+
+        {/* Card 4: Overstock Blocked */}
+        <button
+          type="button"
+          onClick={() => setActiveTab("procurement")}
+          className={`text-left p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 via-white to-purple-500/5 border transition-all cursor-pointer relative overflow-hidden group shadow-xs hover:shadow-md ${
+            activeTab === "procurement"
+              ? "border-purple-400 ring-2 ring-purple-400"
+              : "border-purple-200/80 hover:border-purple-300"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-purple-800 font-mono font-bold flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-600 inline-block" />
+              4. Overstock Gated
+            </span>
+            <span className="text-[10px] bg-purple-100 text-purple-900 px-2 py-0.5 rounded-full font-bold">
+              DO NOT BUY
+            </span>
+          </div>
+          <div className="mt-2.5 font-mono text-2xl sm:text-3xl font-extrabold text-purple-900 flex items-baseline gap-1.5">
+            <span>₹{report.procurementSummary.procurementBudgetSavedInr.toLocaleString()}</span>
+            <span className="text-xs font-sans text-stone-500 font-normal">saved</span>
+          </div>
+          <div className="mt-2 text-[11px] text-stone-600 flex items-center justify-between">
+            <span>{report.summary.overstockedCount} surplus reorders blocked</span>
+            <span className="text-purple-800 font-medium group-hover:underline text-[10px]">
+              {activeTab === "procurement" ? "Viewing Guide" : "Buying guide →"}
+            </span>
+          </div>
+        </button>
+      </div>
+
+      {/* 2. Sleek Tab Bar & Action Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-stone-200/80 shadow-xs">
+        <div className="inline-flex p-1 rounded-xl bg-stone-100 border border-stone-200/70 text-xs font-semibold overflow-x-auto max-w-full">
+          <button
+            onClick={() => setActiveTab("live_matrix")}
+            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === "live_matrix"
+                ? "bg-white text-stone-900 shadow-xs font-bold"
+                : "text-stone-500 hover:text-stone-800"
+            }`}
+          >
+            <Layers className="w-4 h-4 text-emerald-600" />
+            <span>Raw Stock Matrix</span>
+            <span className="px-1.5 py-0.2 bg-stone-200 text-stone-700 rounded-md text-[10px] font-mono">
+              {report.evaluatedItems.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("procurement")}
+            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === "procurement"
+                ? "bg-white text-stone-900 shadow-xs font-bold"
+                : "text-stone-500 hover:text-stone-800"
+            }`}
+          >
+            <ShoppingCart className="w-4 h-4 text-blue-600" />
+            <span>Smart Buying Guide</span>
+            {report.summary.overstockedCount > 0 && (
+              <span className="px-1.5 py-0.2 bg-purple-100 text-purple-800 rounded-md text-[10px] font-mono font-bold">
+                {report.summary.overstockedCount} Gated
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("correlation")}
+            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === "correlation"
+                ? "bg-white text-stone-900 shadow-xs font-bold"
+                : "text-stone-500 hover:text-stone-800"
+            }`}
+          >
+            <Utensils className="w-4 h-4 text-amber-600" />
+            <span>Today&apos;s Cooking Plan</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("simulator")}
+            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === "simulator"
+                ? "bg-white text-stone-900 shadow-xs font-bold"
+                : "text-stone-500 hover:text-stone-800"
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <span>FEFO AI Simulator</span>
+          </button>
         </div>
 
-        {/* Card 4: Violet Theme - Overstock Prevention */}
-        <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 via-white to-purple-500/5 border border-purple-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-wider text-purple-800 font-mono font-bold flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-600 inline-block" />
-              Overstocking Blocked
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center text-purple-700 shadow-2xs font-mono font-bold text-xs">
-              Safe
-            </div>
-          </div>
-          <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-purple-900 flex items-baseline gap-1.5">
-            <span>₹{report.procurementSummary.procurementBudgetSavedInr.toLocaleString()}</span>
-          </div>
-          <div className="mt-2.5 flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100/90 text-purple-900 border border-purple-200">
-              Saved
-            </span>
-            <span className="text-[11px] text-stone-500">by avoiding extra buy</span>
-          </div>
+        <div className="flex items-center gap-2 shrink-0 px-1">
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-all shadow-xs hover:shadow-sm cursor-pointer active:scale-95 ml-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Raw Material</span>
+          </button>
         </div>
       </div>
 
-      {/* 4. Live FEFO Raw Materials Matrix Tab */}
+      {/* 3. Live FEFO Raw Materials Matrix Tab */}
       {activeTab === "live_matrix" && (
         <div className="border border-stone-200 bg-white rounded-2xl overflow-hidden shadow-xs space-y-0">
-          {/* Table Toolbar & Filter */}
-          <div className="p-4 sm:p-5 border-b border-stone-200 bg-stone-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Table Toolbar & Search / Filters */}
+          <div className="p-4 sm:p-5 border-b border-stone-200 bg-stone-50/70 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-serif font-bold text-base text-stone-900">
                   Raw Materials FEFO Stock &amp; Recipe Correlator
                 </h3>
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-stone-200 text-stone-700">
-                  {filteredItems.length} Raw Ingredients Tracked
+                  {filteredItems.length} of {report.evaluatedItems.length} items
                 </span>
               </div>
               <p className="text-xs text-stone-500 mt-0.5">
-                Evaluates raw ingredients only. Determines high/low priority items so the kitchen knows what food to cook urgently.
+                Evaluates raw ingredients only. Prioritizes nearing-expiry produce for immediate cooking before spoilage.
               </p>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] text-stone-500 font-sans mr-1">Filter Tier:</span>
-              <button
-                onClick={() => setTierFilter("all")}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-                  tierFilter === "all"
-                    ? "bg-stone-900 text-white"
-                    : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-100"
-                }`}
-              >
-                All ({report.evaluatedItems.length})
-              </button>
-              <button
-                onClick={() => setTierFilter("expiring_soon")}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-                  tierFilter === "expiring_soon"
-                    ? "bg-rose-600 text-white"
-                    : "bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100"
-                }`}
-              >
-                🔴 High Priority ({report.summary.expiringSoonCount})
-              </button>
-              <button
-                onClick={() => setTierFilter("moderate")}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-                  tierFilter === "moderate"
-                    ? "bg-amber-600 text-white"
-                    : "bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100"
-                }`}
-              >
-                🟡 Medium Priority ({report.summary.moderateShelfLifeCount})
-              </button>
-              <button
-                onClick={() => setTierFilter("long_shelf_life")}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-                  tierFilter === "long_shelf_life"
-                    ? "bg-emerald-600 text-white"
-                    : "bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100"
-                }`}
-              >
-                🟢 Low Priority ({report.summary.longShelfLifeCount})
-              </button>
-              {report.summary.overstockedCount > 0 && (
+            {/* Search Input & Filter Pills */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Live search input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search ingredient..."
+                  className="pl-8 pr-7 py-1.5 rounded-xl border border-stone-200 bg-white text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-44"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
-                  onClick={() => setTierFilter("overstocked")}
+                  onClick={() => setTierFilter("all")}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-                    tierFilter === "overstocked"
-                      ? "bg-purple-600 text-white"
-                      : "bg-purple-50 border border-purple-200 text-purple-800 hover:bg-purple-100"
+                    tierFilter === "all"
+                      ? "bg-stone-900 text-white"
+                      : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-100"
                   }`}
                 >
-                  🟣 Overstocked ({report.summary.overstockedCount})
+                  All ({report.evaluatedItems.length})
                 </button>
-              )}
+                <button
+                  onClick={() => setTierFilter("expiring_soon")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    tierFilter === "expiring_soon"
+                      ? "bg-rose-600 text-white"
+                      : "bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100"
+                  }`}
+                >
+                  🔴 High (&le;48h) ({report.summary.expiringSoonCount})
+                </button>
+                <button
+                  onClick={() => setTierFilter("moderate")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    tierFilter === "moderate"
+                      ? "bg-amber-600 text-white"
+                      : "bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100"
+                  }`}
+                >
+                  🟡 Med (3–7d) ({report.summary.moderateShelfLifeCount})
+                </button>
+                <button
+                  onClick={() => setTierFilter("long_shelf_life")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    tierFilter === "long_shelf_life"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  🟢 Low (&gt;7d) ({report.summary.longShelfLifeCount})
+                </button>
+                {report.summary.overstockedCount > 0 && (
+                  <button
+                    onClick={() => setTierFilter("overstocked")}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                      tierFilter === "overstocked"
+                        ? "bg-purple-600 text-white"
+                        : "bg-purple-50 border border-purple-200 text-purple-800 hover:bg-purple-100"
+                    }`}
+                  >
+                    🟣 Overstocked ({report.summary.overstockedCount})
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -464,12 +515,30 @@ export default function FefoResourceIntelligence({
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 text-xs font-sans">
-                {filteredItems.map((item) => {
-                  const storageInfo = getStorageBadge(item.storage);
-                  const isExpired = item.shelfLifeTier === "expired";
+                {filteredItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-stone-500">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Package className="w-8 h-8 text-stone-300" />
+                        <p className="font-semibold text-stone-700 text-xs">No raw ingredients match your search or filter</p>
+                        <p className="text-[11px] text-stone-500">Try adjusting your search query or tier filter.</p>
+                        <button
+                          type="button"
+                          onClick={() => { setTierFilter("all"); setSearchQuery(""); }}
+                          className="mt-1 px-3 py-1 rounded-lg text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors cursor-pointer"
+                        >
+                          Reset Filters
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredItems.map((item) => {
+                    const storageInfo = getStorageBadge(item.storage);
+                    const isExpired = item.shelfLifeTier === "expired";
 
-                  return (
-                    <tr key={item.id} className="hover:bg-stone-50/80 transition-colors">
+                    return (
+                      <tr key={item.id} className="hover:bg-stone-50/80 transition-colors">
                       {/* 1. Raw Material Name & Category */}
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-stone-900 text-sm">{item.name}</div>
@@ -561,7 +630,7 @@ export default function FefoResourceIntelligence({
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           </div>

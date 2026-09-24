@@ -91,21 +91,20 @@ export default function InstitutionResourceUtilizationPage() {
 
   return (
     <div className="space-y-7 max-w-7xl mx-auto">
-      {/* 1. Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-5">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 pb-5">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="font-serif text-2xl sm:text-3xl text-stone-900 font-bold tracking-tight">
-              Raw Materials &amp; Food Resource Utilization
+              Raw Materials &amp; Resource Utilization
             </h1>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
               <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-              NVIDIA NIM Central Intelligence
+              NVIDIA NIM &amp; FEFO Engine Active
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-stone-500 mt-1.5 max-w-2xl">
-            {institution?.name || "Your Kitchen"} · Exclusively manages <strong>raw ingredients</strong> (vegetables, dairy, grains, pulses) that make ready-made food.
-            Mitigates pre-consumption waste, predicts what to cook urgently, and advises how much to purchase to prevent overstocking.
+          <p className="text-xs sm:text-sm text-stone-500 mt-1.5 max-w-2xl leading-relaxed">
+            {institution?.name || "Your Kitchen"} · Real-time inventory tracking for <strong>raw ingredients</strong> (vegetables, dairy, staples). Prioritizes items to cook urgently and blocks surplus reordering to eliminate waste before cooking begins.
           </p>
         </div>
 
@@ -113,96 +112,26 @@ export default function InstitutionResourceUtilizationPage() {
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
           <button
             onClick={loadResourceData}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold transition-all shadow-xs cursor-pointer active:scale-95"
             title="Refresh raw materials analysis"
           >
-            <RefreshCw className="w-4 h-4 text-stone-500" />
-            <span>Refresh Analysis</span>
+            <RefreshCw className={`w-4 h-4 text-stone-500 ${isLoading ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
           </button>
           <Link
             href="/app/institution/forecast"
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-800 text-xs font-semibold transition-all shadow-xs hover:shadow-sm"
           >
             <TrendingUp className="w-4 h-4 text-emerald-600" />
-            <span>7-Day Demand Forecast</span>
+            <span>7-Day Demand</span>
           </Link>
           <Link
             href="/app/institution/inventory"
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
           >
             <Package className="w-4 h-4 text-stone-300" />
-            <span>Cooked Food Ledger (Surplus)</span>
+            <span>Cooked Surplus Ledger</span>
           </Link>
-        </div>
-      </div>
-
-      {/* 2. Educational & Principles Banner: Raw Materials FEFO & Procurement Guard */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-amber-500/5 to-purple-500/10 border border-stone-200/90 shadow-2xs space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
-              <h2 className="font-serif font-bold text-base sm:text-lg text-stone-900">
-                Raw Materials Optimization &amp; Overstock Gating Protocol
-              </h2>
-            </div>
-            <p className="text-xs sm:text-sm text-stone-600 max-w-3xl leading-relaxed">
-              <strong>Raw Materials Only:</strong> Ready-to-eat cooked meals belong in the surplus redistribution desk. This portal manages raw ingredients before cooking:
-              identifying what to cook urgently so nearing-expiry stock never spoils, and telling your kitchen <strong>how much to buy so you never overstock supplies</strong>.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-stone-200 text-stone-700 font-mono text-xs">
-              <Clock className="w-3.5 h-3.5 text-stone-500" />
-              <span>FEFO Protocol: High &rarr; Med &rarr; Low</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 3-Tier Spectrum Quick Visualizer */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-          {/* Tier 1 */}
-          <div className="p-3 rounded-xl bg-white border border-rose-200/80 shadow-2xs space-y-1">
-            <div className="flex items-center justify-between text-xs font-bold text-rose-800 font-mono">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-rose-600" />
-                1. High Priority (&le; 48h)
-              </span>
-              <span className="text-[10px] bg-rose-100 px-1.5 py-0.5 rounded text-rose-900 font-bold">COOK URGENTLY</span>
-            </div>
-            <p className="text-[11px] text-stone-600 leading-snug">
-              Nearing-expiry raw produce &amp; dairy (e.g. 5 kg ripe tomatoes &rarr; Tomato Gravy / Basil Soup).
-            </p>
-          </div>
-
-          {/* Tier 2 */}
-          <div className="p-3 rounded-xl bg-white border border-amber-200/80 shadow-2xs space-y-1">
-            <div className="flex items-center justify-between text-xs font-bold text-amber-800 font-mono">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                2. Medium Priority (3–7d)
-              </span>
-              <span className="text-[10px] bg-amber-100 px-1.5 py-0.5 rounded text-amber-900 font-bold">STAGE NEXT</span>
-            </div>
-            <p className="text-[11px] text-stone-600 leading-snug">
-              Moderate shelf-life staples (potatoes, onions). Scheduled into mid-week batch menus.
-            </p>
-          </div>
-
-          {/* Tier 3 */}
-          <div className="p-3 rounded-xl bg-white border border-emerald-200/80 shadow-2xs space-y-1">
-            <div className="flex items-center justify-between text-xs font-bold text-emerald-800 font-mono">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                3. Low Priority (&gt; 7d)
-              </span>
-              <span className="text-[10px] bg-emerald-100 px-1.5 py-0.5 rounded text-emerald-900 font-bold">PRESERVE BUFFER</span>
-            </div>
-            <p className="text-[11px] text-stone-600 leading-snug">
-              Grains, pulses, flours, oils. Held as safe buffer. Blocked from reorder if stock exceeds 7-day need.
-            </p>
-          </div>
         </div>
       </div>
 
