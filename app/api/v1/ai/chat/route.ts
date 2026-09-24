@@ -301,6 +301,84 @@ function getFallbackResponse(query: string): string {
   return formalDeflection;
 }
 
+// Contextual recommendation suggestions for the chat interface based on query
+export function getSuggestionsForQuery(query: string): string[] {
+  const q = query.toLowerCase().trim();
+
+  if (isIntroductoryQuery(q) || q.includes("start") || q.includes("guide")) {
+    return [
+      "🍱 How do I list surplus food?",
+      "🤝 How does NGO matching work?",
+      "🚚 How do delivery dispatches work?",
+      "🔐 Where do I complete onboarding?",
+      "📊 Where can I see ESG reports?",
+    ];
+  }
+
+  if (q.includes("list") || q.includes("surplus") || q.includes("kitchen") || q.includes("post food") || q.includes("donate")) {
+    return [
+      "🌡️ What are the food safety temperature rules?",
+      "📈 How does Kitchen Forecast prevent waste?",
+      "🚚 Who picks up and delivers the surplus?",
+      "📊 Where can I see our ESG impact reports?",
+    ];
+  }
+
+  if (q.includes("claim") || q.includes("ngo") || q.includes("receive") || q.includes("browse") || q.includes("charity")) {
+    return [
+      "📍 How does radius distance matching work?",
+      "✅ How do I confirm delivery receipt?",
+      "📋 What KYC verification is needed for NGOs?",
+      "🍱 How do I browse surplus batches?",
+    ];
+  }
+
+  if (q.includes("delivery") || q.includes("courier") || q.includes("driver") || q.includes("dispatch") || q.includes("logistics") || q.includes("plate") || q.includes("vehicle")) {
+    return [
+      "🚗 Where do I enter vehicle number plate?",
+      "🗺️ How does the live route map work?",
+      "📦 How do I advance status to Picked Up?",
+      "📋 Where do I view delivery history?",
+    ];
+  }
+
+  if (q.includes("forecast") || q.includes("predict") || q.includes("inventory") || q.includes("waste")) {
+    return [
+      "🍱 How do I list excess cooked food?",
+      "📊 How are carbon savings calculated?",
+      "📦 How does inventory tracking work?",
+      "🚀 How to get started / use this?",
+    ];
+  }
+
+  if (q.includes("esg") || q.includes("report") || q.includes("carbon") || q.includes("metric") || q.includes("impact")) {
+    return [
+      "🌍 Where is the public impact dashboard?",
+      "📄 How do I export an audit report?",
+      "🍲 How are meals rescued converted from kg?",
+      "🍱 How do I list surplus food?",
+    ];
+  }
+
+  if (q.includes("admin") || q.includes("verify") || q.includes("kyc") || q.includes("compliance") || q.includes("safety")) {
+    return [
+      "🛡️ How does NGO verification work?",
+      "🌡️ What are the temperature thresholds?",
+      "🗺️ How does the live command map work?",
+      "🚀 How to get started / use this?",
+    ];
+  }
+
+  // Default suggestions
+  return [
+    "🚀 How to get started / use this?",
+    "🍱 How do I list surplus food?",
+    "🤝 How does NGO matching work?",
+    "🚚 How do delivery dispatches work?",
+    "📊 Where can I see ESG reports?",
+  ];
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -315,6 +393,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         reply: cleanStarsAndHashes(getIntroductoryReply()),
+        suggestions: getSuggestionsForQuery(message),
       });
     }
 
@@ -346,6 +425,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       reply: cleanStarsAndHashes(reply || ""),
+      suggestions: getSuggestionsForQuery(message),
     });
   } catch (error: unknown) {
     console.error("AI Chat API error:", error);
@@ -353,6 +433,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         reply: "I am ready to help you navigate ZeroPlate AI! Try asking how to list surplus food, claim batches as an NGO, or track active deliveries.",
+        suggestions: getSuggestionsForQuery("general"),
       },
       { status: 200 }
     );

@@ -19,9 +19,98 @@ const STARTER_PROMPTS = [
   "📊 Where can I see ESG reports?",
 ];
 
+function deriveClientRecommendations(query: string): string[] {
+  const q = query.toLowerCase().trim();
+
+  if (
+    q.includes("start") ||
+    q.includes("started") ||
+    q.includes("how to use") ||
+    q.includes("guide") ||
+    q.includes("intro")
+  ) {
+    return [
+      "🍱 How do I list surplus food?",
+      "🤝 How does NGO matching work?",
+      "🚚 How do delivery dispatches work?",
+      "🔐 Where do I complete onboarding?",
+      "📊 Where can I see ESG reports?",
+    ];
+  }
+
+  if (
+    q.includes("list") ||
+    q.includes("surplus") ||
+    q.includes("kitchen") ||
+    q.includes("food batch") ||
+    q.includes("donate")
+  ) {
+    return [
+      "🌡️ What are the food safety temperature rules?",
+      "📈 How does Kitchen Forecast prevent waste?",
+      "🚚 Who picks up and delivers the surplus?",
+      "📊 Where can I see our ESG impact reports?",
+    ];
+  }
+
+  if (
+    q.includes("claim") ||
+    q.includes("ngo") ||
+    q.includes("receive") ||
+    q.includes("browse")
+  ) {
+    return [
+      "📍 How does radius distance matching work?",
+      "✅ How do I confirm delivery receipt?",
+      "📋 What KYC verification is needed for NGOs?",
+      "🍱 How do I browse surplus batches?",
+    ];
+  }
+
+  if (
+    q.includes("delivery") ||
+    q.includes("courier") ||
+    q.includes("driver") ||
+    q.includes("dispatch") ||
+    q.includes("route") ||
+    q.includes("plate")
+  ) {
+    return [
+      "🚗 Where do I enter vehicle number plate?",
+      "🗺️ How does the live route map work?",
+      "📦 How do I advance status to Picked Up?",
+      "📋 Where do I view delivery history?",
+    ];
+  }
+
+  if (
+    q.includes("esg") ||
+    q.includes("report") ||
+    q.includes("carbon") ||
+    q.includes("metric") ||
+    q.includes("impact")
+  ) {
+    return [
+      "🌍 Where is the public impact dashboard?",
+      "📄 How do I export an audit report?",
+      "🍲 How are meals rescued converted from kg?",
+      "🍱 How do I list surplus food?",
+    ];
+  }
+
+  return [
+    "🚀 How to get started / use this?",
+    "🍱 How do I list surplus food?",
+    "🤝 How does NGO matching work?",
+    "🚚 How do delivery dispatches work?",
+    "📊 Where can I see ESG reports?",
+  ];
+}
+
 export default function ZeroPlateAiChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
+  const [recommendations, setRecommendations] = useState<string[]>(STARTER_PROMPTS);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome-1",
@@ -85,6 +174,13 @@ export default function ZeroPlateAiChat() {
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
         setMessages((prev) => [...prev, assistantMsg]);
+
+        // Update recommendations dynamically based on API suggestions or client deduction
+        if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+          setRecommendations(data.suggestions);
+        } else {
+          setRecommendations(deriveClientRecommendations(text));
+        }
       } else {
         throw new Error("Failed to receive response");
       }
@@ -98,6 +194,7 @@ export default function ZeroPlateAiChat() {
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages((prev) => [...prev, errorMsg]);
+      setRecommendations(deriveClientRecommendations(text));
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +210,7 @@ export default function ZeroPlateAiChat() {
         timestamp: "Just now",
       },
     ]);
+    setRecommendations(STARTER_PROMPTS);
   };
 
   // Render markdown-like links [Text](URL) safely while removing stars and hashes
@@ -247,21 +345,28 @@ export default function ZeroPlateAiChat() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Starter Chips */}
-          {messages.length <= 2 && (
-            <div className="px-3 py-2 border-t border-line/60 bg-[#EAE3D4]/30 flex flex-wrap gap-1.5">
-              {STARTER_PROMPTS.map((prompt) => (
+          {/* Permanent Context-Aware Recommendations Bar */}
+          <div className="px-3 py-2 border-t border-line/60 bg-[#EAE3D4]/40 flex flex-col gap-1.5 shrink-0">
+            <div className="flex items-center justify-between text-[10px] font-mono-numeral text-ink-soft">
+              <span className="flex items-center gap-1 font-semibold uppercase tracking-wider">
+                <span>💡</span> Suggested Topics
+              </span>
+              <span className="text-[9px] text-ink-soft/70">Tap to ask</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-0.5">
+              {recommendations.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
                   onClick={() => handleSendMessage(prompt)}
-                  className="px-2.5 py-1 text-[11px] rounded-full border border-line bg-ledger-paper hover:bg-[#EAE3D4] text-ink-soft hover:text-ink transition-colors cursor-pointer whitespace-nowrap"
+                  disabled={isLoading}
+                  className="px-2.5 py-1 text-[11px] rounded-full border border-line bg-ledger-paper hover:bg-[#EAE3D4] hover:border-basil/40 active:scale-98 text-ink-soft hover:text-ink transition-all cursor-pointer whitespace-nowrap shadow-2xs disabled:opacity-50"
                 >
                   {prompt}
                 </button>
               ))}
             </div>
-          )}
+          </div>
 
           {/* Input Composer */}
           <form
