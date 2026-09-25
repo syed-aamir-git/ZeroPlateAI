@@ -47,7 +47,10 @@ export async function GET() {
 
   const items = await db
     .collection("inventoryItems")
-    .find({ institutionId: institution._id })
+    .find({
+      institutionId: institution._id,
+      name: { $not: /raj\s*bhai|aadi\s*bhai|^aamir$/i },
+    })
     .sort({ createdAt: -1 })
     .toArray();
 
@@ -143,6 +146,13 @@ export async function POST(request: NextRequest) {
     if (!name?.trim()) {
       return NextResponse.json(
         { error: "Item name is required." },
+        { status: 400 }
+      );
+    }
+
+    if (/raj\s*bhai|aadi\s*bhai|^aamir$/i.test(name.trim())) {
+      return NextResponse.json(
+        { error: "Invalid food item name." },
         { status: 400 }
       );
     }

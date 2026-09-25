@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
       safetyStatus: "verified_safe",
       status: { $in: ["matched", "pending", "claimed"] },
       "pickupWindow.end": { $gt: now },
+      itemName: { $not: /raj\s*bhai|aadi\s*bhai|^aamir$/i },
     }).toArray();
 
     if (activeListings.length > 0) {

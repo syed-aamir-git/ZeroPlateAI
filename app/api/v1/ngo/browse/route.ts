@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
       safetyStatus: "verified_safe",
       status: { $in: ["pending", "matched"] },
       "pickupWindow.end": { $gt: now },
+      itemName: { $not: /raj\s*bhai|aadi\s*bhai|^aamir$/i },
     };
 
     const listings = await db

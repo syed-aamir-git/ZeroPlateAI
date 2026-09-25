@@ -49,10 +49,15 @@ export async function GET(request: NextRequest) {
     const claimedListings = await db
       .collection("surplusListings")
       .find({
-        $or: [
-          { claimedByNgoId: ngo._id },
-          { claimedByNgoId: String(ngo._id) },
-          { _id: { $in: assignmentListingIds } },
+        $and: [
+          {
+            $or: [
+              { claimedByNgoId: ngo._id },
+              { claimedByNgoId: String(ngo._id) },
+              { _id: { $in: assignmentListingIds } },
+            ],
+          },
+          { itemName: { $not: /raj\s*bhai|aadi\s*bhai|^aamir$/i } },
         ],
       })
       .sort({ claimedAt: -1, createdAt: -1 })

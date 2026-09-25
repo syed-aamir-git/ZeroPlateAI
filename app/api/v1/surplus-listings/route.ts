@@ -49,13 +49,17 @@ export async function GET(request: NextRequest) {
           { status: 404 }
         );
       }
-      query = { institutionId: institution._id };
+      query = {
+        institutionId: institution._id,
+        itemName: { $not: /raj\s*bhai|aadi\s*bhai|^aamir$/i },
+      };
     } else {
       // NGO or Available view: only verified_safe listings
       query = {
         safetyStatus: "verified_safe",
         status: { $in: ["pending", "matched"] },
         "pickupWindow.end": { $gt: new Date() },
+        itemName: { $not: /raj\s*bhai|aadi\s*bhai|^aamir$/i },
       };
     }
 
