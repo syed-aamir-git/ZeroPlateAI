@@ -214,11 +214,11 @@ export default function InstitutionOverviewPage() {
             isCompleted: m.inStockCount > 0,
           },
           {
-            id: "reports",
-            title: "Review ESG compliance audit reports",
-            description: "Explore Scope 3 carbon offsets and audited redistribution logs",
-            href: "/app/institution/reports",
-            isCompleted: m.wastePreventedKg > 0,
+            id: "resource-utilization",
+            title: "Optimize raw materials & FEFO kitchen prep",
+            description: "Prioritize nearing-expiry ingredients and prevent overstocking",
+            href: "/app/institution/resource-utilization",
+            isCompleted: m.inStockCount > 0,
           },
         ]}
       />
@@ -520,17 +520,17 @@ export default function InstitutionOverviewPage() {
           </Link>
 
           <Link
-            href="/app/institution/reports"
+            href="/app/institution/resource-utilization"
             className="group p-4 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 shadow-2xs hover:shadow-xs transition-all space-y-2"
           >
             <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <FileSpreadsheet className="w-4 h-4" />
+              <Layers className="w-4 h-4" />
             </div>
             <h3 className="font-semibold text-sm text-stone-900 group-hover:text-purple-700 transition-colors">
-              Audited ESG Reports
+              Resource Utilization
             </h3>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Export certified corporate carbon offset statements and tax-exempt donation records.
+              Prioritize raw ingredients by expiry (FEFO) and prevent surplus before cooking.
             </p>
           </Link>
         </div>

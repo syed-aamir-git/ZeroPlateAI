@@ -18,7 +18,6 @@ export default async function InstitutionLayout({
     { href: "/app/institution/surplus-listings", label: "Surplus Listings", icon: "ticket" },
     { href: "/app/institution/deliveries", label: "Deliveries", icon: "deliveries" },
     { href: "/app/institution/network", label: "NGO Network", icon: "verification" },
-    { href: "/app/institution/reports", label: "ESG Reports", icon: "impact" },
     { href: "/app/institution/notifications", label: "Notifications", icon: "notifications" },
     { href: "/app/institution/settings", label: "Settings", icon: "settings" },
   ];
