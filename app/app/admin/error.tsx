@@ -16,22 +16,22 @@ export default function AdminError({
   }, [error]);
 
   return (
-    <div className="max-w-xl mx-auto my-16 p-8 rounded-2xl bg-[#3D2538] border border-[#5A3653] text-center space-y-5 shadow-lg text-[#F3EEE2]">
-      <div className="w-14 h-14 rounded-2xl bg-red-950/60 border border-red-800/80 mx-auto flex items-center justify-center text-red-400">
+    <div className="max-w-xl mx-auto my-16 p-8 rounded-2xl bg-white border border-slate-200/90 text-center space-y-5 shadow-xs text-zinc-900">
+      <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 mx-auto flex items-center justify-center text-rose-600">
         <AlertTriangle className="w-7 h-7" />
       </div>
 
       <div className="space-y-2">
-        <h2 className="font-display text-xl font-bold text-[#F3EEE2]">
-          Administrative Portal Notice
+        <h2 className="font-display text-xl font-bold text-zinc-900">
+          Admin Portal Notice
         </h2>
-        <p className="text-xs text-[#C9B9C7] leading-relaxed max-w-md mx-auto">
+        <p className="text-xs text-zinc-500 leading-relaxed max-w-md mx-auto">
           A temporary error occurred while rendering this administrative section. Your credentials and session remain active.
         </p>
       </div>
 
       {error?.message && (
-        <div className="p-3 rounded-lg bg-black/30 border border-[#5A3653] text-[11px] font-mono-numeral text-red-300 text-left overflow-x-auto">
+        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-rose-700 text-left overflow-x-auto">
           {error.message}
         </div>
       )}
@@ -40,7 +40,7 @@ export default function AdminError({
         <button
           type="button"
           onClick={() => reset()}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D9A441] hover:bg-[#D9A441]/90 text-[#24211C] text-xs font-mono-numeral font-bold transition-all shadow-sm cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Reload Section</span>
@@ -48,9 +48,9 @@ export default function AdminError({
 
         <Link
           href="/app/admin/overview"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#5A3653] bg-[#4A2E44] hover:bg-[#4A2E44]/80 text-[#F3EEE2] text-xs font-mono-numeral font-semibold transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-zinc-700 text-xs font-semibold transition-all shadow-xs cursor-pointer"
         >
-          <Home className="w-3.5 h-3.5 text-[#C9B9C7]" />
+          <Home className="w-3.5 h-3.5 text-zinc-400" />
           <span>Admin Overview</span>
         </Link>
       </div>

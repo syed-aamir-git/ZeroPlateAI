@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { LedgerTabIcon, ShieldCheckIcon } from "@/components/icons/ledger-icons";
+import { LedgerTabIcon } from "@/components/icons/ledger-icons";
+import { FileText, ShieldCheck, Clock } from "lucide-react";
 
 interface AuditRecord {
   _id: string;
@@ -54,32 +55,36 @@ export default function AdminAuditLogPage() {
   }, [fetchAuditLogs]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 text-left">
+    <div className="max-w-7xl mx-auto space-y-6 text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#5A3653] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
-          <span className="font-mono-numeral text-xs uppercase tracking-wider text-[#D9A441]">
-            Statutory Traceability & Compliance
+          <span className="font-mono-numeral text-xs uppercase tracking-wider text-emerald-700 font-semibold flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            Compliance &amp; Traceability
           </span>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#F3EEE2] mt-0.5">
-            Immutable Audit Trail ({total} Events)
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-zinc-900 mt-1 tracking-tight">
+            Audit Trail ({total} Events)
           </h1>
+          <p className="text-xs text-zinc-500 mt-1">
+            Real-time immutable log of safety checks, food pickups, claims, and KYC decisions.
+          </p>
         </div>
 
-        <div className="font-mono-numeral text-xs text-[#C9B9C7]">
-          MongoDB Collection: <code className="text-[#D9A441]">auditLogs</code>
+        <div className="text-xs text-zinc-500 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200/90 shadow-xs">
+          Log Storage: <code className="text-emerald-700 font-bold">auditLogs</code>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#5A3653] bg-[#3D2538] p-3 rounded-[6px]">
-        <div className="flex items-center gap-2 overflow-x-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-xs">
+        <div className="flex items-center gap-1 overflow-x-auto bg-slate-100 p-1 rounded-xl border border-slate-200/80">
           {[
             { id: "all", label: "All Audit Events" },
             { id: "SurplusListing", label: "Surplus Listings" },
-            { id: "NGO", label: "NGO KYC" },
-            { id: "DeliveryAssignment", label: "Logistics Handoffs" },
-            { id: "SafetyRuleConfiguration", label: "Rule Config" },
+            { id: "NGO", label: "NGO Verification" },
+            { id: "DeliveryAssignment", label: "Logistics Deliveries" },
+            { id: "SafetyRuleConfiguration", label: "Safety Config" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -87,10 +92,10 @@ export default function AdminAuditLogPage() {
                 setEntityFilter(tab.id);
                 setPage(1);
               }}
-              className={`px-3 py-1 text-xs rounded-[4px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                 entityFilter === tab.id
-                  ? "bg-[#D9A441] text-[#24211C] font-bold"
-                  : "bg-[#4A2E44] text-[#C9B9C7] hover:text-[#F3EEE2] border border-[#5A3653]"
+                  ? "bg-white text-zinc-900 font-semibold shadow-xs border border-slate-200/60"
+                  : "text-zinc-600 hover:text-zinc-900"
               }`}
             >
               {tab.label}
@@ -98,113 +103,118 @@ export default function AdminAuditLogPage() {
           ))}
         </div>
 
-        <div className="text-xs text-[#C9B9C7] font-mono-numeral">
+        <div className="text-xs text-zinc-500 font-medium px-2">
           Page {page} of {totalPages}
         </div>
       </div>
 
       {/* Audit Log Table */}
       {loading ? (
-        <div className="p-12 text-center text-xs font-mono-numeral text-[#C9B9C7]">
-          Retrieving paginated audit log entries...
+        <div className="p-16 text-center space-y-3 border border-slate-200/90 bg-white rounded-2xl shadow-xs">
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin mx-auto" />
+          <div className="text-xs text-zinc-500">
+            Retrieving audit records...
+          </div>
         </div>
       ) : logs.length === 0 ? (
-        <div className="border border-[#5A3653] bg-[#3D2538] p-12 rounded-[6px] text-center space-y-3">
-          <div className="w-12 h-12 rounded-[6px] border border-[#5A3653] bg-[#4A2E44] mx-auto flex items-center justify-center text-[#D9A441]">
+        <div className="border border-slate-200/90 bg-white p-12 rounded-2xl text-center space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl border border-slate-200 bg-slate-50 mx-auto flex items-center justify-center text-zinc-600">
             <LedgerTabIcon size={24} />
           </div>
-          <h2 className="font-display text-lg font-medium text-[#F3EEE2]">
+          <h2 className="font-display text-lg font-bold text-zinc-900">
             No audit log records found
           </h2>
-          <p className="text-xs text-[#C9B9C7] max-w-md mx-auto">
+          <p className="text-xs text-zinc-500 max-w-md mx-auto">
             All safety evaluations, listing approvals, claims, and KYC decisions are recorded here in real time.
           </p>
         </div>
       ) : (
-        <div className="border border-[#5A3653] bg-[#3D2538] rounded-[6px] overflow-x-auto shadow-none">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#4A2E44] border-b border-[#5A3653] text-[#F3EEE2] uppercase font-mono-numeral text-[11px]">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Action / Event</th>
-                <th className="px-4 py-3 font-semibold">Entity</th>
-                <th className="px-4 py-3 font-semibold">Rule Applied</th>
-                <th className="px-4 py-3 font-semibold">Status Verdict</th>
-                <th className="px-4 py-3 font-semibold">Actor / User</th>
-                <th className="px-4 py-3 font-semibold text-right">Timestamp</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#5A3653] text-[#D4CBBF]">
-              {logs.map((log) => (
-                <tr key={log._id} className="hover:bg-[#4A2E44]/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="font-mono-numeral font-semibold text-[#F3EEE2]">
-                      {log.action}
-                    </div>
-                    {log.details && (
-                      <div className="text-[10px] text-[#9E8A9A] font-mono-numeral truncate max-w-[220px]" title={JSON.stringify(log.details)}>
-                        {JSON.stringify(log.details)}
-                      </div>
-                    )}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div className="font-mono-numeral text-[#D9A441]">{log.entityType}</div>
-                    <div className="text-[10px] text-[#9E8A9A] font-mono-numeral">
-                      {log.entityId ? String(log.entityId).slice(-6) : "—"}
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-3 font-mono-numeral text-[#F3EEE2]">
-                    {log.ruleApplied || "—"}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-mono-numeral uppercase font-semibold ${
-                        log.status === "verified_safe" || log.status === "approved" || log.status === "confirmed"
-                          ? "bg-[#2F4B3A] text-[#86C29B] border border-[#2F4B3A]"
-                          : log.status === "rejected" || log.status === "blocked"
-                          ? "bg-clay-rust/20 text-[#F4A88E] border border-clay-rust"
-                          : "bg-[#4A2E44] text-[#D9A441] border border-[#5A3653]"
-                      }`}
-                    >
-                      {log.status || "logged"}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-3 font-mono-numeral text-[#C9B9C7]">
-                    {log.performedBy ? String(log.performedBy).slice(-8) : "System"}
-                  </td>
-
-                  <td className="px-4 py-3 text-right font-mono-numeral text-[#C9B9C7]">
-                    <div>
-                      {new Date(log.createdAt).toLocaleDateString()}
-                    </div>
-                    <div className="text-[10px] text-[#9E8A9A]">
-                      {new Date(log.createdAt).toLocaleTimeString()}
-                    </div>
-                  </td>
+        <div className="border border-slate-200/90 bg-white rounded-2xl overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/80 border-b border-slate-200/80 text-zinc-600 uppercase font-semibold text-[11px] tracking-wider">
+                <tr>
+                  <th className="px-5 py-3.5">Action / Event</th>
+                  <th className="px-4 py-3.5">Entity</th>
+                  <th className="px-4 py-3.5">Rule Applied</th>
+                  <th className="px-4 py-3.5">Status Verdict</th>
+                  <th className="px-4 py-3.5">Actor / User</th>
+                  <th className="px-5 py-3.5 text-right">Timestamp</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-zinc-700">
+                {logs.map((log) => (
+                  <tr key={log._id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="font-semibold text-zinc-900 text-xs">
+                        {log.action}
+                      </div>
+                      {log.details && (
+                        <div className="text-[11px] text-zinc-400 font-mono truncate max-w-[240px]" title={JSON.stringify(log.details)}>
+                          {JSON.stringify(log.details)}
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <div className="font-medium text-zinc-800">{log.entityType}</div>
+                      <div className="text-[10px] text-zinc-400 font-mono">
+                        {log.entityId ? String(log.entityId).slice(-6) : "—"}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3.5 font-mono text-zinc-600">
+                      {log.ruleApplied || "—"}
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
+                          log.status === "verified_safe" || log.status === "approved" || log.status === "confirmed"
+                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                            : log.status === "rejected" || log.status === "blocked"
+                            ? "bg-rose-50 text-rose-800 border border-rose-200"
+                            : "bg-slate-100 text-zinc-700 border border-slate-200"
+                        }`}
+                      >
+                        {log.status || "logged"}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3.5 text-zinc-600 font-mono text-xs">
+                      {log.performedBy ? String(log.performedBy).slice(-8) : "System"}
+                    </td>
+
+                    <td className="px-5 py-3.5 text-right text-zinc-500">
+                      <div className="font-medium text-zinc-700">
+                        {new Date(log.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-[11px] text-zinc-400">
+                        {new Date(log.createdAt).toLocaleTimeString()}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* Pagination Bar */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-[#5A3653] pt-4 text-xs font-mono-numeral">
+        <div className="flex items-center justify-between border-t border-slate-200/80 pt-4 text-xs">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="border-[#5A3653] bg-[#3D2538] text-[#F3EEE2] hover:bg-[#4A2E44]"
+            className="border-slate-200 bg-white text-zinc-700 hover:bg-slate-50 cursor-pointer shadow-xs rounded-xl"
           >
             ← Previous Page
           </Button>
 
-          <span className="text-[#C9B9C7]">
+          <span className="text-zinc-500 font-medium">
             Page {page} of {totalPages}
           </span>
 
@@ -213,7 +223,7 @@ export default function AdminAuditLogPage() {
             size="sm"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="border-[#5A3653] bg-[#3D2538] text-[#F3EEE2] hover:bg-[#4A2E44]"
+            className="border-slate-200 bg-white text-zinc-700 hover:bg-slate-50 cursor-pointer shadow-xs rounded-xl"
           >
             Next Page →
           </Button>

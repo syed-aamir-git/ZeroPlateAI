@@ -194,7 +194,7 @@ export function AppSidebarShell({
   );
 
   return (
-    <div className="h-screen flex overflow-hidden bg-ledger-paper text-ink">
+    <div className={cn("h-screen flex overflow-hidden", isAdmin ? "bg-[#F8F9FA] text-zinc-900" : "bg-ledger-paper text-ink")}>
       {/* Mobile Menu Backdrop & Drawer */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
@@ -511,7 +511,7 @@ export function AppSidebarShell({
         </header>
 
         {/* Page Content Viewport */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className={cn("flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto", isAdmin ? "bg-[#F8F9FA]" : "")}>
           {children}
         </main>
       </div>

@@ -5,14 +5,9 @@ import dynamic from "next/dynamic";
 import { CrateIcon } from "@/components/icons/ledger-icons";
 import {
   Building2,
-  MapPin,
-  Sparkles,
   AlertTriangle,
   RefreshCw,
   Search,
-  Filter,
-  CheckCircle2,
-  Layers,
 } from "lucide-react";
 
 // Dynamically import NetworkDirectoryMap with ssr: false to prevent Leaflet SSR crashes
@@ -21,8 +16,8 @@ const NetworkDirectoryMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[520px] rounded-xl bg-[#3D2538] border border-[#5A3653] flex flex-col items-center justify-center gap-3 text-xs font-mono text-[#C9B9C7]">
-        <div className="w-7 h-7 rounded-full border-2 border-[#D9A441] border-t-transparent animate-spin" />
+      <div className="w-full h-[520px] rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-xs font-mono text-zinc-500 shadow-xs">
+        <div className="w-7 h-7 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin" />
         <span>Initializing Interactive Regional Map...</span>
       </div>
     ),
@@ -99,10 +94,6 @@ export default function AdminInstitutionsPage() {
     return institutions.reduce((acc, curr) => acc + (Number(curr.inventoryCount) || 0), 0);
   }, [institutions]);
 
-  const premiumCount = React.useMemo(() => {
-    return institutions.filter((i) => i.plan === "premium").length;
-  }, [institutions]);
-
   // Available unique types for filter
   const availableTypes = React.useMemo(() => {
     const set = new Set<string>();
@@ -128,53 +119,56 @@ export default function AdminInstitutionsPage() {
   }, [institutions, searchQuery, typeFilter]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 text-left">
+    <div className="max-w-7xl mx-auto space-y-6 text-left">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#5A3653] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
-          <span className="font-mono-numeral text-xs uppercase tracking-wider text-[#D9A441] flex items-center gap-1.5">
+          <span className="font-mono-numeral text-xs uppercase tracking-wider text-emerald-700 font-semibold flex items-center gap-1.5">
             <Building2 className="w-3.5 h-3.5" />
-            Commercial Kitchens &amp; Facilities Directory
+            Kitchens &amp; Facilities Directory
           </span>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#F3EEE2] mt-0.5">
-            Onboarded Institutions ({institutions.length})
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-zinc-900 mt-1 tracking-tight">
+            Registered Institutions ({institutions.length})
           </h1>
+          <p className="text-xs text-zinc-500 mt-1">
+            Manage food donors, dining halls, commercial kitchens, and surplus inventory.
+          </p>
         </div>
 
         {/* Quick KPI Badges */}
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="font-mono-numeral text-xs text-[#C9B9C7] bg-[#3D2538] px-3 py-1.5 rounded-lg border border-[#5A3653]">
-            Aggregate Surplus: <span className="text-[#86C29B] font-bold">{totalSurplusListedKg} kg</span>
+          <div className="text-xs text-zinc-600 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200/90 shadow-xs">
+            Aggregate Surplus: <span className="text-emerald-700 font-bold">{totalSurplusListedKg.toLocaleString()} kg</span>
           </div>
-          <div className="font-mono-numeral text-xs text-[#C9B9C7] bg-[#3D2538] px-3 py-1.5 rounded-lg border border-[#5A3653]">
-            Active Inventory: <span className="text-[#D9A441] font-bold">{totalInventoryCount} items</span>
+          <div className="text-xs text-zinc-600 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200/90 shadow-xs">
+            Active Inventory: <span className="text-blue-700 font-bold">{totalInventoryCount.toLocaleString()} items</span>
           </div>
           <button
             type="button"
             onClick={fetchInstitutions}
             disabled={loading}
-            className="p-1.5 rounded-lg bg-[#3D2538] hover:bg-[#4A2E44] text-[#C9B9C7] hover:text-[#F3EEE2] border border-[#5A3653] transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-white hover:bg-slate-50 text-zinc-600 hover:text-zinc-900 border border-slate-200/90 shadow-xs transition-colors cursor-pointer"
             title="Refresh Institutions List"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-600" : ""}`} />
           </button>
         </div>
       </div>
 
       {/* Error Alert Banner */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/80 text-red-200 flex items-start justify-between gap-3 text-xs">
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start justify-between gap-3 text-xs shadow-xs">
           <div className="flex items-start gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold text-red-100">Unable to load institutions</div>
-              <div className="text-red-300/90 mt-0.5">{error}</div>
+              <div className="font-semibold text-rose-900">Unable to load institutions</div>
+              <div className="text-rose-700 mt-0.5">{error}</div>
             </div>
           </div>
           <button
             type="button"
             onClick={fetchInstitutions}
-            className="px-3 py-1 bg-red-900/60 hover:bg-red-800 text-white rounded font-mono-numeral text-xs font-semibold border border-red-700 transition-colors cursor-pointer shrink-0"
+            className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer shrink-0"
           >
             Retry
           </button>
@@ -184,44 +178,44 @@ export default function AdminInstitutionsPage() {
       {/* View Mode & Filter Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* View Mode Switcher */}
-        <div className="flex items-center gap-1 bg-[#3D2538] p-1 rounded-lg border border-[#5A3653]">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
           <button
             type="button"
             onClick={() => setViewMode("table")}
-            className={`px-3 py-1.5 text-xs font-mono-numeral rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
               viewMode === "table"
-                ? "bg-[#D9A441] text-[#24211C] font-bold shadow-2xs"
-                : "text-[#C9B9C7] hover:text-[#F3EEE2]"
+                ? "bg-white text-zinc-900 font-semibold shadow-xs border border-slate-200/60"
+                : "text-zinc-600 hover:text-zinc-900"
             }`}
           >
             <span>⊞ Facilities Table</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-zinc-700 font-bold border border-slate-200">
               {filteredInstitutions.length}
             </span>
           </button>
           <button
             type="button"
             onClick={() => setViewMode("map")}
-            className={`px-3 py-1.5 text-xs font-mono-numeral rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
               viewMode === "map"
-                ? "bg-[#D9A441] text-[#24211C] font-bold shadow-2xs"
-                : "text-[#C9B9C7] hover:text-[#F3EEE2]"
+                ? "bg-white text-zinc-900 font-semibold shadow-xs border border-slate-200/60"
+                : "text-zinc-600 hover:text-zinc-900"
             }`}
           >
-            <span>🗺️ Facility Map View</span>
+            <span>🗺️ Map View</span>
           </button>
         </div>
 
         {/* Search & Type Filter Bar */}
         <div className="flex items-center gap-2.5 flex-1 max-w-lg justify-end">
           <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-[#C9B9C7] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search facility name, address, ID..."
-              className="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-[#5A3653] bg-[#3D2538] text-[#F3EEE2] placeholder:text-[#C9B9C7]/50 focus:outline-hidden focus:border-[#D9A441] transition-all font-mono-numeral"
+              className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 shadow-xs transition-all"
             />
           </div>
 
@@ -229,7 +223,7 @@ export default function AdminInstitutionsPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="text-xs px-2.5 py-1.5 rounded-lg border border-[#5A3653] bg-[#3D2538] text-[#F3EEE2] focus:outline-hidden focus:border-[#D9A441] font-mono-numeral cursor-pointer"
+              className="text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white text-zinc-800 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 shadow-xs cursor-pointer font-medium"
             >
               <option value="all">All Types</option>
               {availableTypes.map((t) => (
@@ -245,51 +239,55 @@ export default function AdminInstitutionsPage() {
       {/* Facility Map View */}
       {viewMode === "map" ? (
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs text-[#C9B9C7] font-mono-numeral bg-[#3D2538] p-3 rounded-xl border border-[#5A3653]">
+          <div className="flex items-center justify-between text-xs text-zinc-600 bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs">
             <span>Interactive regional facility distribution across dining verticals, processing centers, and campus kitchens.</span>
-            <span className="text-[#86C29B] font-semibold">{institutions.length} Kitchens Mapped</span>
+            <span className="text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              {institutions.length} Kitchens Mapped
+            </span>
           </div>
-          <NetworkDirectoryMap
-            entities={institutions.map((inst) => ({
-              _id: inst._id || String(Math.random()),
-              name: inst.name || "Commercial Kitchen",
-              subtitle: formatType(inst.type).toUpperCase(),
-              address: inst.address || "Address not provided",
-              location: inst.location,
-              badgeText: inst.plan === "premium" ? "Enterprise Kitchen" : "Standard Kitchen",
-              details: {
-                Type: formatType(inst.type),
-                "Surplus Listed": `${Number(inst.totalSurplusKg) || 0} kg`,
-                "Inventory Items": Number(inst.inventoryCount) || 0,
-                "Active Listings": Number(inst.listingsCount) || 0,
-              },
-            }))}
-            entityType="kitchen"
-            theme="dark"
-            className="w-full h-[520px]"
-          />
+          <div className="rounded-2xl overflow-hidden border border-slate-200/90 shadow-xs bg-white">
+            <NetworkDirectoryMap
+              entities={institutions.map((inst) => ({
+                _id: inst._id || String(Math.random()),
+                name: inst.name || "Commercial Kitchen",
+                subtitle: formatType(inst.type).toUpperCase(),
+                address: inst.address || "Address not provided",
+                location: inst.location,
+                badgeText: inst.plan === "premium" ? "Enterprise Kitchen" : "Standard Kitchen",
+                details: {
+                  Type: formatType(inst.type),
+                  "Surplus Listed": `${Number(inst.totalSurplusKg) || 0} kg`,
+                  "Inventory Items": Number(inst.inventoryCount) || 0,
+                  "Active Listings": Number(inst.listingsCount) || 0,
+                },
+              }))}
+              entityType="kitchen"
+              theme="light"
+              className="w-full h-[520px]"
+            />
+          </div>
         </div>
       ) : (
         <>
           {/* Institutions Ledger Table */}
           {loading ? (
-            <div className="p-16 text-center space-y-3 border border-[#5A3653] bg-[#3D2538] rounded-xl">
-              <div className="w-8 h-8 rounded-full border-2 border-[#D9A441] border-t-transparent animate-spin mx-auto" />
-              <div className="text-xs font-mono-numeral text-[#C9B9C7]">
-                Loading registered institutions ledger...
+            <div className="p-16 text-center space-y-3 border border-slate-200/90 bg-white rounded-2xl shadow-xs">
+              <div className="w-8 h-8 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin mx-auto" />
+              <div className="text-xs text-zinc-500">
+                Loading registered institutions directory...
               </div>
             </div>
           ) : filteredInstitutions.length === 0 ? (
-            <div className="border border-[#5A3653] bg-[#3D2538] p-12 rounded-xl text-center space-y-3">
-              <div className="w-12 h-12 rounded-xl border border-[#5A3653] bg-[#4A2E44] mx-auto flex items-center justify-center text-[#D9A441]">
+            <div className="border border-slate-200/90 bg-white p-12 rounded-2xl text-center space-y-3 shadow-xs">
+              <div className="w-12 h-12 rounded-2xl border border-slate-200 bg-slate-50 mx-auto flex items-center justify-center text-zinc-600">
                 <CrateIcon size={24} />
               </div>
-              <h2 className="font-display text-lg font-medium text-[#F3EEE2]">
+              <h2 className="font-display text-lg font-bold text-zinc-900">
                 {institutions.length === 0
                   ? "No institutions onboarded yet"
                   : "No facilities matching your search"}
               </h2>
-              <p className="text-xs text-[#C9B9C7] max-w-md mx-auto">
+              <p className="text-xs text-zinc-500 max-w-md mx-auto">
                 {institutions.length === 0
                   ? "New commercial dining facilities, campus kitchens, and hospitals will appear here once they complete onboarding."
                   : "Try adjusting your search query or vertical type filter."}
@@ -301,77 +299,79 @@ export default function AdminInstitutionsPage() {
                     setSearchQuery("");
                     setTypeFilter("all");
                   }}
-                  className="px-3 py-1.5 text-xs font-mono-numeral text-[#D9A441] hover:underline"
+                  className="px-3.5 py-1.5 text-xs text-emerald-700 hover:text-emerald-800 font-semibold hover:underline"
                 >
                   Clear search filters
                 </button>
               )}
             </div>
           ) : (
-            <div className="border border-[#5A3653] bg-[#3D2538] rounded-xl overflow-x-auto shadow-sm">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#4A2E44] border-b border-[#5A3653] text-[#F3EEE2] uppercase font-mono-numeral text-[11px]">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Facility Name</th>
-                    <th className="px-4 py-3 font-semibold">Vertical Type</th>
-                    <th className="px-4 py-3 font-semibold">Dispatch Address</th>
-                    <th className="px-4 py-3 font-semibold">Subscription Plan</th>
-                    <th className="px-4 py-3 font-semibold">Inventory Logged</th>
-                    <th className="px-4 py-3 font-semibold">Total Surplus Listed</th>
-                    <th className="px-4 py-3 font-semibold text-right">Onboarded</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#5A3653] text-[#D4CBBF]">
-                  {filteredInstitutions.map((inst) => (
-                    <tr key={inst._id} className="hover:bg-[#4A2E44]/40 transition-colors">
-                      <td className="px-4 py-3 font-medium text-[#F3EEE2]">
-                        <div className="text-sm font-semibold">{inst.name || "Commercial Kitchen"}</div>
-                        <div className="text-[10px] text-[#C9B9C7] font-mono-numeral">
-                          ID: {inst._id}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3 text-[#D9A441] font-medium">
-                        {formatType(inst.type)}
-                      </td>
-
-                      <td
-                        className="px-4 py-3 max-w-[220px] truncate text-[#C9B9C7]"
-                        title={inst.address || "Address not provided"}
-                      >
-                        {inst.address || "Address not provided"}
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono-numeral uppercase font-semibold ${
-                            inst.plan === "premium"
-                              ? "bg-[#D9A441]/20 text-[#D9A441] border border-[#D9A441]/40"
-                              : "bg-[#2F4B3A]/20 text-[#86C29B] border border-[#2F4B3A]/40"
-                          }`}
-                        >
-                          {inst.plan === "premium" ? "Enterprise Premium" : "Community Free"}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-3 font-mono-numeral text-[#F3EEE2]">
-                        {Number(inst.inventoryCount) || 0} items
-                      </td>
-
-                      <td className="px-4 py-3 font-mono-numeral text-[#86C29B] font-medium">
-                        {Number(inst.totalSurplusKg) || 0} kg ({Number(inst.listingsCount) || 0} batches)
-                      </td>
-
-                      <td
-                        className="px-4 py-3 text-right font-mono-numeral text-[#C9B9C7]"
-                        suppressHydrationWarning
-                      >
-                        {formatDate(inst.createdAt)}
-                      </td>
+            <div className="border border-slate-200/90 bg-white rounded-2xl overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50/80 border-b border-slate-200/80 text-zinc-600 uppercase font-semibold text-[11px] tracking-wider">
+                    <tr>
+                      <th className="px-5 py-3.5">Facility Name</th>
+                      <th className="px-4 py-3.5">Vertical Type</th>
+                      <th className="px-4 py-3.5">Dispatch Address</th>
+                      <th className="px-4 py-3.5">Subscription Plan</th>
+                      <th className="px-4 py-3.5">Inventory Logged</th>
+                      <th className="px-4 py-3.5">Total Surplus Listed</th>
+                      <th className="px-5 py-3.5 text-right">Onboarded</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-zinc-700">
+                    {filteredInstitutions.map((inst) => (
+                      <tr key={inst._id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-5 py-3.5 font-medium text-zinc-900">
+                          <div className="text-sm font-bold text-zinc-900">{inst.name || "Commercial Kitchen"}</div>
+                          <div className="text-[11px] text-zinc-400 font-mono">
+                            ID: {inst._id}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3.5 text-zinc-700 font-medium">
+                          {formatType(inst.type)}
+                        </td>
+
+                        <td
+                          className="px-4 py-3.5 max-w-[220px] truncate text-zinc-500 text-xs"
+                          title={inst.address || "Address not provided"}
+                        >
+                          {inst.address || "Address not provided"}
+                        </td>
+
+                        <td className="px-4 py-3.5">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
+                              inst.plan === "premium"
+                                ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                            }`}
+                          >
+                            {inst.plan === "premium" ? "Enterprise Premium" : "Community Free"}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3.5 text-zinc-900 font-medium">
+                          {Number(inst.inventoryCount) || 0} items
+                        </td>
+
+                        <td className="px-4 py-3.5 text-emerald-700 font-bold">
+                          {Number(inst.totalSurplusKg) || 0} kg <span className="text-zinc-400 font-normal">({Number(inst.listingsCount) || 0} batches)</span>
+                        </td>
+
+                        <td
+                          className="px-5 py-3.5 text-right text-zinc-500 text-xs"
+                          suppressHydrationWarning
+                        >
+                          {formatDate(inst.createdAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>

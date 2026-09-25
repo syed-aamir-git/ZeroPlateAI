@@ -26,7 +26,7 @@ export default async function AdminLayout({
       userEmail={user.email}
       userName={user.name}
     >
-      <div className="text-[#F3EEE2]">
+      <div className="text-zinc-900 min-h-full">
         {children}
       </div>
     </AppSidebarShell>

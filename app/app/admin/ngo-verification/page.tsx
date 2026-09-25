@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { ShieldCheckIcon, AlertTriangleIcon, UserIcon, RouteIcon } from "@/components/icons/ledger-icons";
 import LocationPickerMap from "@/components/maps/location-picker-map";
+import { CheckCircle2, XCircle, ShieldAlert, Building2 } from "lucide-react";
 
 interface NgoItem {
   _id: string;
@@ -54,9 +54,9 @@ export default function AdminNgoVerificationPage() {
   const handleKycAction = async (ngoId: string, action: "approve" | "reject") => {
     let reason = "";
     if (action === "reject") {
-      const input = prompt("Please provide a statutory compliance reason for rejecting this NGO's KYC:");
+      const input = prompt("Please provide a compliance reason for rejecting this NGO's verification:");
       if (input === null) return; // cancelled
-      reason = input.trim() || "Failed statutory identity verification";
+      reason = input.trim() || "Failed identity or document verification";
     }
 
     setActionLoadingId(ngoId);
@@ -77,7 +77,7 @@ export default function AdminNgoVerificationPage() {
 
       setFeedback({
         type: "success",
-        message: `NGO KYC ${action}d successfully. Action permanently archived to MongoDB auditLogs.`,
+        message: `NGO verification status updated to ${action}d successfully.`,
       });
 
       fetchNgos();
@@ -91,50 +91,57 @@ export default function AdminNgoVerificationPage() {
     }
   };
 
-  const pendingCount = ngos.filter((n) => n.kycStatus === "pending").length;
-
   return (
-    <div className="max-w-6xl mx-auto space-y-6 text-left">
+    <div className="max-w-7xl mx-auto space-y-6 text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#5A3653] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
-          <span className="font-mono-numeral text-xs uppercase tracking-wider text-[#D9A441]">
-            Regulatory Recipient Vetting (Section 12.8)
+          <span className="font-mono-numeral text-xs uppercase tracking-wider text-emerald-700 font-semibold flex items-center gap-1.5">
+            <ShieldCheckIcon size={14} />
+            Compliance &amp; Verification
           </span>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#F3EEE2] mt-0.5">
-            NGO KYC Verification Queue
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-zinc-900 mt-1 tracking-tight">
+            NGO Verification Queue
           </h1>
+          <p className="text-xs text-zinc-500 mt-1">
+            Review and approve registered non-profit organizations and shelters before dispatching food batches.
+          </p>
         </div>
       </div>
 
       {/* Feedback Banner */}
       {feedback && (
         <div
-          className={`p-3.5 rounded-[6px] border text-xs font-medium ${
+          className={`p-4 rounded-2xl border text-xs font-medium shadow-xs flex items-center gap-2.5 ${
             feedback.type === "success"
-              ? "bg-[#2F4B3A]/30 border-[#2F4B3A] text-[#86C29B]"
-              : "bg-clay-rust/30 border-clay-rust text-[#F4A88E]"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+              : "bg-rose-50 border-rose-200 text-rose-900"
           }`}
         >
-          {feedback.message}
+          {feedback.type === "success" ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+          )}
+          <span>{feedback.message}</span>
         </div>
       )}
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto border border-[#5A3653] bg-[#3D2538] p-2.5 rounded-[6px]">
+      <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 max-w-fit">
         {[
-          { id: "pending", label: "Pending Review Queue" },
-          { id: "approved", label: "Approved Recipients" },
-          { id: "rejected", label: "Rejected Applications" },
+          { id: "pending", label: "Pending Review" },
+          { id: "approved", label: "Approved NGOs" },
+          { id: "rejected", label: "Rejected" },
           { id: "all", label: "All Records" },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setStatusFilter(tab.id)}
-            className={`px-3.5 py-1.5 text-xs rounded-[4px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all whitespace-nowrap cursor-pointer ${
               statusFilter === tab.id
-                ? "bg-[#D9A441] text-[#24211C] font-bold"
-                : "bg-[#4A2E44] text-[#C9B9C7] hover:text-[#F3EEE2] border border-[#5A3653]"
+                ? "bg-white text-zinc-900 font-semibold shadow-xs border border-slate-200/60"
+                : "text-zinc-600 hover:text-zinc-900"
             }`}
           >
             {tab.label}
@@ -144,152 +151,159 @@ export default function AdminNgoVerificationPage() {
 
       {/* Queue Table */}
       {loading ? (
-        <div className="p-12 text-center text-xs font-mono-numeral text-[#C9B9C7]">
-          Loading NGO verification queue...
+        <div className="p-16 text-center space-y-3 border border-slate-200/90 bg-white rounded-2xl shadow-xs">
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin mx-auto" />
+          <div className="text-xs text-zinc-500">
+            Loading NGO verification queue...
+          </div>
         </div>
       ) : ngos.length === 0 ? (
-        <div className="border border-[#5A3653] bg-[#3D2538] p-12 rounded-[6px] text-center space-y-3">
-          <div className="w-12 h-12 rounded-[6px] border border-[#5A3653] bg-[#4A2E44] mx-auto flex items-center justify-center text-[#D9A441]">
+        <div className="border border-slate-200/90 bg-white p-12 rounded-2xl text-center space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl border border-slate-200 bg-slate-50 mx-auto flex items-center justify-center text-zinc-600">
             <ShieldCheckIcon size={24} />
           </div>
-          <h2 className="font-display text-lg font-medium text-[#F3EEE2]">
+          <h2 className="font-display text-lg font-bold text-zinc-900">
             No NGO applications in this queue
           </h2>
-          <p className="text-xs text-[#C9B9C7] max-w-md mx-auto">
+          <p className="text-xs text-zinc-500 max-w-md mx-auto">
             {statusFilter === "pending"
-              ? "All registered NGOs have been evaluated. New recipient registrations will appear here for statutory KYC review."
+              ? "All registered NGOs have been evaluated. New recipient registrations will appear here automatically for review."
               : "No records found matching this status filter."}
           </p>
         </div>
       ) : (
-        <div className="border border-[#5A3653] bg-[#3D2538] rounded-[6px] overflow-x-auto shadow-none">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#4A2E44] border-b border-[#5A3653] text-[#F3EEE2] uppercase font-mono-numeral text-[11px]">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Organization Name</th>
-                <th className="px-4 py-3 font-semibold">Registration No.</th>
-                <th className="px-4 py-3 font-semibold">Contact Phone</th>
-                <th className="px-4 py-3 font-semibold">Service Area</th>
-                <th className="px-4 py-3 font-semibold">Weekly Capacity</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold text-right">Verification Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#5A3653] text-[#D4CBBF]">
-              {ngos.map((item) => {
-                const isActionLoading = actionLoadingId === item._id;
+        <div className="border border-slate-200/90 bg-white rounded-2xl overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/80 border-b border-slate-200/80 text-zinc-600 uppercase font-semibold text-[11px] tracking-wider">
+                <tr>
+                  <th className="px-5 py-3.5">Organization Name</th>
+                  <th className="px-4 py-3.5">Registration No.</th>
+                  <th className="px-4 py-3.5">Contact Phone</th>
+                  <th className="px-4 py-3.5">Service Area</th>
+                  <th className="px-4 py-3.5">Weekly Capacity</th>
+                  <th className="px-4 py-3.5">Status</th>
+                  <th className="px-5 py-3.5 text-right">Verification Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-zinc-700">
+                {ngos.map((item) => {
+                  const isActionLoading = actionLoadingId === item._id;
 
-                return (
-                  <React.Fragment key={item._id}>
-                    <tr className="hover:bg-[#4A2E44]/40 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-[#F3EEE2] text-sm">{item.orgName}</div>
-                      <div className="text-[10px] text-[#C9B9C7] font-mono-numeral">
-                        Applied: {new Date(item.createdAt).toLocaleDateString()}
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3 font-mono-numeral text-[#D9A441]">
-                      {item.registrationNumber}
-                    </td>
-
-                    <td className="px-4 py-3 font-mono-numeral text-[#F3EEE2]">
-                      {item.contactPhone}
-                    </td>
-
-                    <td className="px-4 py-3 text-[#D4CBBF]">
-                      <div className="max-w-[180px] truncate" title={item.serviceArea}>
-                        {item.serviceArea}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleMap(item._id)}
-                        className="text-[10px] text-[#D9A441] hover:underline font-mono-numeral flex items-center gap-1 mt-1 cursor-pointer"
-                      >
-                        <RouteIcon size={10} />
-                        <span>{openMapIds[item._id] ? "Hide Map" : "Verify Map 🗺️"}</span>
-                      </button>
-                    </td>
-
-                    <td className="px-4 py-3 font-mono-numeral text-[#F3EEE2]">
-                      {item.capacityPerWeek} <span className="text-[10px] text-[#C9B9C7]">kg/wk</span>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono-numeral uppercase font-semibold ${
-                          item.kycStatus === "approved"
-                            ? "bg-[#2F4B3A] text-[#86C29B] border border-[#2F4B3A]"
-                            : item.kycStatus === "rejected"
-                            ? "bg-clay-rust/20 text-[#F4A88E] border border-clay-rust"
-                            : "bg-[#D9A441]/20 text-[#D9A441] border border-[#D9A441]/40"
-                        }`}
-                      >
-                        {item.kycStatus === "pending" ? "Pending Review" : item.kycStatus}
-                      </span>
-                      {item.kycRejectionReason && (
-                        <div className="text-[10px] text-[#F4A88E] mt-0.5 italic">
-                          {item.kycRejectionReason}
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-3 text-right">
-                      {item.kycStatus === "pending" ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleKycAction(item._id, "approve")}
-                            disabled={isActionLoading}
-                            className="px-3 py-1.5 rounded-[4px] bg-[#2F4B3A] hover:bg-[#3D614B] text-[#F3EEE2] font-semibold text-xs transition-colors cursor-pointer"
-                          >
-                            ✓ Approve
-                          </button>
-                          <button
-                            onClick={() => handleKycAction(item._id, "reject")}
-                            disabled={isActionLoading}
-                            className="px-2.5 py-1.5 rounded-[4px] bg-clay-rust/20 border border-clay-rust hover:bg-clay-rust text-[#F4A88E] hover:text-[#F3EEE2] font-medium text-xs transition-colors cursor-pointer"
-                          >
-                            ✕ Reject
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="text-[11px] font-mono-numeral text-[#C9B9C7]">
-                          Reviewed: {item.kycReviewedAt ? new Date(item.kycReviewedAt).toLocaleDateString() : "Done"}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                  {openMapIds[item._id] && (
-                    <tr key={`${item._id}-map`}>
-                      <td colSpan={7} className="p-3 bg-[#2A1927] border-b border-[#5A3653]">
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-[11px] font-mono-numeral text-[#C9B9C7]">
-                            <span className="font-semibold text-[#F3EEE2]">
-                              Statutory Physical Facility Location & Service Coverage Verification
-                            </span>
-                            <span>
-                              Coordinates: {item.location?.lat || 28.6139}, {item.location?.lng || 77.209}
-                            </span>
+                  return (
+                    <React.Fragment key={item._id}>
+                      <tr className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-5 py-3.5 font-medium text-zinc-900">
+                          <div className="text-sm font-bold text-zinc-900">{item.orgName}</div>
+                          <div className="text-[11px] text-zinc-400 font-mono">
+                            Applied: {new Date(item.createdAt).toLocaleDateString()}
                           </div>
-                          <LocationPickerMap
-                            lat={item.location?.lat || 28.6139}
-                            lng={item.location?.lng || 77.209}
-                            radiusMeters={6000}
-                            pinType="ngo"
-                            theme="dark"
-                            readOnly={true}
-                            label={`Applicant: ${item.orgName}`}
-                            className="w-full h-52 sm:h-60"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-            </tbody>
-          </table>
+                        </td>
+
+                        <td className="px-4 py-3.5 font-mono text-zinc-700 font-medium">
+                          {item.registrationNumber}
+                        </td>
+
+                        <td className="px-4 py-3.5 text-zinc-700 font-medium">
+                          {item.contactPhone}
+                        </td>
+
+                        <td className="px-4 py-3.5 text-zinc-600">
+                          <div className="max-w-[180px] truncate" title={item.serviceArea}>
+                            {item.serviceArea}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleMap(item._id)}
+                            className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 mt-1 cursor-pointer hover:underline"
+                          >
+                            <RouteIcon size={11} />
+                            <span>{openMapIds[item._id] ? "Hide Location" : "View Map 🗺️"}</span>
+                          </button>
+                        </td>
+
+                        <td className="px-4 py-3.5 text-zinc-900 font-medium">
+                          {item.capacityPerWeek} <span className="text-[11px] text-zinc-400 font-normal">kg/wk</span>
+                        </td>
+
+                        <td className="px-4 py-3.5">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
+                              item.kycStatus === "approved"
+                                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                : item.kycStatus === "rejected"
+                                ? "bg-rose-50 text-rose-800 border border-rose-200"
+                                : "bg-amber-50 text-amber-800 border border-amber-200"
+                            }`}
+                          >
+                            {item.kycStatus === "pending" ? "Pending Review" : item.kycStatus === "approved" ? "Approved" : "Rejected"}
+                          </span>
+                          {item.kycRejectionReason && (
+                            <div className="text-[11px] text-rose-600 mt-1 italic">
+                              {item.kycRejectionReason}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-3.5 text-right">
+                          {item.kycStatus === "pending" ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleKycAction(item._id, "approve")}
+                                disabled={isActionLoading}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                              >
+                                {isActionLoading ? "..." : "Approve"}
+                              </button>
+                              <button
+                                onClick={() => handleKycAction(item._id, "reject")}
+                                disabled={isActionLoading}
+                                className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-medium text-xs transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-zinc-400">
+                              Reviewed: {item.kycReviewedAt ? new Date(item.kycReviewedAt).toLocaleDateString() : "Done"}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                      {openMapIds[item._id] && (
+                        <tr key={`${item._id}-map`}>
+                          <td colSpan={7} className="p-4 bg-slate-50/80 border-b border-slate-200/80">
+                            <div className="space-y-2 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                              <div className="flex items-center justify-between text-xs text-zinc-600">
+                                <span className="font-semibold text-zinc-900">
+                                  Facility Location &amp; Operational Coverage Area
+                                </span>
+                                <span className="font-mono text-[11px] text-zinc-500">
+                                  Coordinates: {item.location?.lat || 28.6139}, {item.location?.lng || 77.209}
+                                </span>
+                              </div>
+                              <div className="rounded-xl overflow-hidden border border-slate-200">
+                                <LocationPickerMap
+                                  lat={item.location?.lat || 28.6139}
+                                  lng={item.location?.lng || 77.209}
+                                  radiusMeters={6000}
+                                  pinType="ngo"
+                                  theme="light"
+                                  readOnly={true}
+                                  label={`Applicant: ${item.orgName}`}
+                                  className="w-full h-52 sm:h-60"
+                                />
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
