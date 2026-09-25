@@ -79,9 +79,9 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .toArray();
 
-    // Use institution records if plentiful, otherwise blend with real platform records so the analytics reflect actual database data
-    const activeInventory = instInventory.length >= 8 ? instInventory : allDbInventory;
-    const activeSurplus = instSurplus.length >= 8 ? instSurplus : allDbSurplus;
+    // Use all real records from the database
+    const activeInventory = allDbInventory;
+    const activeSurplus = allDbSurplus;
 
     const toKg = (qty: any, unit: any) => {
       const q = Number(qty) || 0;
@@ -95,6 +95,13 @@ export async function GET(request: NextRequest) {
     let totalFoodPreparedKg = 0;
     activeInventory.forEach((item) => {
       totalFoodPreparedKg += toKg(item.quantity, item.unit);
+    });
+
+    // Also include surplus items logged directly
+    activeSurplus.forEach((s) => {
+      if (!s.inventoryItemId || !activeInventory.some((i) => String(i._id) === String(s.inventoryItemId))) {
+        totalFoodPreparedKg += toKg(s.quantity, s.unit);
+      }
     });
 
     let totalSurplusKg = 0;
@@ -260,8 +267,11 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 6. Map Detailed Real Items for the Table
-    const detailedItems = activeInventory.slice(0, 25).map((item) => {
+    // 6. Map Detailed Real Items for the Table (Include all real user items from both inventory & surplus)
+    const itemMap = new Map<string, any>();
+
+    // Add inventory items
+    activeInventory.forEach((item) => {
       const qKg = toKg(item.quantity, item.unit);
       const isSurplusOrDelivered = item.status === "delivered" || item.status === "listed" || item.status === "surplus";
       const consumedKg = item.status === "delivered" || item.status === "listed"
@@ -270,18 +280,50 @@ export async function GET(request: NextRequest) {
       const rawDate = item.createdAt || item.preparedOrReceivedAt || new Date();
       const dateStr = new Date(rawDate).toISOString().split("T")[0];
 
-      return {
+      itemMap.set(String(item._id), {
         id: item._id.toString(),
-        name: item.name || "Surplus Batch",
+        name: item.name || "Food Batch",
         category: item.category || "cooked_food",
         quantity: `${item.quantity} ${item.unit || "kg"}`,
         quantityKg: Math.round(qKg * 10) / 10,
         status: item.status || "in_stock",
         date: dateStr,
+        rawTimestamp: new Date(rawDate).getTime(),
         consumedEstimateKg: consumedKg,
         dinersFed: Math.round(consumedKg / 0.40),
-      };
+      });
     });
+
+    // Add surplus listings (all real user food batches)
+    activeSurplus.forEach((s) => {
+      const sId = String(s._id);
+      if (s.inventoryItemId && itemMap.has(String(s.inventoryItemId))) {
+        return;
+      }
+      const qKg = toKg(s.quantity, s.unit);
+      const isDelivered = s.status === "delivered" || s.status === "claimed";
+      const consumedKg = isDelivered ? Math.round(qKg * 0.9 * 10) / 10 : Math.round(qKg * 0.5 * 10) / 10;
+      const rawDate = s.createdAt || s.preparedAt || new Date();
+      const dateStr = new Date(rawDate).toISOString().split("T")[0];
+
+      itemMap.set(`surplus_${sId}`, {
+        id: sId,
+        name: s.itemName || s.foodName || "Surplus Batch",
+        category: s.category || "cooked_food",
+        quantity: `${s.quantity} ${s.unit || "kg"}`,
+        quantityKg: Math.round(qKg * 10) / 10,
+        status: s.status || "surplus",
+        date: dateStr,
+        rawTimestamp: new Date(rawDate).getTime(),
+        consumedEstimateKg: consumedKg,
+        dinersFed: Math.max(1, Math.round(consumedKg / 0.40)),
+      });
+    });
+
+    // Show all real items, sorted newest first
+    const detailedItems = Array.from(itemMap.values()).sort(
+      (a, b) => b.rawTimestamp - a.rawTimestamp
+    );
 
     // 7. Summary ESG Impacts
     const costSavedInr = Math.round(wasteAvoidedKg * SUSTAINABILITY_FACTORS.COST_SAVED_INR_PER_KG);

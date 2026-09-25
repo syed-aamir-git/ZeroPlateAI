@@ -935,8 +935,9 @@ export default function InstitutionAnalyticsPage() {
                 <div>
                   <h3 className="font-serif font-bold text-base text-stone-900 flex items-center gap-2">
                     Detailed Food Inventory &amp; Consumption Ledger
-                    <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                      Live MongoDB
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      Live
                     </span>
                   </h3>
                   <p className="text-xs text-stone-500 mt-0.5">
@@ -1018,6 +1019,8 @@ export default function InstitutionAnalyticsPage() {
                                     ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                     : item.status === "listed" || item.status === "surplus"
                                     ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                    : item.status === "expired" || item.status === "rejected" || item.status === "cancelled"
+                                    ? "bg-rose-100 text-rose-800 border border-rose-200"
                                     : "bg-stone-100 text-stone-700 border border-stone-200"
                                 }`}
                               >

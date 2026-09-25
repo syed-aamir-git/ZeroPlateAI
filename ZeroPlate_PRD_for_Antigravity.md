@@ -385,7 +385,7 @@ UI built with shadcn components: `Card`, `Table`, `DataTable`, `Dialog` (create/
 - Processing-unit machine downtime/energy anomaly detection
 - Secondary-buyer marketplace
 - POS/ERP integration for automatic data ingestion
-- Predictive procurement recommendations
+- Predictive procurement recommendations 
 - Multi-language support, international expansion
 
 ---

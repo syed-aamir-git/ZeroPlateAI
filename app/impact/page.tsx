@@ -44,7 +44,7 @@ export default async function PublicImpactPage() {
                 Cumulative Ecological & Community Totals
               </span>
               <span className="font-mono-numeral text-xs text-ink-soft">
-                Live MongoDB aggregation • Audited standard
+                Live aggregation • Audited standard
               </span>
             </div>
 
