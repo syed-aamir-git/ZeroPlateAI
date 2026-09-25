@@ -145,9 +145,9 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
           if (!isOpen) fetchNotifications();
         }}
         className={cn(
-          "relative p-2 rounded-[6px] border transition-colors cursor-pointer",
+          "relative p-2 rounded-xl border transition-colors cursor-pointer",
           isAdmin
-            ? "border-[#5A3653] text-[#F3EEE2] hover:bg-[#4A2E44]"
+            ? "border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-2xs"
             : "border-line text-ink hover:bg-[#EAE3D4]"
         )}
         aria-label="Notifications"
@@ -155,7 +155,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
       >
         <BellIcon size={18} strokeWidth={1.5} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-clay-rust text-[#FAF7F2] text-[10px] font-mono flex items-center justify-center font-bold">
+          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-amber-500 text-white text-[10px] font-mono flex items-center justify-center font-bold shadow-2xs">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -164,9 +164,9 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
       {isOpen && (
         <div
           className={cn(
-            "absolute right-0 mt-2 w-80 sm:w-96 rounded-lg shadow-2xl border z-50 overflow-hidden",
+            "absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border z-50 overflow-hidden",
             isAdmin
-              ? "bg-[#2E1A2B] border-[#5A3653] text-[#F3EEE2]"
+              ? "bg-white border-slate-200 text-slate-900"
               : "bg-[#FAF6EE] border-line text-ink"
           )}
         >
@@ -174,13 +174,13 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
           <div
             className={cn(
               "px-4 py-3 border-b flex items-center justify-between shrink-0",
-              isAdmin ? "border-[#5A3653] bg-[#3D2538] text-[#F3EEE2]" : "border-line bg-[#EFE8D8] text-ink"
+              isAdmin ? "border-slate-200 bg-slate-50 text-slate-900" : "border-line bg-[#EFE8D8] text-ink"
             )}
           >
             <div className="flex items-center gap-2">
               <span className="font-serif font-bold text-sm">Notifications</span>
               {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-clay-rust/20 text-clay-rust font-semibold">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-100 text-amber-900 border border-amber-300 font-semibold">
                   {unreadCount} unread
                 </span>
               )}
@@ -189,7 +189,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-basil hover:underline font-sans cursor-pointer font-medium"
+                className="text-xs text-emerald-700 hover:text-emerald-800 hover:underline font-sans cursor-pointer font-medium"
               >
                 Mark all read
               </button>
@@ -201,7 +201,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
             className={cn(
               "max-h-80 overflow-y-auto divide-y",
               isAdmin
-                ? "bg-[#2E1A2B] divide-[#5A3653]/60"
+                ? "bg-white divide-slate-100"
                 : "bg-[#FAF6EE] divide-line/60"
             )}
           >
@@ -209,10 +209,10 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
               <div
                 className={cn(
                   "p-6 text-center text-xs",
-                  isAdmin ? "bg-[#2E1A2B] text-[#D8C9B8]" : "bg-[#FAF6EE] text-ink-soft"
+                  isAdmin ? "bg-white text-slate-500" : "bg-[#FAF6EE] text-ink-soft"
                 )}
               >
-                No notifications logged in the ledger yet.
+                No notifications logged yet.
               </div>
             ) : (
               notifications.slice(0, 8).map((n) => (
@@ -220,22 +220,22 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
                   key={n._id}
                   onClick={() => !n.readStatus && handleMarkItemRead(n._id)}
                   className={cn(
-                    "p-3 text-xs transition-colors cursor-pointer border-l-2",
+                    "p-3.5 text-xs transition-colors cursor-pointer border-l-2",
                     !n.readStatus
                       ? isAdmin
-                        ? "bg-[#3D2538] hover:bg-[#4A2E44] border-l-saffron text-[#F3EEE2]"
+                        ? "bg-emerald-50/50 hover:bg-emerald-50/80 border-l-emerald-600 text-slate-900"
                         : "bg-[#F3ECE0] hover:bg-[#EBE3D4] border-l-saffron text-ink"
                       : isAdmin
-                        ? "bg-[#2E1A2B] hover:bg-[#382134] border-l-transparent text-[#E3D9CD]"
+                        ? "bg-white hover:bg-slate-50 border-l-transparent text-slate-600"
                         : "bg-[#FAF6EE] hover:bg-[#F2ECE0] border-l-transparent text-ink"
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-semibold">{n.title}</span>
+                    <span className="font-semibold text-slate-900">{n.title}</span>
                     <span
                       className={cn(
                         "text-[10px] shrink-0 font-mono",
-                        isAdmin ? "text-[#CBBBB0]" : "text-ink-soft"
+                        isAdmin ? "text-slate-400" : "text-ink-soft"
                       )}
                     >
                       {new Date(n.createdAt).toLocaleTimeString([], {
@@ -247,7 +247,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
                   <p
                     className={cn(
                       "mt-1 text-[11px] line-clamp-2",
-                      isAdmin ? "text-[#D8C9B8]" : "text-ink-soft"
+                      isAdmin ? "text-slate-600" : "text-ink-soft"
                     )}
                   >
                     {n.message}
@@ -258,7 +258,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
                       onClick={() => setIsOpen(false)}
                       className={cn(
                         "inline-block mt-1.5 text-[11px] hover:underline font-medium",
-                        isAdmin ? "text-[#E6C687]" : "text-basil"
+                        isAdmin ? "text-emerald-700" : "text-basil"
                       )}
                     >
                       View Details →
@@ -273,7 +273,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
           <div
             className={cn(
               "px-4 py-2.5 border-t text-center shrink-0",
-              isAdmin ? "border-[#5A3653] bg-[#3D2538]" : "border-line bg-[#EFE8D8]"
+              isAdmin ? "border-slate-200 bg-slate-50 text-slate-700" : "border-line bg-[#EFE8D8]"
             )}
           >
             <Link
@@ -282,7 +282,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
               className={cn(
                 "text-xs font-medium transition-colors",
                 isAdmin
-                  ? "text-[#F3EEE2] hover:text-saffron"
+                  ? "text-emerald-800 hover:text-emerald-950 font-semibold"
                   : "text-ink hover:text-basil"
               )}
             >

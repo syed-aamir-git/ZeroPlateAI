@@ -149,13 +149,13 @@ export function AppSidebarShell({
             href={item.href}
             onClick={onItemClick}
             className={cn(
-              "flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors relative",
+              "flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-all relative rounded-xl",
               isActive
                 ? isAdmin
-                  ? "text-[#F3EEE2] font-semibold border-l-[3px] border-[#D9A441] pl-[9px] bg-[#4A2E44]/40"
+                  ? "text-emerald-950 font-bold border-l-[3.5px] border-emerald-600 pl-3 bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-transparent shadow-2xs"
                   : "text-basil font-semibold border-l-[3px] border-basil pl-[9px] bg-[#EAE3D4]/50"
                 : isAdmin
-                ? "text-[#C9B9C7] hover:text-[#F3EEE2] hover:bg-[#4A2E44]/30 border-l-[3px] border-transparent pl-[9px]"
+                ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border-l-[3.5px] border-transparent pl-3"
                 : "text-ink-soft hover:text-ink hover:bg-[#EAE3D4]/40 border-l-[3px] border-transparent pl-[9px]"
             )}
           >
@@ -166,10 +166,10 @@ export function AppSidebarShell({
                 className={cn(
                   isActive
                     ? isAdmin
-                      ? "text-[#D9A441]"
+                      ? "text-emerald-700"
                       : "text-basil"
                     : isAdmin
-                    ? "text-[#C9B9C7]"
+                    ? "text-slate-400 group-hover:text-slate-700"
                     : "text-ink-soft"
                 )}
               />
@@ -180,7 +180,7 @@ export function AppSidebarShell({
                 className={cn(
                   "text-xs px-2 py-0.5 rounded-full font-mono-numeral",
                   isAdmin
-                    ? "bg-[#663E5D] text-[#F3EEE2]"
+                    ? "bg-amber-100 text-amber-900 border border-amber-300 font-bold shadow-2xs"
                     : "bg-basil/10 text-basil"
                 )}
               >
@@ -206,7 +206,7 @@ export function AppSidebarShell({
             className={cn(
               "relative w-72 max-w-[85vw] flex flex-col h-full shadow-2xl z-10 transition-colors",
               isAdmin
-                ? "bg-[#3D2538] text-[#F3EEE2]"
+                ? "bg-white text-slate-900 border-r border-slate-200"
                 : "bg-ledger-paper text-ink"
             )}
           >
@@ -214,7 +214,7 @@ export function AppSidebarShell({
             <div
               className={cn(
                 "h-16 px-5 flex items-center justify-between border-b",
-                isAdmin ? "border-[#5A3653]" : "border-line"
+                isAdmin ? "border-slate-200 bg-slate-50/80" : "border-line"
               )}
             >
               <div className="flex items-center gap-2.5">
@@ -223,9 +223,9 @@ export function AppSidebarShell({
                 </span>
                 <span
                   className={cn(
-                    "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2 py-0.5 rounded-[4px] border shrink-0 whitespace-nowrap",
+                    "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap shadow-2xs",
                     isAdmin
-                      ? "bg-[#4A2E44] text-[#E0D0DC] border-[#663E5D]"
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-0 font-bold"
                       : "bg-basil/10 text-basil border-basil/20"
                   )}
                 >
@@ -251,7 +251,7 @@ export function AppSidebarShell({
             <div
               className={cn(
                 "p-4 border-t text-xs",
-                isAdmin ? "border-[#5A3653]" : "border-line"
+                isAdmin ? "border-slate-200 bg-slate-50/80" : "border-line"
               )}
             >
               <div className="mb-3">
@@ -280,22 +280,26 @@ export function AppSidebarShell({
         className={cn(
           "hidden md:flex flex-col w-64 h-full shrink-0 border-r transition-colors select-none",
           isAdmin
-            ? "bg-[#3D2538] text-[#F3EEE2] border-[#5A3653]"
+            ? "bg-gradient-to-b from-slate-50/95 via-white to-slate-50/80 text-slate-900 border-slate-200/90 shadow-xs"
             : "bg-ledger-paper text-ink border-line"
         )}
       >
-        {/* Sidebar Brand Header - Clean, Structured & Uncrowded */}
+        {/* Sidebar Brand Header */}
         <div
           className={cn(
             "h-16 px-5 flex items-center justify-between border-b transition-colors",
-            isAdmin ? "border-[#5A3653] bg-[#352031]/40" : "border-line bg-ledger-paper"
+            isAdmin
+              ? "border-slate-200/80 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-amber-500/10"
+              : "border-line bg-ledger-paper"
           )}
         >
           <Link href={`/dashboard/${role}`} className="flex items-center gap-2 group">
             <span
               className={cn(
                 "font-display text-xl font-bold tracking-tight transition-colors",
-                isAdmin ? "text-[#F3EEE2] group-hover:text-saffron" : "text-basil group-hover:text-basil-dark"
+                isAdmin
+                  ? "text-emerald-800 group-hover:text-emerald-950"
+                  : "text-basil group-hover:text-basil-dark"
               )}
             >
               ZeroPlate<span className="text-saffron">.ai</span>
@@ -303,9 +307,9 @@ export function AppSidebarShell({
           </Link>
           <span
             className={cn(
-              "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2 py-0.5 rounded-[4px] border shrink-0 whitespace-nowrap",
+              "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap shadow-2xs",
               isAdmin
-                ? "bg-[#4A2E44] text-[#E0D0DC] border-[#663E5D]"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-0 font-bold"
                 : "bg-basil/10 text-basil border-basil/20"
             )}
           >
@@ -321,16 +325,18 @@ export function AppSidebarShell({
           ref={profileRef}
           className={cn(
             "p-3 border-t text-xs relative",
-            isAdmin ? "border-[#5A3653] text-[#C9B9C7]" : "border-line text-ink-soft"
+            isAdmin
+              ? "border-slate-200/80 text-slate-600 bg-slate-50/50"
+              : "border-line text-ink-soft"
           )}
         >
           {/* Floating Popover Menu */}
           {isProfileMenuOpen && (
             <div
               className={cn(
-                "absolute bottom-[calc(100%+8px)] left-3 right-3 rounded-[8px] border shadow-xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150",
+                "absolute bottom-[calc(100%+8px)] left-3 right-3 rounded-2xl border shadow-xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150",
                 isAdmin
-                  ? "bg-[#352031] border-[#5A3653] text-[#F3EEE2]"
+                  ? "bg-white border-slate-200 text-slate-900 shadow-[0_12px_30px_-5px_rgba(0,0,0,0.15)]"
                   : "bg-ledger-paper border-line text-ink shadow-[0_10px_25px_-5px_rgba(47,75,58,0.15)]"
               )}
             >
@@ -345,9 +351,9 @@ export function AppSidebarShell({
                 <div className="mt-1">
                   <span
                     className={cn(
-                      "inline-flex items-center text-[10px] font-mono-numeral uppercase tracking-wider px-1.5 py-0.5 rounded border",
+                      "inline-flex items-center text-[10px] font-mono-numeral uppercase tracking-wider px-2 py-0.5 rounded-full border font-semibold",
                       isAdmin
-                        ? "bg-[#4A2E44] text-[#E0D0DC] border-[#663E5D]"
+                        ? "bg-emerald-50 text-emerald-900 border-emerald-200"
                         : "bg-basil/10 text-basil border-basil/20"
                     )}
                   >
@@ -362,9 +368,9 @@ export function AppSidebarShell({
                 onClick={handleSignOut}
                 disabled={isLoggingOut}
                 className={cn(
-                  "w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold rounded-[6px] transition-colors cursor-pointer text-left",
+                  "w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer text-left",
                   isAdmin
-                    ? "text-rose-300 hover:text-rose-100 hover:bg-rose-500/20"
+                    ? "text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                     : "text-rose-700 hover:text-rose-800 hover:bg-rose-50"
                 )}
               >
@@ -382,18 +388,21 @@ export function AppSidebarShell({
             aria-haspopup="menu"
             title="Click to view profile & sign out"
             className={cn(
-              "w-full flex items-center gap-3 p-2 rounded-[6px] transition-all text-left cursor-pointer border border-transparent",
+              "w-full flex items-center gap-3 p-2 rounded-xl transition-all text-left cursor-pointer border border-transparent",
               isAdmin
-                ? "hover:bg-[#4A2E44]/50 hover:border-[#663E5D] focus:ring-2 focus:ring-[#D9A441]/50"
+                ? "hover:bg-slate-100 hover:border-slate-200/90 focus:ring-2 focus:ring-emerald-500/30"
                 : "hover:bg-[#EAE3D4]/60 hover:border-line focus:ring-2 focus:ring-basil/30",
-              isProfileMenuOpen && (isAdmin ? "bg-[#4A2E44]/60 border-[#663E5D]" : "bg-[#EAE3D4]/80 border-line")
+              isProfileMenuOpen &&
+                (isAdmin
+                  ? "bg-slate-100 border-slate-200/90 shadow-2xs"
+                  : "bg-[#EAE3D4]/80 border-line")
             )}
           >
             <div
               className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center border shrink-0",
+                "w-8 h-8 rounded-full flex items-center justify-center border shrink-0 font-bold",
                 isAdmin
-                  ? "bg-[#4A2E44] border-[#663E5D] text-[#F3EEE2]"
+                  ? "bg-gradient-to-br from-emerald-600 to-teal-700 border-emerald-500/30 text-white shadow-2xs"
                   : "bg-ledger-paper border-line text-ink"
               )}
             >
@@ -402,8 +411,8 @@ export function AppSidebarShell({
             <div className="min-w-0 flex-1">
               <div
                 className={cn(
-                  "font-medium truncate text-xs",
-                  isAdmin ? "text-[#F3EEE2]" : "text-ink"
+                  "font-semibold truncate text-xs",
+                  isAdmin ? "text-slate-900" : "text-ink"
                 )}
               >
                 {userName || "Authenticated User"}
@@ -433,12 +442,12 @@ export function AppSidebarShell({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Top App Bar */}
+        {/* Top App Bar (Navbar) */}
         <header
           className={cn(
             "h-16 px-4 sm:px-6 lg:px-8 border-b flex items-center justify-between shrink-0",
             isAdmin
-              ? "bg-[#3D2538] text-[#F3EEE2] border-[#5A3653]"
+              ? "bg-white/95 backdrop-blur-md text-slate-900 border-slate-200/90 shadow-2xs"
               : "bg-ledger-paper border-line text-ink"
           )}
         >
@@ -446,7 +455,7 @@ export function AppSidebarShell({
           <div className="flex items-center gap-3 md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-1.5 rounded-[6px] border border-line text-ink cursor-pointer"
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-800 hover:bg-slate-100 cursor-pointer"
               aria-label="Toggle navigation"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -455,17 +464,27 @@ export function AppSidebarShell({
                 <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
-            <span className="font-display font-bold text-basil text-lg">
+            <span className="font-display font-bold text-emerald-800 text-lg">
               ZeroPlate
             </span>
           </div>
 
-          <div className="hidden md:block text-xs uppercase tracking-wider text-ink-soft font-mono-numeral">
-            {role === "ngo"
-              ? "Community Redistribution Ledger"
-              : role === "admin"
-              ? "Platform Compliance & Safety Ledger"
-              : "Institutional Abundance Ledger"}
+          <div className="hidden md:flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
+            {role === "ngo" ? (
+              "Community Redistribution Ledger"
+            ) : role === "admin" ? (
+              <span className="flex items-center gap-2.5">
+                <span className="text-slate-800 font-semibold normal-case font-sans text-sm">
+                  Platform Operations &amp; Safety Hub
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 normal-case font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Command
+                </span>
+              </span>
+            ) : (
+              "Institutional Abundance Ledger"
+            )}
           </div>
 
           {/* Top-Right: Notifications Bell + Role Badge */}
@@ -474,13 +493,18 @@ export function AppSidebarShell({
 
             <div
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-[6px] border text-xs font-medium shrink-0",
+                "flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium shrink-0",
                 isAdmin
-                  ? "border-[#5A3653] bg-[#4A2E44] text-[#F3EEE2]"
+                  ? "border-emerald-200 bg-emerald-50/80 text-emerald-950 font-semibold shadow-2xs"
                   : "border-line bg-ledger-paper text-ink"
               )}
             >
-              <div className="w-2 h-2 rounded-full bg-basil shrink-0" />
+              <div
+                className={cn(
+                  "w-2 h-2 rounded-full shrink-0",
+                  isAdmin ? "bg-emerald-600 animate-pulse" : "bg-basil"
+                )}
+              />
               <span className="whitespace-nowrap">{roleLabel}</span>
             </div>
           </div>
