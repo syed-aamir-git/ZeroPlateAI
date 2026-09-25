@@ -42,9 +42,27 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .toArray();
 
+    // Sanitize and shorten partnerId and other long IDs in details
+    const sanitizedLogs = logs.map((log) => {
+      if (log.details && typeof log.details === "object") {
+        const details = { ...log.details };
+        for (const [k, v] of Object.entries(details)) {
+          if (typeof v === "string") {
+            if (k.toLowerCase().includes("partnerid") || k.toLowerCase().includes("partner_id")) {
+              details[k] = v.length > 8 ? v.slice(-8) : v;
+            } else if ((k.toLowerCase().endsWith("id") || k.toLowerCase().endsWith("by")) && v.length === 24) {
+              details[k] = v.slice(-8);
+            }
+          }
+        }
+        return { ...log, details };
+      }
+      return log;
+    });
+
     return NextResponse.json({
       success: true,
-      logs,
+      logs: sanitizedLogs,
       total,
       page,
       limit,

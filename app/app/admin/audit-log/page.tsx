@@ -17,6 +17,32 @@ interface AuditRecord {
   details?: Record<string, any>;
 }
 
+// Helper to shorten partnerId and long IDs in audit log details
+function formatLogDetails(details: Record<string, any> | null | undefined): string {
+  if (!details || typeof details !== "object") return "";
+  try {
+    const formatted: Record<string, any> = {};
+    for (const [key, value] of Object.entries(details)) {
+      if (typeof value === "string") {
+        if (key.toLowerCase().includes("partnerid") || key.toLowerCase().includes("partner_id")) {
+          // Shorten partner id to last 8 characters
+          formatted[key] = value.length > 8 ? value.slice(-8) : value;
+        } else if ((key.toLowerCase().endsWith("id") || key.toLowerCase().endsWith("by")) && value.length === 24) {
+          // Shorten 24-char hex mongo IDs
+          formatted[key] = value.slice(-8);
+        } else {
+          formatted[key] = value;
+        }
+      } else {
+        formatted[key] = value;
+      }
+    }
+    return JSON.stringify(formatted);
+  } catch {
+    return JSON.stringify(details);
+  }
+}
+
 export default function AdminAuditLogPage() {
   const [logs, setLogs] = React.useState<AuditRecord[]>([]);
   const [total, setTotal] = React.useState(0);
@@ -136,7 +162,6 @@ export default function AdminAuditLogPage() {
                 <tr>
                   <th className="px-5 py-3.5">Action / Event</th>
                   <th className="px-4 py-3.5">Entity</th>
-                  <th className="px-4 py-3.5">Rule Applied</th>
                   <th className="px-4 py-3.5">Status Verdict</th>
                   <th className="px-4 py-3.5">Actor / User</th>
                   <th className="px-5 py-3.5 text-right">Timestamp</th>
@@ -150,8 +175,11 @@ export default function AdminAuditLogPage() {
                         {log.action}
                       </div>
                       {log.details && (
-                        <div className="text-[11px] text-zinc-400 font-mono truncate max-w-[240px]" title={JSON.stringify(log.details)}>
-                          {JSON.stringify(log.details)}
+                        <div
+                          className="text-[11px] text-zinc-400 font-mono truncate max-w-[340px]"
+                          title={JSON.stringify(log.details, null, 2)}
+                        >
+                          {formatLogDetails(log.details)}
                         </div>
                       )}
                     </td>
@@ -161,10 +189,6 @@ export default function AdminAuditLogPage() {
                       <div className="text-[10px] text-zinc-400 font-mono">
                         {log.entityId ? String(log.entityId).slice(-6) : "—"}
                       </div>
-                    </td>
-
-                    <td className="px-4 py-3.5 font-mono text-zinc-600">
-                      {log.ruleApplied || "—"}
                     </td>
 
                     <td className="px-4 py-3.5 whitespace-nowrap">

@@ -276,9 +276,9 @@ export async function PATCH(
       status: nextStatus,
       performedBy: userObjectId,
       details: {
-        partnerId: partner._id,
+        partnerId: partner._id ? String(partner._id).slice(-8) : partner._id,
         vehicleType: partner.vehicleType,
-        surplusListingId: currentAssignment.surplusListingId,
+        surplusListingId: currentAssignment.surplusListingId ? String(currentAssignment.surplusListingId).slice(-8) : currentAssignment.surplusListingId,
       },
       createdAt: now,
     });
