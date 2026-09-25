@@ -18,7 +18,6 @@ import {
   RefreshCw,
   AlertTriangle,
   ShieldCheck,
-  Activity,
   Route,
   Sparkles,
   ExternalLink,
@@ -79,33 +78,7 @@ interface DispatchItem {
   } | null;
 }
 
-interface AuditEvent {
-  _id: string;
-  entityType: string;
-  action: string;
-  ruleApplied?: string;
-  status?: string;
-  createdAt: string;
-  details?: Record<string, any>;
-}
 
-// Convert technical event names to plain, simple English
-function formatEventAction(action: string): string {
-  const map: Record<string, string> = {
-    surplus_listed: "Surplus Food Donated",
-    surplus_claimed: "Charity Claimed Food",
-    delivery_assigned: "Delivery Driver Assigned",
-    delivery_accepted: "Driver Accepted Delivery",
-    delivery_picked_up: "Food Picked Up from Kitchen",
-    delivery_completed: "Food Delivered to Shelter",
-    kyc_approved: "Charity Account Approved",
-    kyc_submitted: "New Charity KYC Submitted",
-    kyc_rejected: "Charity KYC Rejected",
-    safety_gating_passed: "Food Passed Safety Inspection",
-    safety_gating_failed: "Food Blocked (Safety Risk)",
-  };
-  return map[action] || action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 // Convert technical status names to friendly labels with luxury badge styling
 function formatDeliveryStatus(status: string, hasCourier: boolean) {
@@ -147,7 +120,6 @@ function formatDeliveryStatus(status: string, hasCourier: boolean) {
 
 export default function AdminOverviewPage() {
   const [metrics, setMetrics] = React.useState<AdminMetrics | null>(null);
-  const [recentLogs, setRecentLogs] = React.useState<AuditEvent[]>([]);
   const [dispatches, setDispatches] = React.useState<DispatchItem[]>([]);
   const [facilities, setFacilities] = React.useState<AdminMapFacility[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -164,7 +136,6 @@ export default function AdminOverviewPage() {
       const json = await res.json();
       if (res.ok) {
         setMetrics(json.metrics);
-        setRecentLogs(json.recentLogs || []);
         setDispatches(json.dispatches || []);
         setFacilities(json.facilities || []);
       }
@@ -620,97 +591,7 @@ export default function AdminOverviewPage() {
         )}
       </div>
 
-      {/* 5. RECENT ACTIVITY & SAFETY LOG */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 pb-2">
-          <div>
-            <h2 className="font-serif text-lg font-bold text-zinc-900 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-emerald-700" />
-              Recent Network Activity &amp; Safety Events
-            </h2>
-            <p className="text-xs text-zinc-500">
-              Every safety check, food claim, and charity approval is permanently recorded.
-            </p>
-          </div>
 
-          <Link
-            href="/app/admin/audit-log"
-            className="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-900 transition-colors font-semibold"
-          >
-            <span>View Full Activity Log ({metrics?.auditLogCount || 0} Events)</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {recentLogs.length === 0 ? (
-          <div className="p-8 text-center border border-stone-200/90 bg-white rounded-2xl text-xs text-zinc-500 shadow-xs">
-            No recent platform events recorded yet.
-          </div>
-        ) : (
-          <div className="border border-stone-200/90 bg-white rounded-2xl overflow-x-auto shadow-sm">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-stone-50/90 border-b border-stone-200 text-zinc-600 uppercase font-mono text-[11px]">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Activity</th>
-                  <th className="px-4 py-3 font-semibold">Participant Role</th>
-                  <th className="px-4 py-3 font-semibold">Safety Rule Applied</th>
-                  <th className="px-4 py-3 font-semibold">Outcome</th>
-                  <th className="px-4 py-3 font-semibold text-right">Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 text-zinc-700">
-                {recentLogs.map((log) => {
-                  const isSuccess =
-                    log.status === "verified_safe" ||
-                    log.status === "approved" ||
-                    log.status === "confirmed" ||
-                    log.status === "delivered";
-                  const isBlocked = log.status === "rejected" || log.status === "blocked";
-
-                  return (
-                    <tr key={log._id} className="hover:bg-stone-50/70 transition-colors">
-                      <td className="px-4 py-3 font-medium text-zinc-900">
-                        {formatEventAction(log.action)}
-                      </td>
-                      <td className="px-4 py-3 capitalize text-zinc-500">
-                        {log.entityType?.replace(/_/g, " ") || "Platform"}
-                      </td>
-                      <td className="px-4 py-3 text-amber-800 font-mono">
-                        {log.ruleApplied ? log.ruleApplied.replace(/_/g, " ") : "Standard Rule"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
-                            isSuccess
-                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                              : isBlocked
-                              ? "bg-rose-50 text-rose-800 border border-rose-200"
-                              : "bg-stone-100 text-zinc-800 border border-stone-200"
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isSuccess ? "bg-emerald-600" : isBlocked ? "bg-rose-600" : "bg-amber-600"
-                            }`}
-                          />
-                          {log.status || "Completed"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-right text-zinc-500">
-                        {new Date(log.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                        })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
