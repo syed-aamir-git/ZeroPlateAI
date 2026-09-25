@@ -6,19 +6,26 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/auth-client";
 import {
-  BellIcon,
-  UserIcon,
-  CrateIcon,
-  TicketIcon,
-  ForecastIcon,
-  LedgerTabIcon,
-  RouteIcon,
-  SettingsIcon,
-  ShieldCheckIcon,
-  LogOutIcon,
-  AnalyticsIcon,
-  ResourceIcon,
-} from "@/components/icons/ledger-icons";
+  LayoutDashboard,
+  UtensilsCrossed,
+  ShieldCheck,
+  Building2,
+  SlidersHorizontal,
+  ClipboardList,
+  Users,
+  Truck,
+  Package,
+  TrendingUp,
+  BarChart3,
+  Activity,
+  Bell,
+  Settings,
+  Search,
+  HeartHandshake,
+  LogOut,
+  User,
+  Boxes,
+} from "lucide-react";
 import { NotificationBell } from "@/components/ui/notification-bell";
 
 export interface NavItem {
@@ -40,40 +47,47 @@ interface AppSidebarShellProps {
 
 function getIconComponent(key?: string) {
   switch (key) {
-    case "inventory":
-    case "institutions":
-      return CrateIcon;
-    case "analytics":
-      return AnalyticsIcon;
-    case "forecast":
-      return ForecastIcon;
-    case "utilization":
-    case "resource":
-      return ResourceIcon;
+    case "overview":
+      return LayoutDashboard;
     case "food_items":
     case "surplus":
     case "ticket":
-    case "browse":
-      return TicketIcon;
+      return UtensilsCrossed;
+    case "institutions":
+      return Building2;
+    case "verification":
+      return ShieldCheck;
+    case "safety_rules":
+      return SlidersHorizontal;
+    case "audit":
+      return ClipboardList;
+    case "users":
+    case "organization":
+      return Users;
     case "deliveries":
     case "claims":
-      return RouteIcon;
-    case "settings":
-    case "safety_rules":
-      return SettingsIcon;
-    case "verification":
-      return ShieldCheckIcon;
-    case "organization":
-    case "users":
-      return UserIcon;
+      return Truck;
+    case "inventory":
+    case "crate":
+      return Boxes;
+    case "analytics":
+      return BarChart3;
+    case "forecast":
+      return TrendingUp;
+    case "utilization":
+    case "resource":
+      return Activity;
+    case "browse":
+      return Search;
+    case "impact":
+      return HeartHandshake;
     case "notifications":
     case "bell":
-      return BellIcon;
-    case "overview":
-    case "impact":
-    case "audit":
+      return Bell;
+    case "settings":
+      return Settings;
     default:
-      return LedgerTabIcon;
+      return LayoutDashboard;
   }
 }
 
@@ -292,7 +306,7 @@ export function AppSidebarShell({
                 disabled={isLoggingOut}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-[6px] bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer"
               >
-                <LogOutIcon size={16} />
+                <LogOut className="w-4 h-4" />
                 <span>{isLoggingOut ? "Signing out..." : "Sign Out"}</span>
               </button>
             </div>
@@ -399,7 +413,7 @@ export function AppSidebarShell({
                     : "text-rose-700 hover:text-rose-800 hover:bg-rose-50"
                 )}
               >
-                <LogOutIcon size={16} className="shrink-0 text-rose-600" />
+                <LogOut className="w-4 h-4 shrink-0 text-rose-600" />
                 <span>{isLoggingOut ? "Signing out..." : "Sign Out"}</span>
               </button>
             </div>
@@ -431,7 +445,7 @@ export function AppSidebarShell({
                   : "bg-ledger-paper border-line text-ink"
               )}
             >
-              <UserIcon size={16} strokeWidth={1.5} />
+              <User className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
               <div

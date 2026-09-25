@@ -88,7 +88,8 @@ function formatDeliveryStatus(status: string, hasCourier: boolean) {
     return {
       label: "Looking for Driver",
       color: "bg-amber-50 text-amber-800 border-amber-200",
-      dot: "bg-amber-500 animate-pulse",
+      icon: Clock,
+      iconColor: "text-amber-600 animate-pulse",
     };
   }
   switch (status) {
@@ -96,26 +97,30 @@ function formatDeliveryStatus(status: string, hasCourier: boolean) {
       return {
         label: "Driver on the Way",
         color: "bg-blue-50 text-blue-800 border-blue-200",
-        dot: "bg-blue-600",
+        icon: Truck,
+        iconColor: "text-blue-600",
       };
     case "picked_up":
       return {
         label: "Food in Transit",
         color: "bg-purple-50 text-purple-800 border-purple-200",
-        dot: "bg-purple-600 animate-pulse",
+        icon: Truck,
+        iconColor: "text-purple-600 animate-pulse",
       };
     case "confirmed":
     case "delivered":
       return {
         label: "Safely Delivered",
         color: "bg-emerald-50 text-emerald-800 border-emerald-200",
-        dot: "bg-emerald-600",
+        icon: CheckCircle2,
+        iconColor: "text-emerald-600",
       };
     default:
       return {
         label: status.replace(/_/g, " "),
         color: "bg-stone-50 text-stone-800 border-stone-200",
-        dot: "bg-stone-500",
+        icon: PackageCheck,
+        iconColor: "text-stone-500",
       };
   }
 }
@@ -578,13 +583,18 @@ export default function AdminOverviewPage() {
                         </td>
 
                         {/* Status */}
-                        <td className="px-4 py-3.5">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusInfo.color}`}
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
-                            {statusInfo.label}
-                          </span>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {(() => {
+                            const StatusIcon = statusInfo.icon;
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusInfo.color}`}
+                              >
+                                <StatusIcon className={`w-3.5 h-3.5 shrink-0 ${statusInfo.iconColor}`} />
+                                <span>{statusInfo.label}</span>
+                              </span>
+                            );
+                          })()}
                         </td>
 
                         {/* Time */}
