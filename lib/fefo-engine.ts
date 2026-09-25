@@ -52,6 +52,43 @@ export interface DayCookingPlan {
   };
 }
 
+export type CookingBatchStatus = "planned" | "cooking" | "completed" | "needs_review";
+
+export interface CookingBatchIngredient {
+  name: string;
+  expectedQuantity: number;
+  actualQuantity?: number;
+  unit: string;
+  sourceStockId?: string;
+  expiryNote?: string;
+}
+
+export interface CookingBatch {
+  id: string;
+  batchNumber: string; // e.g. "B-101"
+  dishName: string;
+  mealSlot: "Breakfast" | "Lunch" | "Evening Snacks" | "Dinner";
+  dayKey: "today" | "tomorrow" | "day_after_tomorrow";
+  ingredients: CookingBatchIngredient[];
+  totalRawInputExpected: number;
+  totalRawInputActual?: number;
+  inputUnit: string;
+  expectedOutput: number;
+  actualOutput?: number;
+  outputUnit: string;
+  expectedDurationMinutes: number; // in minutes (e.g. 120 -> 2 hr)
+  actualDurationMinutes?: number; // in minutes (e.g. 168 -> 2 hr 48 min)
+  downtimeMinutes?: number | null; // in minutes (e.g. 15 -> 15 min or null for "Not recorded")
+  energyKwh?: number | null; // in kWh or null for "Not recorded"
+  iotConnected?: boolean;
+  status: CookingBatchStatus;
+  varianceReason?: "trimming_moisture" | "equipment_issue" | "ingredient_quality" | "prep_loss" | "not_sure" | "";
+  varianceNotes?: string;
+  recordedAt?: string;
+  baselineType: "recipe_baseline" | "manually_entered";
+  tolerancePercent?: number; // shortfall tolerance threshold before triggering review (default 10%)
+}
+
 export type FefoShelfLifeTier =
   | "expiring_soon" // <= 48 hours / 2 days (Priority 1: High Priority - Use First)
   | "moderate" // 3 - 7 days (Priority 2: Medium Priority - Use Next)
@@ -590,7 +627,7 @@ export function generate3DayCookingPlans(
 
     const absorptionSummary =
       cfg.badgeVariant === "urgent"
-        ? `Absorbs ${totalKg} kg nearing-expiry raw ingredients across 4 daily meal shifts (100% pre-consumption save).`
+        ? `Absorbs ${totalKg} kg nearing-expiry raw ingredients across 4 daily meal shifts (Potential waste avoided).`
         : cfg.badgeVariant === "moderate"
         ? `Sequential FEFO allocation absorbs ${totalKg} kg raw ingredients before reaching urgent deadline.`
         : `Proactive batch rotation ensures steady pantry turnaround for ${totalKg} kg staple ingredients.`;
@@ -769,7 +806,7 @@ export function evaluateFefoItem(
     const hoursText = hoursUntilExpiry <= 24 ? `${Math.round(hoursUntilExpiry)} hours` : `${daysUntilExpiry} days`;
     aiReasoning = `${item.name} expires in ${hoursText}. Under ${storageNote}. Tomorrow's meal demand requires ~${projectedDemandKg} kg, providing ideal capacity to absorb this batch completely.`;
     recommendation = `Urgently make ${suggestedDish} in tomorrow's meals. Prioritize in FEFO sequence before pulling longer-life stock.`;
-    resultMetric = `Reduced food waste: ${quantityKg} kg (100% pre-consumption diverted)`;
+    resultMetric = `Potential waste avoided: ${quantityKg} kg (Ingredients planned for use)`;
     wastePreventedKg = quantityKg;
     status = "waste_prevented";
   } else if (shelfLifeTier === "overstocked") {
@@ -1279,3 +1316,229 @@ export function getDefaultFefoBaselineItems(): FefoRawItemInput[] {
     },
   ];
 }
+
+/**
+ * Human-readable duration helper (Astra blueprint: 2 hr 48 min instead of 2.8 hr)
+ */
+export function formatDurationHoursMinutes(minutes: number | null | undefined): string {
+  if (minutes == null || isNaN(minutes)) return "Not recorded";
+  const hrs = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  if (hrs > 0 && mins > 0) return `${hrs} hr ${mins} min`;
+  if (hrs > 0) return `${hrs} hr`;
+  return `${mins} min`;
+}
+
+export interface BatchYieldMetrics {
+  yieldPercent: number | null;
+  outputDiff: number | null; // actual - expected
+  isShortfall: boolean;
+  isExcess: boolean;
+  timeDiffMinutes: number | null; // actual - expected
+  shortfallPercent: number | null;
+  needsReview: boolean;
+  alertMessage: string | null;
+  displayYield: string;
+}
+
+/**
+ * Calculates yield, time variance, and alerts based on recipe baseline & tolerance
+ */
+export function calculateBatchYieldMetrics(batch: CookingBatch): BatchYieldMetrics {
+  if (batch.actualOutput == null) {
+    return {
+      yieldPercent: null,
+      outputDiff: null,
+      isShortfall: false,
+      isExcess: false,
+      timeDiffMinutes: null,
+      shortfallPercent: null,
+      needsReview: false,
+      alertMessage: null,
+      displayYield: "Pending cooking",
+    };
+  }
+
+  const yieldPercent = Number(((batch.actualOutput / batch.expectedOutput) * 100).toFixed(2));
+  const outputDiff = Number((batch.actualOutput - batch.expectedOutput).toFixed(2));
+  const isShortfall = outputDiff < 0;
+  const isExcess = outputDiff > 0;
+  const shortfallAmount = Math.abs(outputDiff);
+  const shortfallPercent = Number(((shortfallAmount / batch.expectedOutput) * 100).toFixed(1));
+
+  const tolerance = batch.tolerancePercent ?? 10;
+  const needsReview = isShortfall && shortfallPercent >= tolerance;
+
+  let timeDiffMinutes: number | null = null;
+  if (batch.actualDurationMinutes != null) {
+    timeDiffMinutes = batch.actualDurationMinutes - batch.expectedDurationMinutes;
+  }
+
+  let alertMessage: string | null = null;
+  if (needsReview) {
+    alertMessage = `Output is ${shortfallAmount} ${batch.outputUnit} below expected output · Review this batch`;
+  } else if (isShortfall) {
+    alertMessage = `Output is ${shortfallAmount} ${batch.outputUnit} below expected (within ${tolerance}% tolerance)`;
+  } else if (isExcess) {
+    alertMessage = `Output is +${outputDiff} ${batch.outputUnit} above expected (+${((outputDiff / batch.expectedOutput) * 100).toFixed(1)}%)`;
+  } else {
+    alertMessage = `Output matched expected baseline (100% yield)`;
+  }
+
+  return {
+    yieldPercent,
+    outputDiff,
+    isShortfall,
+    isExcess,
+    timeDiffMinutes,
+    shortfallPercent,
+    needsReview,
+    alertMessage,
+    displayYield: `${yieldPercent}% of expected output`,
+  };
+}
+
+/**
+ * Initial illustrative kitchen cooking batches for "Cooking & Output"
+ * Incorporates Khushbu Khantwal's handwritten batch #B-101 workflow
+ */
+export function getDefaultCookingBatches(): CookingBatch[] {
+  return [
+    {
+      id: "batch-101",
+      batchNumber: "B-101",
+      dishName: "Fresh Tomato Gravy",
+      mealSlot: "Lunch",
+      dayKey: "today",
+      ingredients: [
+        {
+          name: "Ripe Tomatoes",
+          expectedQuantity: 100,
+          actualQuantity: 100,
+          unit: "kg",
+          sourceStockId: "raw_tomatoes_1",
+          expiryNote: "Earliest-expiring stock used first",
+        },
+      ],
+      totalRawInputExpected: 100,
+      totalRawInputActual: 100,
+      inputUnit: "kg",
+      expectedOutput: 80,
+      actualOutput: 65,
+      outputUnit: "kg",
+      expectedDurationMinutes: 120, // 2 hr
+      actualDurationMinutes: 168, // 2 hr 48 min (+48 min)
+      downtimeMinutes: 15, // 15 min paused portion
+      energyKwh: 4.8,
+      iotConnected: true,
+      status: "needs_review",
+      varianceReason: "trimming_moisture",
+      varianceNotes: "High moisture evaporation during extended reduction. Inspected skin-trimming and pot scrapings.",
+      baselineType: "recipe_baseline",
+      tolerancePercent: 10,
+      recordedAt: "Today · 01:05 PM",
+    },
+    {
+      id: "batch-102",
+      batchNumber: "B-102",
+      dishName: "Palak Dal Tadka",
+      mealSlot: "Lunch",
+      dayKey: "today",
+      ingredients: [
+        {
+          name: "Fresh Spinach",
+          expectedQuantity: 12,
+          actualQuantity: 12,
+          unit: "kg",
+          sourceStockId: "raw_spinach_1",
+          expiryNote: "High priority expiring stock",
+        },
+        {
+          name: "Organic Toor Dal",
+          expectedQuantity: 8,
+          actualQuantity: 8,
+          unit: "kg",
+          sourceStockId: "dry_toor_dal_1",
+        },
+      ],
+      totalRawInputExpected: 20,
+      totalRawInputActual: 20,
+      inputUnit: "kg",
+      expectedOutput: 25,
+      actualOutput: 25,
+      outputUnit: "kg",
+      expectedDurationMinutes: 60, // 1 hr
+      actualDurationMinutes: 58,
+      downtimeMinutes: 0,
+      energyKwh: 2.1,
+      iotConnected: true,
+      status: "completed",
+      baselineType: "recipe_baseline",
+      tolerancePercent: 10,
+      recordedAt: "Today · 12:15 PM",
+    },
+    {
+      id: "batch-103",
+      batchNumber: "B-103",
+      dishName: "Special Masala Chai & Evening Snacks",
+      mealSlot: "Evening Snacks",
+      dayKey: "today",
+      ingredients: [
+        {
+          name: "Fresh Cow Milk",
+          expectedQuantity: 15,
+          actualQuantity: 15,
+          unit: "litres",
+          sourceStockId: "raw_milk_1",
+          expiryNote: "Absorbing dairy before evening",
+        },
+      ],
+      totalRawInputExpected: 15,
+      totalRawInputActual: 15,
+      inputUnit: "litres",
+      expectedOutput: 14,
+      outputUnit: "litres",
+      expectedDurationMinutes: 35,
+      actualDurationMinutes: 20,
+      downtimeMinutes: null,
+      energyKwh: null,
+      iotConnected: false,
+      status: "cooking",
+      baselineType: "recipe_baseline",
+      tolerancePercent: 10,
+    },
+    {
+      id: "batch-104",
+      batchNumber: "B-104",
+      dishName: "Slow-Simmered Tomato Gravy with Rice",
+      mealSlot: "Dinner",
+      dayKey: "today",
+      ingredients: [
+        {
+          name: "Ripe Tomatoes",
+          expectedQuantity: 20,
+          unit: "kg",
+          sourceStockId: "raw_tomatoes_1",
+        },
+        {
+          name: "Aged Basmati Rice",
+          expectedQuantity: 15,
+          unit: "kg",
+          sourceStockId: "dry_basmati_rice_1",
+        },
+      ],
+      totalRawInputExpected: 35,
+      inputUnit: "kg",
+      expectedOutput: 32,
+      outputUnit: "kg",
+      expectedDurationMinutes: 75,
+      downtimeMinutes: null,
+      energyKwh: null,
+      iotConnected: false,
+      status: "planned",
+      baselineType: "recipe_baseline",
+      tolerancePercent: 10,
+    },
+  ];
+}
+

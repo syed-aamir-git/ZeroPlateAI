@@ -34,6 +34,16 @@ import {
   AlertOctagon,
   X,
   Search,
+  Play,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  CheckCircle,
+  Radio,
+  Activity,
+  Wrench,
+  Timer,
 } from "lucide-react";
 import {
   FefoIntelligenceReport,
@@ -44,6 +54,13 @@ import {
   RawMaterialProcurementItem,
   DayCookingPlan,
   generate3DayCookingPlans,
+  CookingBatch,
+  CookingBatchStatus,
+  CookingBatchIngredient,
+  getDefaultCookingBatches,
+  formatDurationHoursMinutes,
+  calculateBatchYieldMetrics,
+  BatchYieldMetrics,
 } from "@/lib/fefo-engine";
 
 interface FefoResourceIntelligenceProps {
@@ -77,6 +94,149 @@ export default function FefoResourceIntelligence({
     "all"
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedReasonId, setExpandedReasonId] = useState<string | null>(null);
+
+  // Astra Cooking & Output Batch Tracking State (Khushbu Workflow)
+  const [batches, setBatches] = useState<CookingBatch[]>(() => getDefaultCookingBatches());
+  const [batchFilter, setBatchFilter] = useState<"all" | "cooking" | "needs_review" | "completed" | "planned">("all");
+  const [recordingBatch, setRecordingBatch] = useState<CookingBatch | null>(null);
+  const [inspectingBatch, setInspectingBatch] = useState<CookingBatch | null>(null);
+  const [startingBatch, setStartingBatch] = useState<CookingBatch | null>(null);
+
+  // Recording Form State
+  const [recActualOutput, setRecActualOutput] = useState<string>("");
+  const [recElapsedHours, setRecElapsedHours] = useState<string>("2");
+  const [recElapsedMinutes, setRecElapsedMinutes] = useState<string>("48");
+  const [recDowntimeMinutes, setRecDowntimeMinutes] = useState<string>("");
+  const [recEnergyKwh, setRecEnergyKwh] = useState<string>("");
+  const [recVarianceReason, setRecVarianceReason] = useState<string>("");
+  const [recVarianceNotes, setRecVarianceNotes] = useState<string>("");
+  const [showOptionalDetails, setShowOptionalDetails] = useState<boolean>(false);
+
+  // Count of batches that require attention
+  const needsReviewCount = batches.filter((b) => b.status === "needs_review").length;
+
+  // Filtered batches for display
+  const filteredBatches = batches.filter((b) => {
+    if (batchFilter === "all") return true;
+    return b.status === batchFilter;
+  });
+
+  const handleOpenRecordModal = (batch: CookingBatch) => {
+    setRecordingBatch(batch);
+    setRecActualOutput(batch.actualOutput != null ? String(batch.actualOutput) : "");
+    const totalMinutes = batch.actualDurationMinutes ?? batch.expectedDurationMinutes ?? 60;
+    setRecElapsedHours(String(Math.floor(totalMinutes / 60)));
+    setRecElapsedMinutes(String(totalMinutes % 60));
+    setRecDowntimeMinutes(batch.downtimeMinutes != null ? String(batch.downtimeMinutes) : "");
+    setRecEnergyKwh(batch.energyKwh != null ? String(batch.energyKwh) : "");
+    setRecVarianceReason(batch.varianceReason || "");
+    setRecVarianceNotes(batch.varianceNotes || "");
+    setShowOptionalDetails(Boolean(batch.downtimeMinutes || batch.energyKwh || batch.varianceReason));
+  };
+
+  const handleSaveBatchResult = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recordingBatch) return;
+
+    const actualQty = parseFloat(recActualOutput);
+    if (isNaN(actualQty) || actualQty < 0) return;
+
+    const hrs = parseInt(recElapsedHours || "0", 10);
+    const mins = parseInt(recElapsedMinutes || "0", 10);
+    const actualMinutes = hrs * 60 + mins;
+
+    const downtime = recDowntimeMinutes.trim() !== "" ? parseFloat(recDowntimeMinutes) : null;
+    const energy = recEnergyKwh.trim() !== "" ? parseFloat(recEnergyKwh) : null;
+
+    const tolerance = recordingBatch.tolerancePercent ?? 10;
+    const shortfallAmount = recordingBatch.expectedOutput - actualQty;
+    const shortfallPercent = (shortfallAmount / recordingBatch.expectedOutput) * 100;
+    const needsReview = shortfallAmount > 0 && shortfallPercent >= tolerance;
+
+    const updatedBatch: CookingBatch = {
+      ...recordingBatch,
+      actualOutput: actualQty,
+      actualDurationMinutes: actualMinutes,
+      downtimeMinutes: downtime,
+      energyKwh: energy,
+      varianceReason: (recVarianceReason as any) || "",
+      varianceNotes: recVarianceNotes.trim() || (needsReview ? `Output is ${shortfallAmount} ${recordingBatch.outputUnit} below expected (${(100 - shortfallPercent).toFixed(1)}% yield)` : "Completed normally"),
+      status: needsReview ? "needs_review" : "completed",
+      recordedAt: "Today · Just now",
+    };
+
+    setBatches((prev) => prev.map((b) => (b.id === recordingBatch.id ? updatedBatch : b)));
+    setRecordingBatch(null);
+    setInspectingBatch(updatedBatch); // Immediately preview comparison card
+  };
+
+  const handleConfirmStartBatch = () => {
+    if (!startingBatch) return;
+    const updated: CookingBatch = {
+      ...startingBatch,
+      status: "cooking",
+      recordedAt: "Started just now",
+    };
+    setBatches((prev) => prev.map((b) => (b.id === startingBatch.id ? updated : b)));
+    setStartingBatch(null);
+  };
+
+  const handleStartBatchForDish = (
+    dishName: string,
+    mealLabel: string,
+    ingredients: Array<{ name: string; quantity: string }>
+  ) => {
+    const existing = batches.find((b) => b.dishName.toLowerCase() === dishName.toLowerCase());
+    if (existing) {
+      if (existing.status === "planned") {
+        setStartingBatch(existing);
+      } else if (existing.status === "cooking") {
+        handleOpenRecordModal(existing);
+      } else {
+        setInspectingBatch(existing);
+      }
+      return;
+    }
+
+    const newBatchId = `batch-${Date.now()}`;
+    const newBatchNum = `B-${100 + batches.length + 1}`;
+    const newBatch: CookingBatch = {
+      id: newBatchId,
+      batchNumber: newBatchNum,
+      dishName,
+      mealSlot: (mealLabel as any) || "Lunch",
+      dayKey: selectedPlanDay,
+      ingredients: ingredients.map((ing) => {
+        const numVal = parseFloat(ing.quantity) || 10;
+        const unit = ing.quantity.includes("L") ? "litres" : "kg";
+        return {
+          name: ing.name,
+          expectedQuantity: numVal,
+          unit,
+        };
+      }),
+      totalRawInputExpected: 25,
+      inputUnit: "kg",
+      expectedOutput: 22,
+      outputUnit: "kg",
+      expectedDurationMinutes: 60,
+      status: "planned",
+      baselineType: "recipe_baseline",
+      tolerancePercent: 10,
+    };
+    setBatches((prev) => [newBatch, ...prev]);
+    setStartingBatch(newBatch);
+  };
+
+  const handleApproveBatchReview = (batchId: string) => {
+    setBatches((prev) =>
+      prev.map((b) => (b.id === batchId ? { ...b, status: "completed" } : b))
+    );
+    if (inspectingBatch && inspectingBatch.id === batchId) {
+      setInspectingBatch({ ...inspectingBatch, status: "completed" });
+    }
+  };
 
   // Modal State for adding Raw Material
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -359,27 +519,10 @@ export default function FefoResourceIntelligence({
             }`}
           >
             <Layers className="w-4 h-4 text-emerald-600" />
-            <span>Raw Stock Matrix</span>
+            <span>Raw Stock</span>
             <span className="px-1.5 py-0.2 bg-stone-200 text-stone-700 rounded-md text-[10px] font-mono">
               {report.evaluatedItems.length}
             </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("procurement")}
-            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
-              activeTab === "procurement"
-                ? "bg-white text-stone-900 shadow-xs font-bold"
-                : "text-stone-500 hover:text-stone-800"
-            }`}
-          >
-            <ShoppingCart className="w-4 h-4 text-blue-600" />
-            <span>Smart Buying Guide</span>
-            {report.summary.overstockedCount > 0 && (
-              <span className="px-1.5 py-0.2 bg-purple-100 text-purple-800 rounded-md text-[10px] font-mono font-bold">
-                {report.summary.overstockedCount} Gated
-              </span>
-            )}
           </button>
 
           <button
@@ -391,26 +534,53 @@ export default function FefoResourceIntelligence({
             }`}
           >
             <Utensils className="w-4 h-4 text-amber-600" />
-            <span>Today&apos;s Cooking Plan</span>
+            <span>Cooking &amp; Output</span>
+            {needsReviewCount > 0 ? (
+              <span className="px-1.5 py-0.2 bg-rose-100 text-rose-800 rounded-md text-[10px] font-mono font-bold animate-pulse">
+                {needsReviewCount} Review
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.2 bg-stone-200 text-stone-700 rounded-md text-[10px] font-mono">
+                {batches.length}
+              </span>
+            )}
           </button>
 
           <button
-            onClick={() => setActiveTab("simulator")}
+            onClick={() => setActiveTab("procurement")}
             className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
-              activeTab === "simulator"
+              activeTab === "procurement"
                 ? "bg-white text-stone-900 shadow-xs font-bold"
                 : "text-stone-500 hover:text-stone-800"
             }`}
           >
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            <span>FEFO AI Simulator</span>
+            <ShoppingCart className="w-4 h-4 text-blue-600" />
+            <span>Buying Guide</span>
+            {report.summary.overstockedCount > 0 && (
+              <span className="px-1.5 py-0.2 bg-purple-100 text-purple-800 rounded-md text-[10px] font-mono font-bold">
+                {report.summary.overstockedCount} Gated
+              </span>
+            )}
           </button>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 px-1">
+          {/* Secondary AI Simulator Button (Astra recommendation) */}
+          <button
+            onClick={() => setActiveTab("simulator")}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer border ${
+              activeTab === "simulator"
+                ? "bg-purple-100 text-purple-900 border-purple-300 font-bold shadow-xs"
+                : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50 hover:text-stone-900"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            <span>Try AI Simulator</span>
+          </button>
+
           <button
             onClick={() => setIsAddOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-all shadow-xs hover:shadow-sm cursor-pointer active:scale-95 ml-auto"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-all shadow-xs hover:shadow-sm cursor-pointer active:scale-95"
           >
             <Plus className="w-4 h-4" />
             <span>Add Raw Material</span>
@@ -418,7 +588,7 @@ export default function FefoResourceIntelligence({
         </div>
       </div>
 
-      {/* 3. Live FEFO Raw Materials Matrix Tab */}
+      {/* 3. Live FEFO Raw Stock Matrix Tab */}
       {activeTab === "live_matrix" && (
         <div className="border border-stone-200 bg-white rounded-2xl overflow-hidden shadow-xs space-y-0">
           {/* Table Toolbar & Search / Filters */}
@@ -426,7 +596,7 @@ export default function FefoResourceIntelligence({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-serif font-bold text-base text-stone-900">
-                  Raw Materials FEFO Stock &amp; Recipe Correlator
+                  Raw Stock Inventory &amp; Expiry Monitor
                 </h3>
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-stone-200 text-stone-700">
                   {filteredItems.length} of {report.evaluatedItems.length} items
@@ -517,16 +687,16 @@ export default function FefoResourceIntelligence({
             </div>
           </div>
 
-          {/* Matrix Table */}
+          {/* Clean Simplified Matrix Table (Astra Blueprint) */}
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-stone-200 bg-stone-50 text-[11px] uppercase tracking-wider text-stone-500 font-sans">
                   <th className="py-3 px-4 font-semibold">Raw Ingredient &amp; Storage</th>
-                  <th className="py-3 px-4 font-semibold">Expiry &amp; Priority Tier</th>
-                  <th className="py-3 px-4 font-mono font-semibold text-right">In Stock / Daily Need</th>
-                  <th className="py-3 px-4 font-semibold">AI Central Reasoning (NVIDIA NIM)</th>
-                  <th className="py-3 px-4 font-semibold text-right">Urgent Cooking Recommendation</th>
+                  <th className="py-3 px-4 font-semibold">Available Stock</th>
+                  <th className="py-3 px-4 font-semibold">Expiry &amp; Shelf Life</th>
+                  <th className="py-3 px-4 font-semibold">Use-First Priority</th>
+                  <th className="py-3 px-4 font-semibold text-right">Recommended Prep &amp; Rationale</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 text-xs font-sans">
@@ -551,101 +721,137 @@ export default function FefoResourceIntelligence({
                   filteredItems.map((item) => {
                     const storageInfo = getStorageBadge(item.storage);
                     const isExpired = item.shelfLifeTier === "expired";
+                    const isExpanded = expandedReasonId === item.id;
 
                     return (
-                      <tr key={item.id} className="hover:bg-stone-50/80 transition-colors">
-                      {/* 1. Raw Material Name & Category */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-stone-900 text-sm">{item.name}</div>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="font-mono text-[10px] text-stone-400 capitalize">
-                            {item.category.replace("_", " ")}
-                          </span>
-                          <span className="text-stone-300">·</span>
-                          <span
-                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${storageInfo.color}`}
-                          >
-                            {storageInfo.icon}
-                            <span>{storageInfo.label}</span>
-                          </span>
-                        </div>
-                      </td>
+                      <React.Fragment key={item.id}>
+                        <tr className="hover:bg-stone-50/80 transition-colors">
+                          {/* 1. Raw Ingredient & Storage */}
+                          <td className="py-3.5 px-4">
+                            <div className="font-semibold text-stone-900 text-sm">{item.name}</div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="font-mono text-[10px] text-stone-400 capitalize">
+                                {item.category.replace("_", " ")}
+                              </span>
+                              <span className="text-stone-300">·</span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${storageInfo.color}`}
+                              >
+                                {storageInfo.icon}
+                                <span>{storageInfo.label}</span>
+                              </span>
+                            </div>
+                          </td>
 
-                      {/* 2. Expiry & Shelf Life Tier */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`w-2 h-2 rounded-full shrink-0 ${item.badgeColor.dot}`}
-                          />
-                          <span className={`font-medium ${isExpired ? "text-rose-700 font-bold" : "text-stone-900"}`}>
-                            {isExpired
-                              ? `${Math.abs(Math.round(item.hoursUntilExpiry))}h overdue`
-                              : item.daysUntilExpiry <= 1
-                              ? `${Math.max(1, Math.round(item.hoursUntilExpiry))}h remaining`
-                              : `${Math.round(item.daysUntilExpiry)} days safe`}
-                          </span>
-                        </div>
-                        <div className="mt-1">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${item.badgeColor.bg}`}
-                          >
-                            {isExpired
-                              ? "❌ Expired / Quarantined"
-                              : item.shelfLifeTier === "expiring_soon"
-                              ? "🔴 High Priority: Cook Urgently"
-                              : item.shelfLifeTier === "moderate"
-                              ? "🟡 Medium Priority: Use Next"
-                              : item.shelfLifeTier === "overstocked"
-                              ? "🟣 Overstocked: Do Not Reorder"
-                              : "🟢 Low Priority: Buffer Reserve"}
-                          </span>
-                        </div>
-                      </td>
+                          {/* 2. Available Stock */}
+                          <td className="py-3.5 px-4 font-mono">
+                            <div className="font-bold text-stone-900 text-sm">
+                              {item.quantity} {item.unit}
+                            </div>
+                            <div className="text-[10px] text-stone-500 font-sans mt-0.5">
+                              daily need: ~{item.correlatedDemandKg} kg
+                            </div>
+                          </td>
 
-                      {/* 3. Stock Quantity vs Projected Demand */}
-                      <td className="py-3.5 px-4 font-mono text-right">
-                        <div className="font-bold text-stone-900 text-sm">
-                          {item.quantity} {item.unit}
-                        </div>
-                        <div className="text-[10px] text-stone-500 font-sans mt-0.5">
-                          need: ~{item.correlatedDemandKg} kg/day
-                        </div>
-                      </td>
-
-                      {/* 4. AI Central Reasoning */}
-                      <td className="py-3.5 px-4 max-w-sm">
-                        <p className="text-[11px] text-stone-700 leading-relaxed font-sans">
-                          {item.aiReasoning}
-                        </p>
-                      </td>
-
-                      {/* 5. Actionable Recommendation & Result */}
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="space-y-1">
-                          <div
-                            className={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-medium text-left max-w-xs ml-auto border ${
-                              isExpired
-                                ? "bg-rose-50 text-rose-900 border-rose-200"
-                                : "bg-emerald-50 text-emerald-800 border-emerald-200"
-                            }`}
-                          >
-                            <span
-                              className={`font-bold block text-[10px] uppercase tracking-wider ${
-                                isExpired ? "text-rose-700" : "text-emerald-700"
-                              }`}
-                            >
-                              {item.targetMealTime}
+                          {/* 3. Expiry & Shelf Life */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${item.badgeColor.dot}`}
+                              />
+                              <span className={`font-medium ${isExpired ? "text-rose-700 font-bold" : "text-stone-900"}`}>
+                                {isExpired
+                                  ? `${Math.abs(Math.round(item.hoursUntilExpiry))}h overdue`
+                                  : item.daysUntilExpiry <= 1
+                                  ? `${Math.max(1, Math.round(item.hoursUntilExpiry))}h remaining`
+                                  : `${Math.round(item.daysUntilExpiry)} days safe`}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-stone-400 font-mono block mt-0.5">
+                              Expiry: {new Date(item.expiryDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
-                            <span>{item.recommendation}</span>
-                          </div>
-                          <div className="text-[10px] font-semibold text-stone-500 font-mono">
-                            {item.resultMetric}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                }))}
+                          </td>
+
+                          {/* 4. Use-First Priority */}
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold border ${item.badgeColor.bg}`}
+                            >
+                              {isExpired
+                                ? "❌ Expired / Quarantined"
+                                : item.shelfLifeTier === "expiring_soon"
+                                ? "🔴 High Priority: Cook Urgently"
+                                : item.shelfLifeTier === "moderate"
+                                ? "🟡 Medium Priority: Use Next"
+                                : item.shelfLifeTier === "overstocked"
+                                ? "🟣 Overstocked: Do Not Reorder"
+                                : "🟢 Low Priority: Buffer Reserve"}
+                            </span>
+                          </td>
+
+                          {/* 5. Recommended Prep & Rationale */}
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex flex-col items-end gap-1">
+                              <div
+                                className={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-medium text-left max-w-xs ml-auto border ${
+                                  isExpired
+                                    ? "bg-rose-50 text-rose-900 border-rose-200"
+                                    : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                }`}
+                              >
+                                <span
+                                  className={`font-bold block text-[10px] uppercase tracking-wider ${
+                                    isExpired ? "text-rose-700" : "text-emerald-700"
+                                  }`}
+                                >
+                                  {item.targetMealTime}
+                                </span>
+                                <span className="line-clamp-1">{item.suggestedRecipeUse || item.recommendation}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-stone-500 font-mono">
+                                  {item.resultMetric}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedReasonId(isExpanded ? null : item.id)}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors cursor-pointer"
+                                >
+                                  <Sparkles className="w-3 h-3 text-purple-600" />
+                                  <span>{isExpanded ? "Hide" : "AI Reason"}</span>
+                                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Accordion Row for AI Central Reasoning */}
+                        {isExpanded && (
+                          <tr className="bg-purple-50/40 border-b border-purple-100">
+                            <td colSpan={5} className="py-3.5 px-5 text-left">
+                              <div className="flex items-start gap-2.5 text-xs text-stone-700">
+                                <Sparkles className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                  <div className="font-semibold text-stone-900 text-xs flex items-center gap-2">
+                                    <span>NVIDIA NIM Kitchen Intelligence:</span>
+                                    <span className="text-[10px] font-mono text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full font-bold">
+                                      {item.targetMealTime}
+                                    </span>
+                                  </div>
+                                  <p className="text-stone-700 text-xs leading-relaxed">{item.aiReasoning}</p>
+                                  <p className="text-emerald-800 font-medium text-[11px] mt-1">
+                                    Action: {item.recommendation}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -970,18 +1176,18 @@ export default function FefoResourceIntelligence({
         </div>
       )}
 
-      {/* 7. Upcoming Meal Absorption Schedule Tab */}
+      {/* 7. Upcoming Meal Absorption Schedule & Batch Execution Tab */}
       {activeTab === "correlation" && (
         <div className="border border-stone-200 bg-white rounded-2xl p-5 sm:p-7 shadow-xs space-y-6">
           <div className="border-b border-stone-100 pb-4">
             <div className="flex items-center gap-2">
               <Utensils className="w-5 h-5 text-amber-600" />
               <h3 className="font-serif font-bold text-lg text-stone-900">
-                What to Make Urgently: 3-Day Raw Material Cooking Schedule
+                Cooking &amp; Output: Raw Material Batch Execution &amp; Yield Tracking
               </h3>
             </div>
             <p className="text-xs text-stone-500 mt-1">
-              Correlates raw ingredients directly into today, tomorrow, and day after tomorrow kitchen batch preparation to absorb stock before shelf-life expires.
+              Correlates raw stock into today, tomorrow, and day after tomorrow kitchen prep. Monitor how ingredients turn into finished food, record actual kitchen outputs, and compare yields against recipe baselines.
             </p>
           </div>
 
@@ -1141,16 +1347,26 @@ export default function FefoResourceIntelligence({
                       </div>
                     </div>
 
-                    {/* Recommended Dishes to Prepare */}
+                    {/* Recommended Dishes to Prepare with Action to Start Batch */}
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-bold block">
                         Recommended Dishes to Prepare:
                       </span>
-                      <ul className="text-xs text-stone-700 space-y-1">
+                      <ul className="text-xs text-stone-700 space-y-1.5">
                         {meal.suggestedDishes.map((dish, dIdx) => (
-                          <li key={dIdx} className="flex items-baseline gap-1.5 leading-snug">
-                            <span className="w-1.5 h-1.5 rounded-full bg-stone-400 shrink-0 mt-1" />
-                            <strong className="text-stone-900 font-semibold">{dish}</strong>
+                          <li key={dIdx} className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-stone-50 transition-colors">
+                            <div className="flex items-baseline gap-1.5 min-w-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-stone-400 shrink-0 mt-1" />
+                              <strong className="text-stone-900 font-semibold text-xs truncate">{dish}</strong>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleStartBatchForDish(dish, mealSlot.label, meal.ingredientsToAbsorb)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 transition-colors cursor-pointer shrink-0"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Start Batch</span>
+                            </button>
                           </li>
                         ))}
                       </ul>
@@ -1181,6 +1397,930 @@ export default function FefoResourceIntelligence({
                 <li key={idx}>{note}</li>
               ))}
             </ul>
+          </div>
+
+          {/* Kitchen Batches & Output Tracking (Khushbu Khantwal Blueprint Workflow) */}
+          <div className="mt-8 border-t border-stone-200 pt-6 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-serif font-bold text-base text-stone-900">
+                    Kitchen Batches &amp; Output Tracking
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                    Khushbu Workflow
+                  </span>
+                </div>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Monitor raw materials converted into finished food, record kitchen actuals, and compare output yields against recipe baselines.
+                </p>
+              </div>
+
+              {/* Status Filter Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setBatchFilter("all")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    batchFilter === "all"
+                      ? "bg-stone-900 text-white"
+                      : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-100"
+                  }`}
+                >
+                  All ({batches.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBatchFilter("cooking")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    batchFilter === "cooking"
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-50 border border-blue-200 text-blue-800 hover:bg-blue-100"
+                  }`}
+                >
+                  Cooking ({batches.filter((b) => b.status === "cooking").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBatchFilter("needs_review")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    batchFilter === "needs_review"
+                      ? "bg-rose-600 text-white"
+                      : "bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100"
+                  }`}
+                >
+                  Needs Review ({batches.filter((b) => b.status === "needs_review").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBatchFilter("completed")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    batchFilter === "completed"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Completed ({batches.filter((b) => b.status === "completed").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBatchFilter("planned")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    batchFilter === "planned"
+                      ? "bg-stone-600 text-white"
+                      : "bg-stone-50 border border-stone-200 text-stone-700 hover:bg-stone-100"
+                  }`}
+                >
+                  Planned ({batches.filter((b) => b.status === "planned").length})
+                </button>
+              </div>
+            </div>
+
+            {/* Prominent Alert Banner if any batch needs attention */}
+            {needsReviewCount > 0 && (
+              <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-rose-900 shadow-2xs animate-in fade-in duration-200">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-xs sm:text-sm text-rose-900">
+                      {needsReviewCount} Batch Requires Attention
+                    </div>
+                    <div className="text-xs text-rose-800 mt-0.5">
+                      Batch #{batches.find(b => b.status === "needs_review")?.batchNumber} ({batches.find(b => b.status === "needs_review")?.dishName}): Output is {Math.abs(Number(((batches.find(b => b.status === "needs_review")?.actualOutput || 0) - (batches.find(b => b.status === "needs_review")?.expectedOutput || 0)).toFixed(1)))} {batches.find(b => b.status === "needs_review")?.outputUnit} below expected · Duration was +{((batches.find(b => b.status === "needs_review")?.actualDurationMinutes || 0) - (batches.find(b => b.status === "needs_review")?.expectedDurationMinutes || 0))} min over baseline.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rev = batches.find((b) => b.status === "needs_review");
+                    if (rev) setInspectingBatch(rev);
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white text-xs font-semibold shrink-0 cursor-pointer shadow-xs transition-colors"
+                >
+                  Inspect Comparison →
+                </button>
+              </div>
+            )}
+
+            {/* Compact Batches Table (Desktop) */}
+            <div className="hidden md:block border border-stone-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-stone-200 bg-stone-50 text-[11px] uppercase tracking-wider text-stone-500 font-sans">
+                    <th className="py-3 px-4 font-semibold">Dish / Meal</th>
+                    <th className="py-3 px-4 font-semibold">Raw Input Allocated</th>
+                    <th className="py-3 px-4 font-semibold">Expected Output</th>
+                    <th className="py-3 px-4 font-semibold">Actual Output</th>
+                    <th className="py-3 px-4 font-semibold">Duration</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold text-right">Next Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 text-xs font-sans">
+                  {filteredBatches.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-stone-500 text-xs">
+                        No batches match the current filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredBatches.map((batch) => {
+                      const yieldMetrics = calculateBatchYieldMetrics(batch);
+                      return (
+                        <tr key={batch.id} className="hover:bg-stone-50/80 transition-colors">
+                          {/* 1. Dish & Meal */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-xs font-bold text-stone-800 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                                {batch.batchNumber}
+                              </span>
+                              <span className="font-semibold text-stone-900 text-xs">
+                                {batch.dishName}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1 text-[10px] text-stone-500">
+                              <span>{batch.mealSlot}</span>
+                              <span>·</span>
+                              <span className="capitalize">{batch.dayKey.replace(/_/g, " ")}</span>
+                            </div>
+                          </td>
+
+                          {/* 2. Raw Input */}
+                          <td className="py-3.5 px-4 font-mono">
+                            <div className="font-semibold text-stone-800 text-xs">
+                              {batch.totalRawInputActual ?? batch.totalRawInputExpected} {batch.inputUnit}
+                            </div>
+                            <div className="text-[10px] text-stone-400 font-sans truncate max-w-[130px]">
+                              {batch.ingredients.map((i) => i.name).join(", ")}
+                            </div>
+                          </td>
+
+                          {/* 3. Expected Output */}
+                          <td className="py-3.5 px-4 font-mono">
+                            <div className="font-semibold text-stone-800 text-xs">
+                              {batch.expectedOutput} {batch.outputUnit}
+                            </div>
+                            <div className="text-[10px] text-stone-400 font-sans">
+                              {batch.baselineType === "recipe_baseline" ? "Recipe Baseline" : "Manually Entered"}
+                            </div>
+                          </td>
+
+                          {/* 4. Actual Output */}
+                          <td className="py-3.5 px-4 font-mono">
+                            {batch.actualOutput != null ? (
+                              <div>
+                                <div className="font-bold text-stone-900 text-xs">
+                                  {batch.actualOutput} {batch.outputUnit}
+                                </div>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <span
+                                    className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                      yieldMetrics.needsReview
+                                        ? "bg-rose-100 text-rose-800"
+                                        : "bg-emerald-100 text-emerald-800"
+                                    }`}
+                                  >
+                                    {yieldMetrics.yieldPercent}%
+                                  </span>
+                                  {yieldMetrics.isShortfall && (
+                                    <span className="text-[10px] text-rose-600 font-sans">
+                                      (-{Math.abs(yieldMetrics.outputDiff || 0)} {batch.outputUnit})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-stone-400 italic text-[11px] font-sans">
+                                Pending cooking
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 5. Duration */}
+                          <td className="py-3.5 px-4 font-mono">
+                            <div className="text-xs text-stone-800">
+                              {formatDurationHoursMinutes(batch.actualDurationMinutes ?? batch.expectedDurationMinutes)}
+                            </div>
+                            <div className="text-[10px] text-stone-400 font-sans">
+                              exp: {formatDurationHoursMinutes(batch.expectedDurationMinutes)}
+                              {batch.downtimeMinutes ? ` · ${batch.downtimeMinutes}m pause` : ""}
+                            </div>
+                          </td>
+
+                          {/* 6. Plain Status */}
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                                batch.status === "needs_review"
+                                  ? "bg-rose-50 text-rose-800 border-rose-200"
+                                  : batch.status === "cooking"
+                                  ? "bg-blue-50 text-blue-800 border-blue-200"
+                                  : batch.status === "completed"
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : "bg-stone-100 text-stone-700 border-stone-200"
+                              }`}
+                            >
+                              {batch.status === "cooking" && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                              )}
+                              {batch.status === "needs_review" && (
+                                <AlertTriangle className="w-3 h-3 text-rose-600" />
+                              )}
+                              {batch.status === "completed" && (
+                                <CheckCircle className="w-3 h-3 text-emerald-600" />
+                              )}
+                              <span>
+                                {batch.status === "needs_review"
+                                  ? "Needs review"
+                                  : batch.status === "cooking"
+                                  ? "Cooking"
+                                  : batch.status === "completed"
+                                  ? "Completed"
+                                  : "Planned"}
+                              </span>
+                            </span>
+                          </td>
+
+                          {/* 7. Next Action Button */}
+                          <td className="py-3.5 px-4 text-right">
+                            {batch.status === "planned" && (
+                              <button
+                                type="button"
+                                onClick={() => setStartingBatch(batch)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                              >
+                                <Play className="w-3 h-3" />
+                                <span>Start Batch</span>
+                              </button>
+                            )}
+
+                            {batch.status === "cooking" && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenRecordModal(batch)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                              >
+                                <Timer className="w-3 h-3" />
+                                <span>Record Result</span>
+                              </button>
+                            )}
+
+                            {(batch.status === "completed" || batch.status === "needs_review") && (
+                              <button
+                                type="button"
+                                onClick={() => setInspectingBatch(batch)}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer border ${
+                                  batch.status === "needs_review"
+                                    ? "bg-rose-100 hover:bg-rose-200 text-rose-900 border-rose-300"
+                                    : "bg-stone-50 hover:bg-stone-100 text-stone-800 border-stone-200"
+                                }`}
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>View Details</span>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Stacked Cards for Smaller Screens (Mobile) */}
+            <div className="md:hidden space-y-3">
+              {filteredBatches.map((batch) => {
+                const yieldMetrics = calculateBatchYieldMetrics(batch);
+                return (
+                  <div
+                    key={batch.id}
+                    className="p-4 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200 text-stone-800">
+                          {batch.batchNumber}
+                        </span>
+                        <span className="font-semibold text-stone-900 text-xs">
+                          {batch.dishName}
+                        </span>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          batch.status === "needs_review"
+                            ? "bg-rose-50 text-rose-800 border-rose-200"
+                            : batch.status === "cooking"
+                            ? "bg-blue-50 text-blue-800 border-blue-200"
+                            : batch.status === "completed"
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                            : "bg-stone-100 text-stone-700 border-stone-200"
+                        }`}
+                      >
+                        {batch.status === "needs_review" ? "Needs review" : batch.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-stone-50 p-2.5 rounded-lg border border-stone-100">
+                      <div>
+                        <span className="text-[10px] text-stone-500 font-sans block">Expected Output:</span>
+                        <span className="font-bold text-stone-800">{batch.expectedOutput} {batch.outputUnit}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-stone-500 font-sans block">Actual Output:</span>
+                        <span className="font-bold text-stone-900">
+                          {batch.actualOutput != null ? `${batch.actualOutput} ${batch.outputUnit}` : "—"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[11px] text-stone-500 font-mono">
+                        {formatDurationHoursMinutes(batch.actualDurationMinutes ?? batch.expectedDurationMinutes)}
+                      </span>
+                      {batch.status === "planned" && (
+                        <button
+                          type="button"
+                          onClick={() => setStartingBatch(batch)}
+                          className="px-3 py-1.5 rounded-lg bg-stone-900 text-white text-xs font-semibold"
+                        >
+                          Start Batch
+                        </button>
+                      )}
+                      {batch.status === "cooking" && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenRecordModal(batch)}
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold"
+                        >
+                          Record Result
+                        </button>
+                      )}
+                      {(batch.status === "completed" || batch.status === "needs_review") && (
+                        <button
+                          type="button"
+                          onClick={() => setInspectingBatch(batch)}
+                          className="px-3 py-1.5 rounded-lg bg-stone-100 text-stone-800 border border-stone-200 text-xs font-semibold"
+                        >
+                          View Details
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: Record Batch Cooking Result */}
+      {recordingBatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+              <div className="flex items-center gap-2">
+                <Utensils className="w-5 h-5 text-amber-600" />
+                <div>
+                  <h3 className="font-serif font-bold text-base text-stone-900">
+                    Record Finished Cooking Result
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Batch #{recordingBatch.batchNumber} · {recordingBatch.dishName} ({recordingBatch.mealSlot})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRecordingBatch(null)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBatchResult} className="p-5 space-y-4">
+              {/* Baseline Reference Card */}
+              <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-xs space-y-1">
+                <div className="font-semibold text-amber-900 flex items-center justify-between">
+                  <span>Recipe Baseline:</span>
+                  <span className="font-mono text-amber-800">
+                    Expected: {recordingBatch.expectedOutput} {recordingBatch.outputUnit} · {formatDurationHoursMinutes(recordingBatch.expectedDurationMinutes)}
+                  </span>
+                </div>
+                <div className="text-[11px] text-amber-800">
+                  Ingredients: {recordingBatch.ingredients.map((i) => `${i.name} (${i.expectedQuantity} ${i.unit})`).join(", ")}
+                </div>
+              </div>
+
+              {/* Prominent Inputs: Actual Output & Elapsed Duration */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-900 mb-1">
+                    Actual Finished Food Output ({recordingBatch.outputUnit}) *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0.5"
+                      required
+                      value={recActualOutput}
+                      onChange={(e) => setRecActualOutput(e.target.value)}
+                      placeholder={`e.g. ${recordingBatch.expectedOutput}`}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-stone-400 font-bold">
+                      {recordingBatch.outputUnit}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-900 mb-1">
+                    Elapsed Cooking Duration (Hours &amp; Minutes) *
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="24"
+                        required
+                        value={recElapsedHours}
+                        onChange={(e) => setRecElapsedHours(e.target.value)}
+                        placeholder="2"
+                        className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-stone-400">
+                        hr
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        required
+                        value={recElapsedMinutes}
+                        onChange={(e) => setRecElapsedMinutes(e.target.value)}
+                        placeholder="48"
+                        className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-stone-400">
+                        min
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-stone-500 mt-1">
+                    Recorded duration: {recElapsedHours || 0} hr {recElapsedMinutes || 0} min (Start-to-finish elapsed time)
+                  </p>
+                </div>
+              </div>
+
+              {/* Collapsible: Additional details — optional */}
+              <div className="border border-stone-200 rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowOptionalDetails(!showOptionalDetails)}
+                  className="w-full p-3 bg-stone-50 hover:bg-stone-100 flex items-center justify-between text-xs font-semibold text-stone-700 transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-stone-500" />
+                    <span>Additional details — optional</span>
+                  </span>
+                  {showOptionalDetails ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
+                </button>
+
+                {showOptionalDetails && (
+                  <div className="p-3.5 bg-white space-y-3 border-t border-stone-200">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-stone-600 mb-1">
+                          Paused Downtime (Minutes)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={recDowntimeMinutes}
+                          onChange={(e) => setRecDowntimeMinutes(e.target.value)}
+                          placeholder="Leave blank if none"
+                          className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-stone-600 mb-1">
+                          Energy Usage (kWh / fuel)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={recEnergyKwh}
+                          onChange={(e) => setRecEnergyKwh(e.target.value)}
+                          placeholder="e.g. 4.8"
+                          className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-medium text-stone-600 mb-1">
+                        Variance Reason (if actual differs from recipe)
+                      </label>
+                      <select
+                        value={recVarianceReason}
+                        onChange={(e) => setRecVarianceReason(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      >
+                        <option value="">None / Within normal tolerance</option>
+                        <option value="trimming_moisture">Trimming / Moisture evaporation during cooking</option>
+                        <option value="equipment_issue">Equipment issue / Machine delay</option>
+                        <option value="ingredient_quality">Ingredient quality / Wilting loss</option>
+                        <option value="prep_loss">Preparation / Pot scraping loss</option>
+                        <option value="not_sure">Not sure / Unrecorded difference</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-medium text-stone-600 mb-1">
+                        Kitchen Staff Notes
+                      </label>
+                      <input
+                        type="text"
+                        value={recVarianceNotes}
+                        onChange={(e) => setRecVarianceNotes(e.target.value)}
+                        placeholder="e.g. Extended simmer for thicker gravy reduction"
+                        className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setRecordingBatch(null)}
+                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-all shadow-xs"
+                >
+                  Save Batch Result &amp; View Comparison
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: Batch Yield & Output Comparison Modal (Khushbu 2-Page Sketch) */}
+      {inspectingBatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-xl max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center">
+                  <Scale className="w-4 h-4 text-amber-700" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-serif font-bold text-base text-stone-900">
+                      Batch #{inspectingBatch.batchNumber} Output &amp; Yield Comparison
+                    </h3>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                        inspectingBatch.status === "needs_review"
+                          ? "bg-rose-50 text-rose-800 border-rose-200"
+                          : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      }`}
+                    >
+                      {inspectingBatch.status === "needs_review" ? "Needs Review" : "Completed"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-500">
+                    {inspectingBatch.dishName} · {inspectingBatch.mealSlot} · {inspectingBatch.recordedAt || "Today"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectingBatch(null)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
+              {/* Canonical Diagnostic Alert Banner */}
+              {(() => {
+                const yieldMetrics = calculateBatchYieldMetrics(inspectingBatch);
+                return yieldMetrics.needsReview ? (
+                  <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-900">
+                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="font-bold text-sm">
+                        Output is {Math.abs(yieldMetrics.outputDiff || 0)} {inspectingBatch.outputUnit} below expected · Review this batch
+                      </div>
+                      <p className="text-xs text-rose-800 leading-relaxed">
+                        Yield achieved is {yieldMetrics.yieldPercent}% of recipe baseline. Output shortfall is not automatically food waste; differences can reflect natural moisture evaporation, trimming loss, or scale variance.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3 text-emerald-900">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="font-bold text-sm">
+                        Recipe Baseline Yield Confirmed ({yieldMetrics.yieldPercent}% Yield)
+                      </div>
+                      <p className="text-xs text-emerald-800 leading-relaxed">
+                        Kitchen finished output matches recipe conversion parameters. Full nutritional portion volume retained.
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Side-by-Side Khushbu Expected vs Actual Comparison Ledger */}
+              <div className="border border-stone-200 rounded-xl overflow-hidden bg-stone-50/40">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-stone-200 bg-stone-100/80 text-[11px] uppercase tracking-wider text-stone-500 font-sans">
+                      <th className="py-2.5 px-4 font-semibold">Workflow Metric</th>
+                      <th className="py-2.5 px-4 font-semibold">Expected Baseline</th>
+                      <th className="py-2.5 px-4 font-semibold">Kitchen Actual</th>
+                      <th className="py-2.5 px-4 font-semibold">Variance</th>
+                      <th className="py-2.5 px-4 font-semibold">Status / Telemetry</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-200/70 font-mono">
+                    {/* Row 1: Raw Material Input */}
+                    <tr className="hover:bg-white transition-colors">
+                      <td className="py-3 px-4 font-sans font-semibold text-stone-900">
+                        Raw Material Input
+                      </td>
+                      <td className="py-3 px-4 text-stone-700">
+                        {inspectingBatch.totalRawInputExpected} {inspectingBatch.inputUnit}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-stone-900">
+                        {inspectingBatch.totalRawInputActual ?? inspectingBatch.totalRawInputExpected} {inspectingBatch.inputUnit}
+                      </td>
+                      <td className="py-3 px-4 text-stone-600">
+                        0 {inspectingBatch.inputUnit} (100%)
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[11px] text-stone-500">
+                        Earliest-expiring stock allocated
+                      </td>
+                    </tr>
+
+                    {/* Row 2: Finished Cooked Output */}
+                    <tr className="hover:bg-white transition-colors">
+                      <td className="py-3 px-4 font-sans font-semibold text-stone-900">
+                        Finished Cooked Output
+                      </td>
+                      <td className="py-3 px-4 text-stone-700">
+                        {inspectingBatch.expectedOutput} {inspectingBatch.outputUnit}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-stone-900">
+                        {inspectingBatch.actualOutput ?? "—"} {inspectingBatch.outputUnit}
+                      </td>
+                      <td className="py-3 px-4">
+                        {(() => {
+                          const m = calculateBatchYieldMetrics(inspectingBatch);
+                          return (
+                            <span className={m.isShortfall ? "text-rose-700 font-bold" : "text-emerald-700 font-bold"}>
+                              {m.outputDiff != null ? `${m.outputDiff > 0 ? "+" : ""}${m.outputDiff} ${inspectingBatch.outputUnit} (${m.yieldPercent}%)` : "—"}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[11px]">
+                        {(() => {
+                          const m = calculateBatchYieldMetrics(inspectingBatch);
+                          return m.isShortfall ? (
+                            <span className="text-rose-700 font-medium">Below expected output</span>
+                          ) : (
+                            <span className="text-emerald-700 font-medium">Normal yield achieved</span>
+                          );
+                        })()}
+                      </td>
+                    </tr>
+
+                    {/* Row 3: Processing Time */}
+                    <tr className="hover:bg-white transition-colors">
+                      <td className="py-3 px-4 font-sans font-semibold text-stone-900">
+                        Processing Time
+                      </td>
+                      <td className="py-3 px-4 text-stone-700">
+                        {formatDurationHoursMinutes(inspectingBatch.expectedDurationMinutes)}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-stone-900">
+                        {formatDurationHoursMinutes(inspectingBatch.actualDurationMinutes)}
+                      </td>
+                      <td className="py-3 px-4">
+                        {inspectingBatch.actualDurationMinutes != null ? (
+                          <span className={inspectingBatch.actualDurationMinutes > inspectingBatch.expectedDurationMinutes ? "text-amber-700 font-bold" : "text-emerald-700 font-bold"}>
+                            {inspectingBatch.actualDurationMinutes - inspectingBatch.expectedDurationMinutes > 0 ? "+" : ""}
+                            {inspectingBatch.actualDurationMinutes - inspectingBatch.expectedDurationMinutes} min
+                          </span>
+                        ) : "—"}
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[11px] text-stone-500">
+                        Start-to-finish elapsed time
+                      </td>
+                    </tr>
+
+                    {/* Row 4: Paused Downtime */}
+                    <tr className="hover:bg-white transition-colors">
+                      <td className="py-3 px-4 font-sans font-semibold text-stone-900">
+                        Paused Downtime
+                      </td>
+                      <td className="py-3 px-4 text-stone-700">
+                        0 min
+                      </td>
+                      <td className="py-3 px-4 font-bold text-stone-900">
+                        {inspectingBatch.downtimeMinutes != null ? `${inspectingBatch.downtimeMinutes} min` : "Not recorded"}
+                      </td>
+                      <td className="py-3 px-4 text-stone-600">
+                        {inspectingBatch.downtimeMinutes ? `+${inspectingBatch.downtimeMinutes} min` : "0 min"}
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[11px] text-stone-500">
+                        {inspectingBatch.downtimeMinutes ? "Line pause / equipment wait" : "Continuous prep"}
+                      </td>
+                    </tr>
+
+                    {/* Row 5: Energy Usage */}
+                    <tr className="hover:bg-white transition-colors">
+                      <td className="py-3 px-4 font-sans font-semibold text-stone-900">
+                        Energy Usage
+                      </td>
+                      <td className="py-3 px-4 text-stone-700">
+                        ~3.5 kWh est.
+                      </td>
+                      <td className="py-3 px-4 font-bold text-stone-900">
+                        {inspectingBatch.energyKwh != null ? `${inspectingBatch.energyKwh} kWh` : "Not recorded"}
+                      </td>
+                      <td className="py-3 px-4 text-stone-600">
+                        {inspectingBatch.energyKwh != null ? `+${(inspectingBatch.energyKwh - 3.5).toFixed(1)} kWh` : "—"}
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[11px]">
+                        <span className="inline-flex items-center gap-1 text-purple-700 font-medium">
+                          <Radio className="w-3 h-3 text-purple-500 animate-pulse" />
+                          <span>Telemetry ready (IoT)</span>
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Variance Analysis & Diagnostic Recommendations */}
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-stone-900 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <span>Variance Analysis &amp; Kitchen Notes:</span>
+                  </span>
+                  {inspectingBatch.varianceReason && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-200 text-stone-800">
+                      Reason: {inspectingBatch.varianceReason.replace(/_/g, " ")}
+                    </span>
+                  )}
+                </div>
+                {inspectingBatch.varianceNotes && (
+                  <p className="text-stone-700 leading-relaxed font-sans">
+                    <strong>Staff Observation:</strong> {inspectingBatch.varianceNotes}
+                  </p>
+                )}
+                <p className="text-stone-600 text-[11px] leading-relaxed">
+                  <strong>AI Chef Recommendation:</strong> Shortfall of 15 kg in fresh tomato gravy preparations is common when high water-content tomatoes undergo extended simmering. For subsequent batches, either calibrate simmering reduction time to 120 minutes or incorporate an extra 10–12 litres water buffer to achieve standard institutional gravy volume.
+                </p>
+              </div>
+
+              {/* IoT Connection Notice */}
+              <div className="p-3 rounded-xl bg-purple-50/70 border border-purple-200/80 flex items-center gap-2.5 text-purple-900 text-xs">
+                <Cpu className="w-4 h-4 text-purple-600 shrink-0" />
+                <span className="text-[11px]">
+                  <strong>Future IoT Integration:</strong> Telemetric smart scales, temperature probes, and power meters can automatically record actual finished food weights and burner gas/power consumption directly into this ledger.
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-stone-200 flex items-center justify-between bg-stone-50">
+              <span className="text-[11px] text-stone-500 font-mono">
+                Batch ID: {inspectingBatch.id}
+              </span>
+              <div className="flex items-center gap-2">
+                {inspectingBatch.status === "needs_review" && (
+                  <button
+                    type="button"
+                    onClick={() => handleApproveBatchReview(inspectingBatch.id)}
+                    className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                  >
+                    Mark as Reviewed &amp; Approved
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setInspectingBatch(null)}
+                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-100 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Start Planned Cooking Batch Confirmation */}
+      {startingBatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+              <div className="flex items-center gap-2">
+                <Play className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <h3 className="font-serif font-bold text-base text-stone-900">
+                    Confirm &amp; Start Cooking Batch
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Batch #{startingBatch.batchNumber} · {startingBatch.dishName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStartingBatch(null)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="space-y-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-bold block">
+                  Raw Ingredients to Pull from Pantry (FEFO Sequence):
+                </span>
+                <div className="space-y-1.5">
+                  {startingBatch.ingredients.map((ing, iIdx) => (
+                    <div
+                      key={iIdx}
+                      className="p-2.5 rounded-xl border border-stone-200 bg-stone-50/70 flex items-center justify-between text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Package className="w-3.5 h-3.5 text-stone-400" />
+                        <span className="font-semibold text-stone-900">{ing.name}</span>
+                      </div>
+                      <span className="font-mono font-bold text-stone-800">
+                        {ing.expectedQuantity} {ing.unit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs bg-amber-50/70 p-3 rounded-xl border border-amber-200">
+                <div>
+                  <span className="text-[10px] text-amber-800 block">Expected Finished Food:</span>
+                  <span className="font-mono font-bold text-amber-950 text-sm">
+                    {startingBatch.expectedOutput} {startingBatch.outputUnit}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-amber-800 block">Expected Duration:</span>
+                  <span className="font-mono font-bold text-amber-950 text-sm">
+                    {formatDurationHoursMinutes(startingBatch.expectedDurationMinutes)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setStartingBatch(null)}
+                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmStartBatch}
+                  className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-all shadow-xs"
+                >
+                  Confirm &amp; Start Cooking
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
