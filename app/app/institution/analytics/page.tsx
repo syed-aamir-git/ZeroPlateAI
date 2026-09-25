@@ -989,7 +989,6 @@ export default function InstitutionAnalyticsPage() {
                         <th className="py-3 px-4 font-mono text-right font-semibold">Logged Quantity</th>
                         <th className="py-3 px-4 font-mono text-right font-semibold">Est. Consumed</th>
                         <th className="py-3 px-4 font-mono text-right font-semibold">Diners Fed</th>
-                        <th className="py-3 px-4 font-sans text-center font-semibold">Status</th>
                         <th className="py-3 px-4 font-mono text-right font-semibold">Logged Date</th>
                       </tr>
                     </thead>
@@ -1013,21 +1012,6 @@ export default function InstitutionAnalyticsPage() {
                             <td className="py-3 px-4 font-mono text-blue-700 font-semibold text-right">
                               ~{item.dinersFed}
                             </td>
-                            <td className="py-3 px-4 text-center">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-semibold ${
-                                  item.status === "delivered"
-                                    ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                                    : item.status === "listed" || item.status === "surplus"
-                                    ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                    : item.status === "expired" || item.status === "rejected" || item.status === "cancelled"
-                                    ? "bg-rose-100 text-rose-800 border border-rose-200"
-                                    : "bg-stone-100 text-stone-700 border border-stone-200"
-                                }`}
-                              >
-                                {item.status.replace("_", " ")}
-                              </span>
-                            </td>
                             <td className="py-3 px-4 font-mono text-stone-500 text-right text-[11px]">
                               {item.date}
                             </td>
@@ -1035,7 +1019,7 @@ export default function InstitutionAnalyticsPage() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={7} className="py-10 text-center text-stone-500 font-mono">
+                          <td colSpan={6} className="py-10 text-center text-stone-500 font-mono">
                             No food batch inventory records found for this kitchen yet.
                           </td>
                         </tr>
