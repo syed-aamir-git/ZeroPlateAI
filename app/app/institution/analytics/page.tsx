@@ -74,11 +74,13 @@ interface DetailedItem {
   name: string;
   category: string;
   quantity: string;
-  quantityKg: number;
+  unit?: string;
+  quantityKg?: number;
+  consumedEstimate?: string;
+  consumedEstimateKg?: number;
+  dinersFed: number;
   status: string;
   date: string;
-  consumedEstimateKg: number;
-  dinersFed: number;
 }
 
 interface AnalyticsData {
@@ -982,7 +984,6 @@ export default function InstitutionAnalyticsPage() {
                         <th className="py-3 px-4 font-sans font-semibold">Food Item Name</th>
                         <th className="py-3 px-4 font-sans font-semibold">Category</th>
                         <th className="py-3 px-4 font-mono text-right font-semibold">Logged Quantity</th>
-                        <th className="py-3 px-4 font-mono text-right font-semibold">Mass (kg)</th>
                         <th className="py-3 px-4 font-mono text-right font-semibold">Est. Consumed</th>
                         <th className="py-3 px-4 font-mono text-right font-semibold">Diners Fed</th>
                         <th className="py-3 px-4 font-sans text-center font-semibold">Status</th>
@@ -1000,14 +1001,11 @@ export default function InstitutionAnalyticsPage() {
                             <td className="py-3 px-4 text-stone-600 capitalize font-mono text-[11px]">
                               {item.category.replace("_", " ")}
                             </td>
-                            <td className="py-3 px-4 font-mono text-stone-900 text-right font-medium">
+                            <td className="py-3 px-4 font-mono text-stone-900 text-right font-semibold">
                               {item.quantity}
                             </td>
-                            <td className="py-3 px-4 font-mono text-stone-500 text-right">
-                              {item.quantityKg} kg
-                            </td>
                             <td className="py-3 px-4 font-mono font-bold text-emerald-700 text-right">
-                              {item.consumedEstimateKg} kg
+                              {item.consumedEstimate || (item.consumedEstimateKg !== undefined ? `${item.consumedEstimateKg} kg` : "—")}
                             </td>
                             <td className="py-3 px-4 font-mono text-blue-700 font-semibold text-right">
                               ~{item.dinersFed}
@@ -1034,7 +1032,7 @@ export default function InstitutionAnalyticsPage() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={8} className="py-10 text-center text-stone-500 font-mono">
+                          <td colSpan={7} className="py-10 text-center text-stone-500 font-mono">
                             No food batch inventory records found for this kitchen yet.
                           </td>
                         </tr>

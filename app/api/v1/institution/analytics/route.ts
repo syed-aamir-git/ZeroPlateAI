@@ -270,27 +270,61 @@ export async function GET(request: NextRequest) {
     // 6. Map Detailed Real Items for the Table (Include all real user items from both inventory & surplus)
     const itemMap = new Map<string, any>();
 
+    const formatQuantityWithUnit = (qty: number, rawUnit?: string) => {
+      const u = (rawUnit || "kg").toLowerCase().trim();
+      if (u === "l" || u === "litres" || u === "liters" || u === "litre") {
+        return `${qty} Litres`;
+      }
+      if (u === "pcs" || u === "pieces" || u === "piece" || u === "pc") {
+        return `${qty} pcs`;
+      }
+      return `${qty} kg`;
+    };
+
+    const formatConsumedWithUnit = (qty: number, rawUnit?: string, isDelivered: boolean = false) => {
+      const u = (rawUnit || "kg").toLowerCase().trim();
+      const multiplier = isDelivered ? 0.9 : 0.5;
+      const consumed = Math.round(qty * multiplier * 10) / 10;
+      if (u === "l" || u === "litres" || u === "liters" || u === "litre") {
+        return `${consumed} Litres`;
+      }
+      if (u === "pcs" || u === "pieces" || u === "piece" || u === "pc") {
+        return `${Math.round(consumed)} pcs`;
+      }
+      return `${consumed} kg`;
+    };
+
+    const calculateDiners = (qty: number, rawUnit?: string) => {
+      const u = (rawUnit || "kg").toLowerCase().trim();
+      if (u === "l" || u === "litres" || u === "liters" || u === "litre") {
+        return Math.max(1, Math.round(qty * 4 * 0.9));
+      }
+      if (u === "pcs" || u === "pieces" || u === "piece" || u === "pc") {
+        return Math.max(1, Math.round(qty / 2));
+      }
+      return Math.max(1, Math.round(qty / 0.40));
+    };
+
     // Add inventory items
     activeInventory.forEach((item) => {
       const qKg = toKg(item.quantity, item.unit);
-      const isSurplusOrDelivered = item.status === "delivered" || item.status === "listed" || item.status === "surplus";
-      const consumedKg = item.status === "delivered" || item.status === "listed"
-        ? Math.round(qKg * 0.85 * 10) / 10
-        : qKg;
+      const isDelivered = item.status === "delivered" || item.status === "listed" || item.status === "surplus";
       const rawDate = item.createdAt || item.preparedOrReceivedAt || new Date();
       const dateStr = new Date(rawDate).toISOString().split("T")[0];
+      const rawQty = Number(item.quantity) || 0;
 
       itemMap.set(String(item._id), {
         id: item._id.toString(),
         name: item.name || "Food Batch",
         category: item.category || "cooked_food",
-        quantity: `${item.quantity} ${item.unit || "kg"}`,
+        unit: (item.unit || "kg").toLowerCase().trim(),
+        quantity: formatQuantityWithUnit(rawQty, item.unit),
         quantityKg: Math.round(qKg * 10) / 10,
         status: item.status || "in_stock",
         date: dateStr,
         rawTimestamp: new Date(rawDate).getTime(),
-        consumedEstimateKg: consumedKg,
-        dinersFed: Math.round(consumedKg / 0.40),
+        consumedEstimate: formatConsumedWithUnit(rawQty, item.unit, isDelivered),
+        dinersFed: calculateDiners(rawQty, item.unit),
       });
     });
 
@@ -302,21 +336,22 @@ export async function GET(request: NextRequest) {
       }
       const qKg = toKg(s.quantity, s.unit);
       const isDelivered = s.status === "delivered" || s.status === "claimed";
-      const consumedKg = isDelivered ? Math.round(qKg * 0.9 * 10) / 10 : Math.round(qKg * 0.5 * 10) / 10;
       const rawDate = s.createdAt || s.preparedAt || new Date();
       const dateStr = new Date(rawDate).toISOString().split("T")[0];
+      const rawQty = Number(s.quantity) || 0;
 
       itemMap.set(`surplus_${sId}`, {
         id: sId,
         name: s.itemName || s.foodName || "Surplus Batch",
         category: s.category || "cooked_food",
-        quantity: `${s.quantity} ${s.unit || "kg"}`,
+        unit: (s.unit || "kg").toLowerCase().trim(),
+        quantity: formatQuantityWithUnit(rawQty, s.unit),
         quantityKg: Math.round(qKg * 10) / 10,
         status: s.status || "surplus",
         date: dateStr,
         rawTimestamp: new Date(rawDate).getTime(),
-        consumedEstimateKg: consumedKg,
-        dinersFed: Math.max(1, Math.round(consumedKg / 0.40)),
+        consumedEstimate: formatConsumedWithUnit(rawQty, s.unit, isDelivered),
+        dinersFed: calculateDiners(rawQty, s.unit),
       });
     });
 
