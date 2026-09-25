@@ -226,9 +226,9 @@ export default function AdminNgoVerificationPage() {
                           {item.capacityPerWeek} <span className="text-[11px] text-zinc-400 font-normal">kg/wk</span>
                         </td>
 
-                        <td className="px-4 py-3.5">
+                        <td className="px-4 py-3.5 whitespace-nowrap">
                           <span
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
+                            className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide shrink-0 ${
                               item.kycStatus === "approved"
                                 ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                                 : item.kycStatus === "rejected"
@@ -236,10 +236,19 @@ export default function AdminNgoVerificationPage() {
                                 : "bg-amber-50 text-amber-800 border border-amber-200"
                             }`}
                           >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full mr-1.5 shrink-0 ${
+                                item.kycStatus === "approved"
+                                  ? "bg-emerald-600"
+                                  : item.kycStatus === "rejected"
+                                  ? "bg-rose-600"
+                                  : "bg-amber-500 animate-pulse"
+                              }`}
+                            />
                             {item.kycStatus === "pending" ? "Pending Review" : item.kycStatus === "approved" ? "Approved" : "Rejected"}
                           </span>
                           {item.kycRejectionReason && (
-                            <div className="text-[11px] text-rose-600 mt-1 italic">
+                            <div className="text-[11px] text-rose-600 mt-1 italic max-w-xs truncate">
                               {item.kycRejectionReason}
                             </div>
                           )}

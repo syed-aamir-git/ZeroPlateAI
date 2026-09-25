@@ -341,9 +341,9 @@ export default function AdminInstitutionsPage() {
                           {inst.address || "Address not provided"}
                         </td>
 
-                        <td className="px-4 py-3.5">
+                        <td className="px-4 py-3.5 whitespace-nowrap">
                           <span
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
+                            className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
                               inst.plan === "premium"
                                 ? "bg-amber-50 text-amber-800 border border-amber-200"
                                 : "bg-emerald-50 text-emerald-800 border border-emerald-200"

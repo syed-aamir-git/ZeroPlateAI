@@ -128,9 +128,9 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
+                          className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
                             u.role === "platform_admin"
                               ? "bg-purple-50 text-purple-800 border border-purple-200"
                               : u.role === "institution_admin"
@@ -165,9 +165,9 @@ export default function AdminUsersPage() {
                         )}
                       </td>
 
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                          className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] font-semibold ${
                             u.profileCompleted
                               ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                               : "bg-amber-50 text-amber-800 border border-amber-200"
