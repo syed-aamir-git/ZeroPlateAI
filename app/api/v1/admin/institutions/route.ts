@@ -49,9 +49,15 @@ export async function GET() {
       const listingStats = listMap.get(String(inst._id)) || { count: 0, totalKg: 0 };
       return {
         ...inst,
+        _id: String(inst._id),
+        name: inst.name || "Commercial Kitchen",
+        type: inst.type || "commercial_kitchen",
+        address: inst.address || "Address not specified",
+        plan: inst.plan || "free",
+        createdAt: inst.createdAt ? new Date(inst.createdAt).toISOString() : new Date().toISOString(),
         inventoryCount: invMap.get(String(inst._id)) || 0,
         listingsCount: listingStats.count,
-        totalSurplusKg: listingStats.totalKg,
+        totalSurplusKg: listingStats.totalKg || 0,
       };
     });
 
