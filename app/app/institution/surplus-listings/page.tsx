@@ -22,7 +22,12 @@ import {
   Sparkles,
 } from "lucide-react";
 import LocationPickerMap from "@/components/maps/location-picker-map";
-import { calculatePiecesToPlates, evaluateSurplusUrgency } from "@/lib/surplus-engine";
+import {
+  calculatePiecesToPlates,
+  evaluateSurplusUrgency,
+  formatFoodQuantity,
+  isPiecesUnit,
+} from "@/lib/surplus-engine";
 import ManualMatchmakerModal from "@/components/surplus/manual-matchmaker-modal";
 import { HeartHandshake, Utensils } from "lucide-react";
 
@@ -770,6 +775,11 @@ function SurplusListingsContent() {
                           <span className="text-xs font-sans font-normal text-stone-500">
                             {item.unit}
                           </span>
+                          {isPiecesUnit(item.unit) && (
+                            <span className="text-xs font-sans font-medium text-emerald-700 ml-1.5 whitespace-nowrap">
+                              (~{calculatePiecesToPlates(item.quantity, item.unit, item.category).plates} plates)
+                            </span>
+                          )}
                         </div>
                         <div className="text-[10px] text-emerald-700 font-sans font-normal">
                           ≈ {urgency.estimatedMeals} meals
@@ -1030,7 +1040,7 @@ function SurplusListingsContent() {
                           const isSurplus = item.status === "surplus" || item.rawStatus === "surplus";
                           return (
                             <option key={item._id} value={item._id}>
-                              {item.name} ({item.quantity} {item.unit} available) — {item.category.replace("_", " ")}
+                              {item.name} ({formatFoodQuantity(item.quantity, item.unit, item.category)} available) — {item.category.replace("_", " ")}
                               {isSurplus ? " ★ FLAGGED SURPLUS" : ""}
                             </option>
                           );
@@ -1084,7 +1094,7 @@ function SurplusListingsContent() {
                     />
                     {selectedItem && (
                       <span className="text-[11px] text-stone-500 mt-1 block font-mono">
-                        Max available: {selectedItem.quantity} {selectedItem.unit}
+                        Max available: {formatFoodQuantity(selectedItem.quantity, selectedItem.unit, selectedItem.category)}
                       </span>
                     )}
                   </div>

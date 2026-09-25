@@ -25,6 +25,7 @@ import {
   Info,
 } from "lucide-react";
 import type { AdminMapFacility } from "@/components/maps/admin-command-map";
+import { formatFoodQuantity } from "@/lib/surplus-engine";
 
 // Dynamic import with ssr: false to prevent Leaflet SSR issues
 const AdminCommandMap = dynamic(
@@ -66,6 +67,7 @@ interface DispatchItem {
   itemName: string;
   quantity: number;
   unit: string;
+  category?: string;
   institutionName: string;
   ngoName: string;
   pickupLocation?: { lat?: number; lng?: number; address?: string };
@@ -402,7 +404,7 @@ export default function AdminOverviewPage() {
               <span className="text-xs font-sans text-zinc-500 font-normal">kg</span>
               {Boolean(metrics?.redistributedByUnit?.pieces) && (
                 <span className="text-xs text-teal-700 font-normal">
-                  + {metrics?.redistributedByUnit?.pieces} pcs
+                  + {metrics?.redistributedByUnit?.pieces} pcs (~{Math.round((metrics?.redistributedByUnit?.pieces ?? 0) / 2)} plates)
                 </span>
               )}
             </div>
@@ -524,7 +526,7 @@ export default function AdminOverviewPage() {
                       <td className="px-4 py-3.5 font-medium text-zinc-900">
                         <div className="font-semibold text-sm">{d.itemName}</div>
                         <div className="text-xs text-amber-700 font-mono font-bold mt-0.5">
-                          {d.quantity} {d.unit}
+                          {formatFoodQuantity(d.quantity, d.unit, d.category || "general")}
                         </div>
                       </td>
 

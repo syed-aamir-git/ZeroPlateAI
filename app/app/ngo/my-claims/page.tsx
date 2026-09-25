@@ -25,6 +25,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import DeliveryRouteMap, { getVehicleConfig, calculateDeliveryEtas } from "@/components/maps/delivery-route-map";
+import { calculatePiecesToPlates, formatFoodQuantity, isPiecesUnit } from "@/lib/surplus-engine";
 
 interface ClaimRecord {
   _id: string;
@@ -509,10 +510,17 @@ export default function NgoMyClaimsPage() {
 
                         {/* 2. Quantity */}
                         <td className="py-3 px-4 font-mono text-right font-bold text-stone-900 whitespace-nowrap">
-                          {claim.quantity}{" "}
-                          <span className="text-xs font-sans font-normal text-stone-500">
-                            {claim.unit}
-                          </span>
+                          <div>
+                            {claim.quantity}{" "}
+                            <span className="text-xs font-sans font-normal text-stone-500">
+                              {claim.unit}
+                            </span>
+                          </div>
+                          {isPiecesUnit(claim.unit) && (
+                            <div className="text-[11px] font-sans font-medium text-emerald-700">
+                              ~{calculatePiecesToPlates(claim.quantity, claim.unit, claim.category).plates} plates
+                            </div>
+                          )}
                         </td>
 
                         {/* 3. Donor Kitchen */}
@@ -703,7 +711,7 @@ export default function NgoMyClaimsPage() {
                                             <span className="font-medium text-stone-800">{claim.courier?.name || "Assigned Driver"}</span>
                                             {claim.courier?.vehicleNumber ? ` • Plate: ${claim.courier.vehicleNumber}` : ""}
                                             {" • Bringing "}
-                                            <strong className="text-stone-800">{claim.itemName} ({claim.quantity} {claim.unit})</strong>
+                                            <strong className="text-stone-800">{claim.itemName} ({formatFoodQuantity(claim.quantity, claim.unit, claim.category)})</strong>
                                           </div>
                                         </div>
                                       </div>

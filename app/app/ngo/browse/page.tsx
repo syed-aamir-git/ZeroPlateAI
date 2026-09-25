@@ -25,7 +25,11 @@ import {
 } from "lucide-react";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import MarketplaceMap from "@/components/maps/marketplace-map";
-import { calculatePiecesToPlates, evaluateSurplusUrgency } from "@/lib/surplus-engine";
+import {
+  calculatePiecesToPlates,
+  evaluateSurplusUrgency,
+  isPiecesUnit,
+} from "@/lib/surplus-engine";
 
 interface SurplusListing {
   _id: string;
@@ -689,6 +693,11 @@ export default function NgoBrowsePage() {
                             <span className="text-xs font-sans font-medium text-stone-500">
                               {item.unit}
                             </span>
+                            {isPiecesUnit(item.unit) && (
+                              <span className="text-xs font-sans font-semibold text-emerald-800 ml-1.5 whitespace-nowrap">
+                                (~{plates.plates} plates)
+                              </span>
+                            )}
                           </div>
                           <div className="text-right">
                             <span className="font-mono text-xs font-bold text-stone-800 flex items-center gap-1 justify-end">

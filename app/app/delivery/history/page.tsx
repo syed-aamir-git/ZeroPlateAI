@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { LedgerTabIcon, StampIcon, RouteIcon } from "@/components/icons/ledger-icons";
+import { formatFoodQuantity } from "@/lib/surplus-engine";
 
 const DeliveryRouteMap = dynamic(
   () => import("@/components/maps/delivery-route-map"),
@@ -190,7 +191,7 @@ export default function DeliveryHistoryPage() {
                     </div>
                   </div>
                   <div className="font-mono-numeral text-base font-bold text-[#86C29B]">
-                    {item.quantity} <span className="text-xs font-normal text-[#9E9587]">{item.unit}</span>
+                    {formatFoodQuantity(item.quantity, item.unit, item.category)}
                   </div>
                 </div>
 

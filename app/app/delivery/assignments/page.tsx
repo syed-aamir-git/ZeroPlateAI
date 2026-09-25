@@ -8,7 +8,12 @@ import {
   ShieldCheckIcon,
   UserIcon,
 } from "@/components/icons/ledger-icons";
-import { evaluateSurplusUrgency, calculatePiecesToPlates } from "@/lib/surplus-engine";
+import {
+  evaluateSurplusUrgency,
+  calculatePiecesToPlates,
+  isPiecesUnit,
+  formatFoodQuantity,
+} from "@/lib/surplus-engine";
 import { Clock, Utensils, AlertTriangle, Star, CloudRain, Gauge } from "lucide-react";
 
 import { getVehicleConfig, calculateDeliveryEtas } from "@/components/maps/delivery-route-map";
@@ -518,6 +523,11 @@ export default function DeliveryAssignmentsPage() {
                     <div className="font-mono-numeral text-xl font-bold text-[#D9A441]">
                       {assignment.item.quantity}{" "}
                       <span className="text-xs font-normal text-[#9E9587]">{assignment.item.unit}</span>
+                      {isPiecesUnit(assignment.item.unit) && (
+                        <span className="text-xs font-normal text-[#86C29B] ml-1.5 whitespace-nowrap">
+                          (~{plates.plates} plates)
+                        </span>
+                      )}
                     </div>
                     <div className="text-[11px] font-mono text-[#86C29B] font-semibold flex items-center gap-1 justify-end">
                       <Utensils className="w-3 h-3 text-[#86C29B]" />
@@ -600,7 +610,7 @@ export default function DeliveryAssignmentsPage() {
 
                       <div className="text-[11px] text-[#D4CBBF]">
                         {assignment.status === "accepted"
-                          ? `Collect verified batch "${assignment.item.name}" (${assignment.item.quantity} ${assignment.item.unit}) from the donor facility.`
+                          ? `Collect verified batch "${assignment.item.name}" (${formatFoodQuantity(assignment.item.quantity, assignment.item.unit, assignment.item.category)}) from the donor facility.`
                           : `Deliver batch "${assignment.item.name}" safely to the recipient shelter.`}
                       </div>
                     </div>

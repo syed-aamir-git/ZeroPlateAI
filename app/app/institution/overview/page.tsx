@@ -254,7 +254,7 @@ export default function InstitutionOverviewPage() {
             </div>
             <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-100/90 text-emerald-800 border border-emerald-200">
-                {m.wastePreventedByUnit?.pieces ?? 0} pcs
+                {m.wastePreventedByUnit?.pieces ?? 0} pcs (~{Math.round((m.wastePreventedByUnit?.pieces ?? 0) / 2)} plates)
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-100/90 text-emerald-800 border border-emerald-200">
                 {m.wastePreventedByUnit?.litres ?? 0} L

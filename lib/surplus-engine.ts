@@ -55,8 +55,8 @@ export interface SurplusEvaluationResult {
  */
 export function calculatePiecesToPlates(
   quantity: number,
-  unit: string,
-  category: FoodCategory | string
+  unit: string = "pcs",
+  category: FoodCategory | string = "general"
 ): {
   plates: number;
   analogyText: string;
@@ -68,8 +68,27 @@ export function calculatePiecesToPlates(
   let estimatedKg = quantity;
 
   // Convert non-kg units to approximate kg
-  if (normUnit === "pieces" || normUnit === "pcs") {
-    if (normCat.includes("bakery") || normCat.includes("bread") || normCat.includes("roti")) {
+  if (
+    normUnit === "pieces" ||
+    normUnit === "pcs" ||
+    normUnit === "piece" ||
+    normUnit === "pc"
+  ) {
+    if (
+      normCat.includes("meal") ||
+      normCat.includes("thali") ||
+      normCat.includes("box") ||
+      normCat.includes("packed_meal") ||
+      normCat.includes("packet")
+    ) {
+      const plates = Math.max(1, Math.round(quantity));
+      return {
+        plates,
+        analogyText: `${quantity} pieces = ${plates} meal plates (1 plate/box)`,
+        usableQuantityKg: Math.round(quantity * 0.4 * 10) / 10,
+      };
+    }
+    if (normCat.includes("bakery") || normCat.includes("bread") || normCat.includes("roti") || normCat.includes("chapati")) {
       // 3 pieces per meal plate
       const plates = Math.max(1, Math.floor(quantity / 3));
       return {
@@ -146,6 +165,33 @@ export function calculatePiecesToPlates(
     analogyText: `${quantity} kg cooked food ≈ ${plates} full meal plates (at ~450g/plate)`,
     usableQuantityKg: quantity,
   };
+}
+
+/**
+ * Checks if a unit denotes pieces (pcs, pieces, piece, pc)
+ */
+export function isPiecesUnit(unit?: string | null): boolean {
+  if (!unit) return false;
+  const norm = unit.toLowerCase().trim();
+  return norm === "pcs" || norm === "pieces" || norm === "piece" || norm === "pc";
+}
+
+/**
+ * Formats a food quantity and unit string.
+ * Whenever unit is in pieces ("pcs", "pieces"), it also displays in plates:
+ * e.g., "50 pcs (~25 plates)"
+ */
+export function formatFoodQuantity(
+  quantity: number | string,
+  unit: string = "kg",
+  category: FoodCategory | string = "general"
+): string {
+  const numQty = typeof quantity === "string" ? parseFloat(quantity) || 0 : quantity;
+  if (!isPiecesUnit(unit)) {
+    return `${numQty} ${unit}`;
+  }
+  const { plates } = calculatePiecesToPlates(numQty, unit, category);
+  return `${numQty} ${unit} (~${plates} plates)`;
 }
 
 /**

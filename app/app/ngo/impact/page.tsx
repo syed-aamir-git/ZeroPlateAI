@@ -18,6 +18,7 @@ import {
   Layers,
   Clock,
 } from "lucide-react";
+import { formatFoodQuantity } from "@/lib/surplus-engine";
 
 interface NgoImpactData {
   totalRedistributedKg: number;
@@ -59,7 +60,7 @@ function formatCategoryQuantity(val: CategoryMetric | number): string {
   }
   const parts: string[] = [];
   if (val.kg > 0) parts.push(`${val.kg} kg`);
-  if (val.pieces > 0) parts.push(`${val.pieces} pcs`);
+  if (val.pieces > 0) parts.push(`${val.pieces} pcs (~${Math.round(val.pieces / 2)} plates)`);
   if (val.litres > 0) parts.push(`${val.litres} L`);
   return parts.length > 0 ? parts.join(" • ") : "0 kg";
 }
@@ -189,7 +190,7 @@ export default function NgoImpactPage() {
             </span>
             {impact?.redistributedByUnit && (
               <span className="text-[11px] font-mono text-stone-400">
-                • {impact.redistributedByUnit.pieces} pcs • {impact.redistributedByUnit.litres} L
+                • {impact.redistributedByUnit.pieces} pcs (~{Math.round(impact.redistributedByUnit.pieces / 2)} plates) • {impact.redistributedByUnit.litres} L
               </span>
             )}
           </div>
@@ -389,7 +390,7 @@ export default function NgoImpactPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 font-mono text-right font-bold text-emerald-700 whitespace-nowrap">
-                        {handoff.quantity} {handoff.unit}
+                        {formatFoodQuantity(handoff.quantity, handoff.unit, handoff.category || "general")}
                       </td>
                       <td className="py-3 px-4 font-mono text-xs text-stone-500 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">

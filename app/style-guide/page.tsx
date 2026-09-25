@@ -331,7 +331,7 @@ export default function StyleGuidePage() {
                 <tr className="hover:bg-[#F3EDE0]/80 transition-colors">
                   <td className="px-4 py-3 font-medium text-ink">Cooked Chapati (Wheat)</td>
                   <td className="px-4 py-3 text-ink-soft">Cooked Food</td>
-                  <td className="px-4 py-3 font-ledger-mono">350 pcs</td>
+                  <td className="px-4 py-3 font-ledger-mono">350 pcs (~116 plates)</td>
                   <td className="px-4 py-3 font-ledger-mono text-xs">Today, 18:00</td>
                   <td className="px-4 py-3">
                     <StatusBadge variant="verified_safe" showIcon />

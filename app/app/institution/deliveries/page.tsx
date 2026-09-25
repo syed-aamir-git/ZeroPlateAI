@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { getVehicleConfig, calculateDeliveryEtas } from "@/components/maps/delivery-route-map";
+import { formatFoodQuantity } from "@/lib/surplus-engine";
 
 const DeliveryRouteMap = dynamic(
   () => import("@/components/maps/delivery-route-map"),
@@ -496,7 +497,7 @@ export default function InstitutionDeliveriesPage() {
                     <h3 className="font-serif text-lg sm:text-xl font-bold text-stone-900 mt-2">
                       {d.item.name} ·{" "}
                       <span className="font-mono text-emerald-700">
-                        {d.item.quantity} {d.item.unit}
+                        {formatFoodQuantity(d.item.quantity, d.item.unit, d.item.category)}
                       </span>
                     </h3>
 

@@ -23,6 +23,7 @@ import {
   Building2,
   Scale,
 } from "lucide-react";
+import { formatFoodQuantity, calculatePiecesToPlates } from "@/lib/surplus-engine";
 
 interface InstitutionData {
   _id: string;
@@ -227,7 +228,7 @@ export default function InstitutionReportsPage() {
                   </span>
                   {report.executiveSummary.wastePreventedByUnit && (
                     <span className="text-[11px] font-mono text-stone-400">
-                      • {report.executiveSummary.wastePreventedByUnit.pieces} pcs • {report.executiveSummary.wastePreventedByUnit.litres} L
+                      • {report.executiveSummary.wastePreventedByUnit.pieces} pcs (~{calculatePiecesToPlates(report.executiveSummary.wastePreventedByUnit.pieces, "pcs").plates} plates) • {report.executiveSummary.wastePreventedByUnit.litres} L
                     </span>
                   )}
                 </div>
@@ -420,10 +421,7 @@ export default function InstitutionReportsPage() {
                         </td>
 
                         <td className="py-3 px-4 font-mono font-bold text-stone-900 text-right whitespace-nowrap">
-                          {rec.quantity ?? rec.quantityKg}{" "}
-                          <span className="text-xs font-sans font-normal text-stone-500">
-                            {rec.unit || "kg"}
-                          </span>
+                          {formatFoodQuantity(rec.quantity ?? rec.quantityKg, rec.unit || "kg", rec.category)}
                         </td>
 
                         <td className="py-3 px-4 font-mono text-emerald-700 font-bold text-right whitespace-nowrap">

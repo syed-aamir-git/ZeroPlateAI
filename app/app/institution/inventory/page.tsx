@@ -21,6 +21,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { CrateIcon, TicketIcon } from "@/components/icons/ledger-icons";
+import { calculatePiecesToPlates, isPiecesUnit } from "@/lib/surplus-engine";
 
 interface InventoryItem {
   _id: string;
@@ -557,10 +558,17 @@ export default function InstitutionInventoryPage() {
 
                       {/* 3. Quantity */}
                       <td className="py-3 px-4 font-mono text-right font-bold text-stone-900">
-                        {item.quantity}{" "}
-                        <span className="text-xs font-sans font-normal text-stone-500">
-                          {item.unit}
-                        </span>
+                        <div>
+                          {item.quantity}{" "}
+                          <span className="text-xs font-sans font-normal text-stone-500">
+                            {item.unit}
+                          </span>
+                        </div>
+                        {isPiecesUnit(item.unit) && (
+                          <div className="text-[11px] font-sans font-medium text-emerald-700">
+                            ~{calculatePiecesToPlates(item.quantity, item.unit, item.category).plates} plates
+                          </div>
+                        )}
                       </td>
 
                       {/* 4. Prepared / Logged */}
