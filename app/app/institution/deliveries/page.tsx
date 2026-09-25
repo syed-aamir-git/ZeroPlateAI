@@ -21,6 +21,8 @@ import {
   ChevronUp,
 } from "lucide-react";
 
+import { getVehicleConfig, calculateDeliveryEtas } from "@/components/maps/delivery-route-map";
+
 const DeliveryRouteMap = dynamic(
   () => import("@/components/maps/delivery-route-map"),
   {
@@ -635,38 +637,63 @@ export default function InstitutionDeliveriesPage() {
                   </div>
 
                   {/* Live Food Delivery Tracking Alert for In-Transit Dispatches */}
-                  {(d.status === "accepted" || d.status === "picked_up") && (
-                    <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
-                      <div className="flex items-center gap-2">
-                        <span className="relative flex h-3 w-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                        </span>
-                        <div>
-                          <div className="font-bold text-stone-900 flex items-center gap-1.5">
-                            <span>
-                              {d.status === "accepted"
-                                ? "🛵 Delivery Partner Arriving for Pickup"
-                                : "🍲 Surplus Batch In Transit to NGO"}
+                  {(d.status === "accepted" || d.status === "picked_up") && (() => {
+                    const vConfig = getVehicleConfig(d.courier?.vehicleType);
+                    const etas = calculateDeliveryEtas(d.status, 18);
+
+                    return (
+                      <div className="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-xs space-y-2 shadow-2xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <span className="relative flex h-3 w-3 shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                             </span>
+                            <div>
+                              <div className="font-bold text-stone-900 flex items-center gap-1.5">
+                                <span>{vConfig.emoji}</span>
+                                <span>
+                                  {d.status === "accepted"
+                                    ? `Driver Arriving for Pickup (${vConfig.label})`
+                                    : `Surplus Batch In Transit to NGO (${vConfig.label})`}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-stone-600 mt-0.5">
+                                <span className="font-medium text-stone-800">{d.courier?.name || "Assigned Driver"}</span>
+                                {d.courier?.vehicleNumber ? ` • Plate: ${d.courier.vehicleNumber}` : ""}
+                                <span> • {vConfig.modelDesc}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-[11px] text-stone-600">
-                            {d.courier?.name ? `${d.courier.name} (${d.courier.vehicleType.replace("_", " ")})` : "Delivery Partner Assigned"}
-                            {d.courier?.vehicleNumber ? ` • Plate: ${d.courier.vehicleNumber}` : ""}
+
+                          {d.courier?.phone && (
+                            <a
+                              href={`tel:${d.courier.phone}`}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto shrink-0"
+                            >
+                              📞 Call Driver
+                            </a>
+                          )}
+                        </div>
+
+                        {/* Estimated Pickup & Drop-Off Timings */}
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-emerald-200/80 font-mono text-[11px]">
+                          <div className="bg-white/90 p-2 rounded border border-emerald-100">
+                            <div className="text-stone-500 text-[10px]">📍 Est. Kitchen Pickup:</div>
+                            <div className="font-bold text-amber-700 text-xs">
+                              {etas.isPickupDone ? "Collected ✓" : `${etas.pickupClockTime} (~${etas.pickupMins}m away)`}
+                            </div>
+                          </div>
+                          <div className="bg-white/90 p-2 rounded border border-emerald-100">
+                            <div className="text-stone-500 text-[10px]">🎯 Est. NGO Drop-off:</div>
+                            <div className="font-bold text-emerald-700 text-xs">
+                              {etas.isDropDone ? "Delivered ✓" : `${etas.dropClockTime} (~${etas.dropMins}m away)`}
+                            </div>
                           </div>
                         </div>
                       </div>
-
-                      {d.courier?.phone && (
-                        <a
-                          href={`tel:${d.courier.phone}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto"
-                        >
-                          📞 Call Driver
-                        </a>
-                      )}
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {isMapOpen && (
                     <div className="rounded-2xl overflow-hidden border border-stone-200 shadow-xs animate-in fade-in duration-200">

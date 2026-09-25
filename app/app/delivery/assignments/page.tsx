@@ -11,6 +11,8 @@ import {
 import { evaluateSurplusUrgency, calculatePiecesToPlates } from "@/lib/surplus-engine";
 import { Clock, Utensils, AlertTriangle, Star, CloudRain, Gauge } from "lucide-react";
 
+import { getVehicleConfig, calculateDeliveryEtas } from "@/components/maps/delivery-route-map";
+
 const DeliveryRouteMap = dynamic(
   () => import("@/components/maps/delivery-route-map"),
   {
@@ -541,133 +543,181 @@ export default function DeliveryAssignmentsPage() {
                 </div>
 
                 {/* Active Mission Directive (Displayed during accepted or picked_up) */}
-                {isActiveMission && (
-                  <div
-                    className={`p-3.5 rounded-[8px] border text-xs space-y-2 ${
-                      assignment.status === "accepted"
-                        ? "bg-[#D9A441]/10 border-[#D9A441]/50 text-[#F3EEE2]"
-                        : "bg-[#2F4B3A]/25 border-emerald-500/50 text-[#F3EEE2]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                        </span>
-                        <span className="font-mono-numeral text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                          {assignment.status === "accepted"
-                            ? "🛵 Mission Phase 1: Proceed to Pickup Point"
-                            : "🍲 Mission Phase 2: Proceed to NGO Drop-Off"}
+                {isActiveMission && (() => {
+                  const vConfig = getVehicleConfig(partner?.vehicleType);
+                  const missionEtas = calculateDeliveryEtas(assignment.status, 18);
+
+                  return (
+                    <div
+                      className={`p-3.5 rounded-[8px] border text-xs space-y-2.5 ${
+                        assignment.status === "accepted"
+                          ? "bg-[#D9A441]/10 border-[#D9A441]/50 text-[#F3EEE2]"
+                          : "bg-[#2F4B3A]/25 border-emerald-500/50 text-[#F3EEE2]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                          </span>
+                          <span className="font-mono-numeral text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                            <span>{vConfig.emoji}</span>
+                            <span>
+                              {assignment.status === "accepted"
+                                ? "Mission Phase 1: Proceed to Pickup Point"
+                                : "Mission Phase 2: Proceed to NGO Drop-Off"}
+                            </span>
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono-numeral text-stone-300 bg-[#1D1B17] px-2 py-0.5 rounded border border-[#3B362E] flex items-center gap-1">
+                          <span>{vConfig.label}</span>
+                          {partner?.vehicleNumber && <span className="text-amber-300">• {partner.vehicleNumber}</span>}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono-numeral text-stone-400 bg-[#1D1B17] px-2 py-0.5 rounded border border-[#3B362E]">
-                        GPS Active
-                      </span>
-                    </div>
 
-                    <div className="font-semibold text-sm">
-                      {assignment.status === "accepted"
-                        ? `Proceed to: ${assignment.pickup.name}`
-                        : `Proceed to: ${assignment.drop.name}`}
-                    </div>
+                      <div className="font-semibold text-sm">
+                        {assignment.status === "accepted"
+                          ? `Proceed to: ${assignment.pickup.name}`
+                          : `Proceed to: ${assignment.drop.name}`}
+                      </div>
 
-                    <div className="text-[11px] text-[#D4CBBF]">
-                      {assignment.status === "accepted"
-                        ? `Collect verified batch "${assignment.item.name}" (${assignment.item.quantity} ${assignment.item.unit}) from the donor facility.`
-                        : `Deliver batch "${assignment.item.name}" safely to the recipient shelter.`}
-                    </div>
-                  </div>
-                )}
+                      {/* Estimated Times of Pickup & Drop-Off */}
+                      <div className="grid grid-cols-2 gap-2 p-2 rounded bg-[#1D1B17]/90 border border-[#3B362E] font-mono-numeral text-[11px]">
+                        <div>
+                          <span className="text-[#9E9587] block text-[10px]">📍 Est. Pickup Time</span>
+                          <span className="font-bold text-amber-300">
+                            {missionEtas.isPickupDone ? "Collected ✓" : `${missionEtas.pickupClockTime} (~${missionEtas.pickupMins}m)`}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9E9587] block text-[10px]">🎯 Est. Drop-off Time</span>
+                          <span className="font-bold text-emerald-400">
+                            {missionEtas.isDropDone ? "Delivered ✓" : `${missionEtas.dropClockTime} (~${missionEtas.dropMins}m)`}
+                          </span>
+                        </div>
+                      </div>
 
-                {/* Pickup and Drop Details with Navigation Action Links */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                  {/* Pickup Point */}
-                  <div
-                    className={`p-3 rounded-[6px] space-y-2 transition-all border ${
-                      assignment.status === "accepted"
-                        ? "bg-[#2A241A] border-[#D9A441] shadow-sm"
-                        : "bg-[#24211C] border-[#3B362E]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-[#9E9587] text-[11px] font-mono-numeral uppercase">
-                      <span className="font-bold text-[#D9A441] flex items-center gap-1">
-                        <span>📍</span>
-                        <span>1. Pickup Point (Kitchen)</span>
-                      </span>
-                      {windowStart && windowEnd && (
-                        <span>
-                          {windowStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} –{" "}
-                          {windowEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      )}
+                      <div className="text-[11px] text-[#D4CBBF]">
+                        {assignment.status === "accepted"
+                          ? `Collect verified batch "${assignment.item.name}" (${assignment.item.quantity} ${assignment.item.unit}) from the donor facility.`
+                          : `Deliver batch "${assignment.item.name}" safely to the recipient shelter.`}
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-semibold text-sm text-[#F3EEE2]">{assignment.pickup.name}</div>
-                      <div className="text-[#D4CBBF] mt-0.5 leading-relaxed">{assignment.pickup.address}</div>
-                    </div>
-                    <div className="pt-1 flex items-center gap-2">
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                          assignment.pickup.address
-                        )}&travelmode=driving`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#D9A441]/20 hover:bg-[#D9A441]/30 border border-[#D9A441]/40 text-[#D9A441] text-[11px] font-mono-numeral transition-colors"
+                  );
+                })()}
+
+                {/* Pickup and Drop Details with Navigation Action Links & ETAs */}
+                {(() => {
+                  const missionEtas = calculateDeliveryEtas(assignment.status, 18);
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      {/* Pickup Point */}
+                      <div
+                        className={`p-3 rounded-[6px] space-y-2 transition-all border ${
+                          assignment.status === "accepted"
+                            ? "bg-[#2A241A] border-[#D9A441] shadow-sm"
+                            : "bg-[#24211C] border-[#3B362E]"
+                        }`}
                       >
-                        🧭 Navigate to Pickup
-                      </a>
-                    </div>
-                  </div>
+                        <div className="flex items-center justify-between text-[#9E9587] text-[11px] font-mono-numeral uppercase">
+                          <span className="font-bold text-[#D9A441] flex items-center gap-1">
+                            <span>📍</span>
+                            <span>1. Pickup Point (Kitchen)</span>
+                          </span>
+                          {windowStart && windowEnd && (
+                            <span>
+                              {windowStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} –{" "}
+                              {windowEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm text-[#F3EEE2]">{assignment.pickup.name}</div>
+                          <div className="text-[#D4CBBF] mt-0.5 leading-relaxed">{assignment.pickup.address}</div>
+                        </div>
 
-                  {/* Drop Point */}
-                  <div
-                    className={`p-3 rounded-[6px] space-y-2 transition-all border ${
-                      assignment.status === "picked_up"
-                        ? "bg-[#1E2922] border-emerald-500 shadow-sm"
-                        : "bg-[#24211C] border-[#3B362E]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-[#9E9587] text-[11px] font-mono-numeral uppercase">
-                      <span className="font-bold text-emerald-400 flex items-center gap-1">
-                        <span>🎯</span>
-                        <span>2. Drop Point (NGO Recipient)</span>
-                      </span>
-                      {assignment.drop.contactPhone && (
-                        <a
-                          href={`tel:${assignment.drop.contactPhone}`}
-                          className="text-[#D9A441] underline font-mono-numeral"
-                        >
-                          📞 Call NGO
-                        </a>
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm text-[#F3EEE2]">{assignment.drop.name}</div>
-                      <div className="text-[#D4CBBF] mt-0.5 leading-relaxed">{assignment.drop.address}</div>
-                    </div>
-                    <div className="pt-1 flex items-center gap-2">
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                          assignment.drop.address
-                        )}&travelmode=driving`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-400 text-[11px] font-mono-numeral transition-colors"
+                        {/* Pickup ETA Timing Display */}
+                        <div className="text-[11px] font-mono-numeral text-amber-300/90 bg-[#1D1B17] px-2 py-1 rounded border border-[#3B362E] flex items-center justify-between">
+                          <span>Est. Pickup:</span>
+                          <span className="font-bold">
+                            {missionEtas.isPickupDone ? "Collected ✓" : `${missionEtas.pickupClockTime} (~${missionEtas.pickupMins}m away)`}
+                          </span>
+                        </div>
+
+                        <div className="pt-1 flex items-center gap-2">
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                              assignment.pickup.address
+                            )}&travelmode=driving`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#D9A441]/20 hover:bg-[#D9A441]/30 border border-[#D9A441]/40 text-[#D9A441] text-[11px] font-mono-numeral transition-colors"
+                          >
+                            🧭 Navigate to Pickup
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Drop Point */}
+                      <div
+                        className={`p-3 rounded-[6px] space-y-2 transition-all border ${
+                          assignment.status === "picked_up"
+                            ? "bg-[#1E2922] border-emerald-500 shadow-sm"
+                            : "bg-[#24211C] border-[#3B362E]"
+                        }`}
                       >
-                        🧭 Navigate to Drop
-                      </a>
-                      {assignment.drop.contactPhone && (
-                        <a
-                          href={`tel:${assignment.drop.contactPhone}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 border border-[#3B362E] text-[#F3EEE2] text-[11px] font-mono-numeral transition-colors"
-                        >
-                          📞 {assignment.drop.contactPhone}
-                        </a>
-                      )}
+                        <div className="flex items-center justify-between text-[#9E9587] text-[11px] font-mono-numeral uppercase">
+                          <span className="font-bold text-emerald-400 flex items-center gap-1">
+                            <span>🎯</span>
+                            <span>2. Drop Point (NGO Recipient)</span>
+                          </span>
+                          {assignment.drop.contactPhone && (
+                            <a
+                              href={`tel:${assignment.drop.contactPhone}`}
+                              className="text-[#D9A441] underline font-mono-numeral"
+                            >
+                              📞 Call NGO
+                            </a>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm text-[#F3EEE2]">{assignment.drop.name}</div>
+                          <div className="text-[#D4CBBF] mt-0.5 leading-relaxed">{assignment.drop.address}</div>
+                        </div>
+
+                        {/* Drop ETA Timing Display */}
+                        <div className="text-[11px] font-mono-numeral text-emerald-400/90 bg-[#1D1B17] px-2 py-1 rounded border border-[#3B362E] flex items-center justify-between">
+                          <span>Est. Drop-off:</span>
+                          <span className="font-bold">
+                            {missionEtas.isDropDone ? "Delivered ✓" : `${missionEtas.dropClockTime} (~${missionEtas.dropMins}m away)`}
+                          </span>
+                        </div>
+
+                        <div className="pt-1 flex items-center gap-2">
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                              assignment.drop.address
+                            )}&travelmode=driving`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-400 text-[11px] font-mono-numeral transition-colors"
+                          >
+                            🧭 Navigate to Drop
+                          </a>
+                          {assignment.drop.contactPhone && (
+                            <a
+                              href={`tel:${assignment.drop.contactPhone}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 border border-[#3B362E] text-[#F3EEE2] text-[11px] font-mono-numeral transition-colors"
+                            >
+                              📞 {assignment.drop.contactPhone}
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* Interactive Leaflet Route Map Toggle & View */}
                 <div className="space-y-2">

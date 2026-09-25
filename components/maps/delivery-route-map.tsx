@@ -46,34 +46,175 @@ export interface DeliveryRouteMapProps {
   onLocationUpdate?: (location: { lat: number; lng: number; heading?: number; speed?: number }) => void;
 }
 
+export interface VehicleConfig {
+  typeKey: string;
+  label: string;
+  modelDesc: string;
+  emoji: string;
+  svg: string;
+}
+
+export function getVehicleConfig(type?: string): VehicleConfig {
+  const norm = (type || "").toLowerCase().trim();
+
+  if (norm === "four_wheeler" || norm === "car") {
+    return {
+      typeKey: "four_wheeler",
+      label: "Four-Wheeler (Car)",
+      modelDesc: "Compact Delivery Car / Hatchback",
+      emoji: "🚗",
+      svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM7.5 15c-.83 0-1.5-.67-1.5-1.5S6.67 12 7.5 12s1.5.67 1.5 1.5S8.33 15 7.5 15zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+      </svg>`,
+    };
+  }
+
+  if (norm === "van") {
+    return {
+      typeKey: "van",
+      label: "Delivery Cargo Van",
+      modelDesc: "High-Capacity Cargo Van",
+      emoji: "🚐",
+      svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20 8h-3V4H1v13h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9 1.96 2.5H17V9.5h2.5zm-2 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+      </svg>`,
+    };
+  }
+
+  if (norm === "electric_cargo" || norm === "ev") {
+    return {
+      typeKey: "electric_cargo",
+      label: "Electric Cargo EV",
+      modelDesc: "Zero-Emission Electric Scooter / EV Loader",
+      emoji: "⚡🛵",
+      svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 20c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm0-4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm10 4.5c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm0-4.5c-.83 0-1.5-.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm-5-3.5 2-4h-3V4l-4 6h3l-2 5h4z"/>
+      </svg>`,
+    };
+  }
+
+  if (norm === "three_wheeler" || norm === "auto") {
+    return {
+      typeKey: "three_wheeler",
+      label: "Three-Wheeler / Auto",
+      modelDesc: "Commercial Cargo Three-Wheeler",
+      emoji: "🛺",
+      svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 12h-2V7.5c0-.83-.67-1.5-1.5-1.5H7.5C6.67 6 6 6.67 6 7.5V12H4c-1.1 0-2 .9-2 2v2h2c0 1.66 1.34 3 3 3s3-1.34 3-3h4c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-2c0-1.1-.9-2-2-2zm-12 5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm10 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM7.5 8h8v3h-8V8z"/>
+      </svg>`,
+    };
+  }
+
+  // Default: Two-Wheeler (Motorcycle / Scooter)
+  return {
+    typeKey: "two_wheeler",
+    label: "Two-Wheeler (Scooter/Bike)",
+    modelDesc: "High-Agility Logistics Scooter / Motorcycle",
+    emoji: "🛵",
+    svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 7c0-1.1-.9-2-2-2h-3v2h3v2.65L13.52 14H10V9H6c-2.21 0-4 1.79-4 4v3h2c0 1.66 1.34 3 3 3s3-1.34 3-3h3.5l4-5.5H19V7zm-12 11c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 0c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm0-4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/>
+    </svg>`,
+  };
+}
+
+export function calculateDeliveryEtas(
+  status: string,
+  totalDurationMins: number = 18
+) {
+  const now = new Date();
+
+  const formatClock = (d: Date) =>
+    d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  if (status === "accepted") {
+    // Partner is on the way to pick up from donor kitchen
+    const pickupMins = Math.max(3, Math.round(totalDurationMins * 0.4));
+    const pickupDate = new Date(now.getTime() + pickupMins * 60000);
+
+    const dropMins = pickupMins + totalDurationMins;
+    const dropDate = new Date(now.getTime() + dropMins * 60000);
+
+    return {
+      isPickupDone: false,
+      isDropDone: false,
+      pickupMins,
+      pickupClockTime: formatClock(pickupDate),
+      dropMins,
+      dropClockTime: formatClock(dropDate),
+    };
+  }
+
+  if (status === "picked_up") {
+    // Food has already been picked up; courier is en route to NGO
+    const dropMins = Math.max(2, Math.round(totalDurationMins * 0.65));
+    const dropDate = new Date(now.getTime() + dropMins * 60000);
+
+    return {
+      isPickupDone: true,
+      isDropDone: false,
+      pickupMins: 0,
+      pickupClockTime: "Collected ✓",
+      dropMins,
+      dropClockTime: formatClock(dropDate),
+    };
+  }
+
+  if (status === "delivered" || status === "confirmed") {
+    return {
+      isPickupDone: true,
+      isDropDone: true,
+      pickupMins: 0,
+      pickupClockTime: "Completed ✓",
+      dropMins: 0,
+      dropClockTime: "Delivered ✓",
+    };
+  }
+
+  // Assigned / default
+  const pMins = Math.max(4, Math.round(totalDurationMins * 0.4));
+  const pDate = new Date(now.getTime() + pMins * 60000);
+  const dDate = new Date(now.getTime() + (pMins + totalDurationMins) * 60000);
+
+  return {
+    isPickupDone: false,
+    isDropDone: false,
+    pickupMins: pMins,
+    pickupClockTime: formatClock(pDate),
+    dropMins: pMins + totalDurationMins,
+    dropClockTime: formatClock(dDate),
+  };
+}
+
 function createFoodDeliveryCourierIcon(
   L: typeof LeafletType,
   options: {
     name?: string;
     vehicleType?: string;
+    vehicleNumber?: string;
     heading?: number;
     role?: string;
   }
 ) {
-  const isCar = options.vehicleType === "four_wheeler" || options.vehicleType === "van";
-  const vehicleEmoji = isCar ? "🚗" : "🛵";
+  const vehicleConfig = getVehicleConfig(options.vehicleType);
   const label = options.name || (options.role === "driver" ? "You (Driver)" : "Delivery Partner");
 
   const html = `
-    <div class="relative flex items-center justify-center select-none" style="width: 48px; height: 48px; cursor: pointer;">
-      <!-- Glowing radar ripple ring -->
+    <div class="relative flex items-center justify-center select-none" style="width: 52px; height: 52px; cursor: pointer;">
+      <!-- Glowing radar ripple rings (Swiggy / Zomato live style) -->
       <span class="absolute -inset-2 rounded-full animate-ping opacity-75 bg-emerald-500 pointer-events-none"></span>
       <span class="absolute -inset-1 rounded-full animate-pulse opacity-50 bg-emerald-400 pointer-events-none"></span>
       
-      <!-- High contrast disc with vehicle icon -->
-      <div class="relative z-10 w-11 h-11 rounded-full flex items-center justify-center text-white shadow-2xl border-2 border-white bg-[#059669] hover:scale-110 transition-transform">
-        <span class="text-xl leading-none filter drop-shadow">${vehicleEmoji}</span>
+      <!-- Disc displaying high-fidelity vector model of the vehicle -->
+      <div class="relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-2xl border-2 border-white bg-gradient-to-br from-emerald-600 to-emerald-800 hover:scale-110 transition-transform">
+        <div class="w-6 h-6 flex items-center justify-center drop-shadow-md text-white">
+          ${vehicleConfig.svg}
+        </div>
       </div>
       
-      <!-- Food delivery driver name & live status pill -->
+      <!-- Driver name & vehicle model live pill badge -->
       <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-mono-numeral font-bold text-white shadow-lg bg-[#1D1B17] border border-emerald-500/70 flex items-center gap-1.5 z-20">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-        <span>${label}</span>
+        <span>${vehicleConfig.emoji} ${label}</span>
       </div>
     </div>
   `;
@@ -81,8 +222,8 @@ function createFoodDeliveryCourierIcon(
   return L.divIcon({
     html,
     className: "zeroplate-courier-live-icon",
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
+    iconSize: [52, 52],
+    iconAnchor: [26, 26],
     popupAnchor: [0, -28],
   });
 }
@@ -115,45 +256,73 @@ export default function DeliveryRouteMap({
   const isActiveDelivery = status === "accepted" || status === "picked_up";
   const driverName = courierLocation?.name || courierInfo?.name || "Assigned Driver";
   const vehicleType = courierLocation?.vehicleType || courierInfo?.vehicleType || "two_wheeler";
+  const vehicleNumber = courierLocation?.vehicleNumber || courierInfo?.vehicleNumber || "";
+  const vehicleConfig = getVehicleConfig(vehicleType);
+
+  // Compute live estimated time of pickup and time of drop-off
+  const etas = calculateDeliveryEtas(status, routeInfo?.durationMins || 18);
 
   // Build Popup Content for the live Courier Marker
   const buildCourierPopupContent = useCallback(
     (posLat: number, posLng: number) => {
-      const isCar = vehicleType === "four_wheeler" || vehicleType === "van";
-      const vehicleDesc = isCar ? "Delivery Van" : "Two-Wheeler / Scooter";
       const statusText =
         status === "accepted"
           ? "En Route to Pickup Kitchen"
           : status === "picked_up"
           ? "En Route to Recipient Shelter"
-          : "Active Dispatch";
+          : "Active Logistics Corridor";
 
       return `
-        <div class="p-3 text-xs space-y-1.5 min-w-[200px]">
+        <div class="p-3 text-xs space-y-2 min-w-[220px]">
           <div class="flex items-center justify-between border-b border-stone-700/50 pb-1">
             <span class="font-mono-numeral text-[10px] uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-              Live GPS Tracking
+              Live Delivery GPS
             </span>
-            <span class="text-[10px] text-stone-400 font-mono-numeral">Just now</span>
+            <span class="text-[10px] text-stone-400 font-mono-numeral">Real-time</span>
           </div>
-          <div class="font-bold text-sm text-[#F3EEE2] flex items-center gap-1.5">
-            <span>${driverName}</span>
-            <span class="text-[10px] font-normal text-stone-400">(${vehicleDesc})</span>
+
+          <div>
+            <div class="font-bold text-sm text-[#F3EEE2] flex items-center gap-1.5">
+              <span>${driverName}</span>
+              ${vehicleNumber ? `<span class="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-mono text-[10px] border border-amber-400/40">${vehicleNumber}</span>` : ""}
+            </div>
+            <div class="text-[11px] text-emerald-300 font-medium mt-0.5 flex items-center gap-1">
+              <span>${vehicleConfig.emoji}</span>
+              <span>${vehicleConfig.modelDesc}</span>
+            </div>
           </div>
-          <div class="text-xs text-amber-300 font-medium">${statusText}</div>
+
+          <div class="bg-stone-900/90 rounded p-2 border border-stone-700/50 space-y-1 text-[11px]">
+            <div class="flex items-center justify-between">
+              <span class="text-stone-400 font-mono-numeral">📍 Est. Pickup:</span>
+              <span class="font-semibold text-amber-300 font-mono-numeral">
+                ${etas.isPickupDone ? "Collected ✓" : `${etas.pickupClockTime} (~${etas.pickupMins}m)`}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-stone-400 font-mono-numeral">🎯 Est. Drop-off:</span>
+              <span class="font-semibold text-emerald-400 font-mono-numeral">
+                ${etas.isDropDone ? "Delivered ✓" : `${etas.dropClockTime} (~${etas.dropMins}m)`}
+              </span>
+            </div>
+          </div>
+
+          <div class="text-xs text-stone-300 font-medium">${statusText}</div>
+
           ${
             courierInfo?.phone
-              ? `<div class="pt-1"><a href="tel:${courierInfo.phone}" class="text-emerald-400 font-mono-numeral underline">📞 Call Driver: ${courierInfo.phone}</a></div>`
+              ? `<div class="pt-1"><a href="tel:${courierInfo.phone}" class="inline-flex items-center gap-1 text-emerald-400 font-mono-numeral underline">📞 Call Driver: ${courierInfo.phone}</a></div>`
               : ""
           }
-          <div class="text-[10px] text-stone-400 font-mono-numeral pt-0.5">
+
+          <div class="text-[10px] text-stone-500 font-mono-numeral pt-0.5">
             Coordinates: ${posLat.toFixed(4)}, ${posLng.toFixed(4)}
           </div>
         </div>
       `;
     },
-    [driverName, vehicleType, status, courierInfo?.phone]
+    [driverName, vehicleNumber, vehicleConfig, status, etas, courierInfo?.phone]
   );
 
   const handleMapReady = useCallback(
@@ -260,6 +429,9 @@ export default function DeliveryRouteMap({
           <div class="font-mono-numeral text-[10px] uppercase tracking-wider text-[#D9A441] font-bold">1. Origin — Donor Kitchen</div>
           <div class="font-semibold text-sm text-[#F3EEE2]">${pickup.name}</div>
           <div class="text-[#D4CBBF] leading-tight">${pickup.address}</div>
+          <div class="pt-1 text-[11px] font-mono-numeral text-amber-300">
+            Est. Pickup: ${etas.pickupClockTime}
+          </div>
           ${
             pickup.contactPhone
               ? `<div class="pt-1"><a href="tel:${pickup.contactPhone}" class="text-[#D9A441] font-mono-numeral underline">📞 Call Kitchen: ${pickup.contactPhone}</a></div>`
@@ -283,6 +455,9 @@ export default function DeliveryRouteMap({
           <div class="font-mono-numeral text-[10px] uppercase tracking-wider text-emerald-400 font-bold">2. Destination — Recipient NGO</div>
           <div class="font-semibold text-sm text-[#F3EEE2]">${drop.name}</div>
           <div class="text-[#D4CBBF] leading-tight">${drop.address}</div>
+          <div class="pt-1 text-[11px] font-mono-numeral text-emerald-300">
+            Est. Drop-off: ${etas.dropClockTime}
+          </div>
           ${
             drop.contactPhone
               ? `<div class="pt-1"><a href="tel:${drop.contactPhone}" class="text-emerald-400 font-mono-numeral underline">📞 Call NGO: ${drop.contactPhone}</a></div>`
@@ -346,14 +521,14 @@ export default function DeliveryRouteMap({
       }).addTo(map);
       polylineRef.current = polyline;
 
-      // 4. Live Food Delivery Courier Marker (Active during accepted or picked_up)
+      // 4. Live Food Delivery Courier Marker with vehicle-specific model icon
       if (isActiveDelivery) {
         let initialPos: [number, number];
 
         if (courierLocation?.lat && courierLocation?.lng) {
           initialPos = [courierLocation.lat, courierLocation.lng];
         } else {
-          // Default starting offset along the road
+          // Starting offset along the real road
           const ratio = status === "picked_up" ? 0.45 : 0.15;
           const idx = Math.min(
             routePoints.length - 1,
@@ -367,6 +542,7 @@ export default function DeliveryRouteMap({
         const courierIcon = createFoodDeliveryCourierIcon(L, {
           name: driverName,
           vehicleType,
+          vehicleNumber,
           role,
         });
 
@@ -381,7 +557,7 @@ export default function DeliveryRouteMap({
         courierMarkerRef.current = marker;
       }
 
-      // 5. Fit bounds with padding to include pickup, drop, and courier
+      // 5. Fit bounds to contain all points
       const boundsCoords: [number, number][] = [pickupCoord, dropCoord];
       if (courierLocation?.lat && courierLocation?.lng) {
         boundsCoords.push([courierLocation.lat, courierLocation.lng]);
@@ -406,13 +582,15 @@ export default function DeliveryRouteMap({
       courierLocation,
       driverName,
       vehicleType,
+      vehicleNumber,
       role,
       urgencyTier,
+      etas,
       buildCourierPopupContent,
     ]
   );
 
-  // Sync marker whenever external courierLocation prop changes (e.g., from server polling or GPS watch)
+  // Sync marker when external courierLocation changes
   useEffect(() => {
     if (!courierLocation || !courierLocation.lat || !courierLocation.lng) return;
 
@@ -424,15 +602,13 @@ export default function DeliveryRouteMap({
         buildCourierPopupContent(courierLocation.lat, courierLocation.lng)
       );
 
-      // Optionally pan to keep courier visible if map exists
       if (mapRef.current && !mapRef.current.getBounds().contains([courierLocation.lat, courierLocation.lng])) {
         mapRef.current.panTo([courierLocation.lat, courierLocation.lng], { animate: true });
       }
     }
   }, [courierLocation, buildCourierPopupContent]);
 
-  // Fallback realistic smooth simulated movement along real road points
-  // if courierLocation is not actively updating from GPS
+  // Fallback smooth simulation along real road if live GPS not updating
   useEffect(() => {
     if (!isActiveDelivery) return;
 
@@ -440,7 +616,6 @@ export default function DeliveryRouteMap({
       const points = routePointsRef.current;
       if (!points || points.length < 2) return;
 
-      // If we don't have external GPS updates, advance along the road
       const totalSteps = points.length;
       let nextStep = simStepRef.current + 1;
       if (nextStep >= totalSteps) {
@@ -479,7 +654,6 @@ export default function DeliveryRouteMap({
   const initialLat = pickup.lat && !isNaN(pickup.lat) ? pickup.lat : 12.9716;
   const initialLng = pickup.lng && !isNaN(pickup.lng) ? pickup.lng : 77.5946;
 
-  // Directions destination depends on current stage
   const targetDestination = status === "accepted" ? pickup : drop;
   const gmapsDirectionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
     currentCourierPos ? `${currentCourierPos.lat},${currentCourierPos.lng}` : pickup.address
@@ -497,28 +671,63 @@ export default function DeliveryRouteMap({
         onMapReady={handleMapReady}
       />
 
-      {/* Food Delivery App-style Live Delivery Banner Overlay */}
+      {/* Live Food Delivery Tracking HUD with Estimated Pickup & Drop-off Times */}
       {isActiveDelivery && (
-        <div className="absolute top-3 left-3 right-14 sm:right-auto z-[400] bg-[#1D1B17]/95 backdrop-blur-md border border-[#3B362E] p-2.5 rounded-[8px] shadow-xl max-w-sm">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-            <span className="font-mono-numeral text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-              {status === "accepted" ? "🛵 Driver Arriving at Kitchen" : "🍲 Food In Transit to NGO"}
+        <div className="absolute top-3 left-3 right-16 sm:right-auto z-[400] bg-[#1D1B17]/95 backdrop-blur-md border border-[#3B362E] p-3 rounded-[8px] shadow-xl max-w-sm">
+          {/* Header with Vehicle Type Badge & Pulse */}
+          <div className="flex items-center justify-between gap-2 border-b border-[#3B362E]/60 pb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+              <span className="font-mono-numeral text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                <span>{vehicleConfig.emoji}</span>
+                <span>{status === "accepted" ? "En Route to Pickup" : "In Transit to NGO"}</span>
+              </span>
+            </div>
+            <span className="text-[10px] font-mono-numeral text-stone-300 bg-stone-800 px-1.5 py-0.5 rounded border border-[#3B362E]">
+              {vehicleConfig.label}
             </span>
           </div>
 
-          <div className="text-xs text-[#F3EEE2] font-semibold mt-1 truncate">
+          {/* Delivery Points Details */}
+          <div className="text-xs text-[#F3EEE2] font-semibold mt-1.5 truncate">
             {status === "accepted" ? `Pickup: ${pickup.name}` : `Destination: ${drop.name}`}
           </div>
 
-          <div className="flex items-center justify-between text-[11px] font-mono-numeral text-[#D4CBBF] mt-1 pt-1 border-t border-[#3B362E]/60">
+          {/* Estimated Pickup & Drop-Off Timings Card */}
+          <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-[#3B362E]/60 text-[11px] font-mono-numeral">
+            <div className="bg-[#24211C] p-1.5 rounded border border-[#3B362E]">
+              <div className="text-stone-400 text-[10px]">📍 Pickup Time</div>
+              <div className="font-bold text-amber-300 text-xs">
+                {etas.isPickupDone ? "Collected ✓" : etas.pickupClockTime}
+              </div>
+              {!etas.isPickupDone && (
+                <div className="text-[10px] text-stone-500">~{etas.pickupMins}m away</div>
+              )}
+            </div>
+
+            <div className="bg-[#24211C] p-1.5 rounded border border-[#3B362E]">
+              <div className="text-stone-400 text-[10px]">🎯 Drop-off Time</div>
+              <div className="font-bold text-emerald-400 text-xs">
+                {etas.isDropDone ? "Delivered ✓" : etas.dropClockTime}
+              </div>
+              {!etas.isDropDone && (
+                <div className="text-[10px] text-stone-500">~{etas.dropMins}m away</div>
+              )}
+            </div>
+          </div>
+
+          {/* Distance & GPS indicator */}
+          <div className="flex items-center justify-between text-[10px] font-mono-numeral text-[#D4CBBF] mt-2 pt-1 border-t border-[#3B362E]/40">
             <span>
-              {routeInfo ? `${routeInfo.distanceKm} km (~${routeInfo.durationMins} mins)` : "Live Route Active"}
+              {routeInfo ? `${routeInfo.distanceKm} km total corridor` : "Road corridor computed"}
             </span>
-            <span className="text-emerald-400 font-medium">GPS Live</span>
+            <span className="text-emerald-400 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live Telemetry
+            </span>
           </div>
         </div>
       )}
@@ -529,7 +738,7 @@ export default function DeliveryRouteMap({
           type="button"
           onClick={handleRecenter}
           className="px-2 py-1 text-[11px] font-mono-numeral text-[#F3EEE2] hover:text-[#D9A441] transition-colors cursor-pointer"
-          title="Recenter full corridor view"
+          title="Recenter corridor view"
         >
           ⤢ Fit
         </button>
@@ -546,14 +755,14 @@ export default function DeliveryRouteMap({
       </div>
 
       {/* Footer Corridor Stats */}
-      <div className="absolute bottom-2 left-2 z-[400] bg-[#1D1B17]/90 backdrop-blur-sm border border-[#3B362E] px-2.5 py-1 rounded-[4px] text-[11px] font-mono-numeral text-[#9E9587] flex items-center gap-2">
+      <div className="absolute bottom-2 left-2 z-[400] bg-[#1D1B17]/90 backdrop-blur-sm border border-[#3B362E] px-2.5 py-1 rounded-[4px] text-[11px] font-mono-numeral text-[#9E9587] flex items-center gap-2 flex-wrap">
         <span
           className={`w-1.5 h-1.5 rounded-full ${
             urgencyTier === "critical_red" ? "bg-red-500 animate-ping" : "bg-[#86C29B] animate-pulse"
           }`}
         />
         <span className="text-[#F3EEE2] font-semibold">
-          {urgencyTier === "critical_red" ? "🔴 Critical Priority" : "Real-Road Corridor"}
+          {vehicleConfig.emoji} {vehicleConfig.label}
         </span>
         <span>•</span>
         <span>{routeInfo ? `${routeInfo.distanceKm} km` : "Active Line"}</span>

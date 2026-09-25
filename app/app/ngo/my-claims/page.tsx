@@ -24,7 +24,7 @@ import {
   BarChart3,
   Sparkles,
 } from "lucide-react";
-import DeliveryRouteMap from "@/components/maps/delivery-route-map";
+import DeliveryRouteMap, { getVehicleConfig, calculateDeliveryEtas } from "@/components/maps/delivery-route-map";
 
 interface ClaimRecord {
   _id: string;
@@ -678,42 +678,64 @@ export default function NgoMyClaimsPage() {
                                 </span>
                               </div>
                               {/* Live Food Delivery Tracking Alert (Zomato/Swiggy style for NGO) */}
-                              {(claim.deliveryStatus === "accepted" || claim.deliveryStatus === "picked_up") && (
-                                <div className="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                                  <div className="flex items-center gap-2.5">
-                                    <span className="relative flex h-3 w-3 shrink-0">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                                    </span>
-                                    <div>
-                                      <div className="font-bold text-stone-900 text-sm flex items-center gap-2">
-                                        <span>
-                                          {claim.deliveryStatus === "accepted"
-                                            ? "🛵 Driver En Route to Donor Kitchen"
-                                            : "🍲 Food is On The Way to Your Shelter!"}
+                              {(claim.deliveryStatus === "accepted" || claim.deliveryStatus === "picked_up") && (() => {
+                                const vConfig = getVehicleConfig(claim.courier?.vehicleType);
+                                const etas = calculateDeliveryEtas(claim.deliveryStatus, 18);
+
+                                return (
+                                  <div className="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-xs space-y-2.5 shadow-2xs">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                      <div className="flex items-center gap-2.5">
+                                        <span className="relative flex h-3 w-3 shrink-0">
+                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                                         </span>
+                                        <div>
+                                          <div className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                                            <span>{vConfig.emoji}</span>
+                                            <span>
+                                              {claim.deliveryStatus === "accepted"
+                                                ? `Driver En Route to Donor Kitchen (${vConfig.label})`
+                                                : `Food En Route to Your Shelter! (${vConfig.label})`}
+                                            </span>
+                                          </div>
+                                          <div className="text-xs text-stone-600 mt-0.5">
+                                            <span className="font-medium text-stone-800">{claim.courier?.name || "Assigned Driver"}</span>
+                                            {claim.courier?.vehicleNumber ? ` • Plate: ${claim.courier.vehicleNumber}` : ""}
+                                            {" • Bringing "}
+                                            <strong className="text-stone-800">{claim.itemName} ({claim.quantity} {claim.unit})</strong>
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="text-xs text-stone-600 mt-0.5">
-                                        {claim.courier?.name
-                                          ? `${claim.courier.name} (${claim.courier.vehicleType.replace("_", " ")})`
-                                          : "Assigned Delivery Partner"}
-                                        {claim.courier?.vehicleNumber ? ` • Plate: ${claim.courier.vehicleNumber}` : ""}
-                                        {" — Bringing "}
-                                        <strong className="text-stone-800">{claim.itemName} ({claim.quantity} {claim.unit})</strong>
+
+                                      {claim.courier?.phone && (
+                                        <a
+                                          href={`tel:${claim.courier.phone}`}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto shrink-0"
+                                        >
+                                          📞 Call Driver: {claim.courier.phone}
+                                        </a>
+                                      )}
+                                    </div>
+
+                                    {/* Estimated Timings of Pickup & Drop-Off */}
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-emerald-200/80 font-mono text-[11px]">
+                                      <div className="bg-white/90 p-2 rounded border border-emerald-100">
+                                        <div className="text-stone-500 text-[10px]">📍 Pickup from Kitchen:</div>
+                                        <div className="font-bold text-amber-700 text-xs">
+                                          {etas.isPickupDone ? "Collected from Kitchen ✓" : `${etas.pickupClockTime} (~${etas.pickupMins}m away)`}
+                                        </div>
+                                      </div>
+                                      <div className="bg-white/90 p-2 rounded border border-emerald-100">
+                                        <div className="text-stone-500 text-[10px]">🎯 Est. Arrival at Shelter:</div>
+                                        <div className="font-bold text-emerald-700 text-xs">
+                                          {etas.isDropDone ? "Delivered ✓" : `${etas.dropClockTime} (~${etas.dropMins}m away)`}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-
-                                  {claim.courier?.phone && (
-                                    <a
-                                      href={`tel:${claim.courier.phone}`}
-                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto shrink-0"
-                                    >
-                                      📞 Call Driver: {claim.courier.phone}
-                                    </a>
-                                  )}
-                                </div>
-                              )}
+                                );
+                              })()}
 
                               <div className="rounded-2xl overflow-hidden border border-stone-200 shadow-xs bg-white">
                                 <DeliveryRouteMap
