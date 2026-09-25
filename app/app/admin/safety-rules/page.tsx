@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { ShieldCheckIcon, SettingsIcon } from "@/components/icons/ledger-icons";
-import { CheckCircle2, ShieldAlert, Sliders, Info } from "lucide-react";
+import { ShieldCheckIcon } from "@/components/icons/ledger-icons";
+import { CheckCircle2, ShieldAlert, Sliders, AlertCircle } from "lucide-react";
 
 interface SafetyRulesConfig {
   _id?: string;
@@ -18,6 +18,26 @@ interface SafetyRulesConfig {
     packaged: number;
   };
   updatedAt?: string;
+}
+
+const LIMITS = {
+  cookedFoodMaxHours: { min: 0, max: 72, label: "Cooked Food Max Age" },
+  cookedFoodWindowCutoffHours: { min: 0, max: 72, label: "Pickup Window Cutoff" },
+  dairyBufferHours: { min: 0, max: 72, label: "Dairy Buffer Window" },
+  cooked_food: { min: 0, max: 72, label: "Cooked Food" },
+  dairy: { min: 0, max: 168, label: "Dairy" },
+  bakery: { min: 0, max: 168, label: "Bakery" },
+  raw_produce: { min: 0, max: 336, label: "Produce" },
+  packaged: { min: 0, max: 720, label: "Packaged" },
+} as const;
+
+function getValidationError(value: string, min: number, max: number): string | null {
+  if (value.trim() === "") return "Value cannot be empty";
+  const num = Number(value);
+  if (isNaN(num)) return "Must be a valid number";
+  if (num < min) return `Cannot be less than ${min}h`;
+  if (num > max) return `Invalid: Exceeds max limit (${max}h)`;
+  return null;
 }
 
 export default function AdminSafetyRulesPage() {
@@ -37,6 +57,22 @@ export default function AdminSafetyRulesPage() {
     raw_produce: "24",
     packaged: "48",
   });
+
+  // Real-time validations
+  const errors = React.useMemo(() => {
+    return {
+      cookedFoodMaxHours: getValidationError(cookedFoodMaxHours, LIMITS.cookedFoodMaxHours.min, LIMITS.cookedFoodMaxHours.max),
+      cookedFoodWindowCutoffHours: getValidationError(cookedFoodWindowCutoffHours, LIMITS.cookedFoodWindowCutoffHours.min, LIMITS.cookedFoodWindowCutoffHours.max),
+      dairyBufferHours: getValidationError(dairyBufferHours, LIMITS.dairyBufferHours.min, LIMITS.dairyBufferHours.max),
+      cooked_food: getValidationError(expiryThresholds.cooked_food, LIMITS.cooked_food.min, LIMITS.cooked_food.max),
+      dairy: getValidationError(expiryThresholds.dairy, LIMITS.dairy.min, LIMITS.dairy.max),
+      bakery: getValidationError(expiryThresholds.bakery, LIMITS.bakery.min, LIMITS.bakery.max),
+      raw_produce: getValidationError(expiryThresholds.raw_produce, LIMITS.raw_produce.min, LIMITS.raw_produce.max),
+      packaged: getValidationError(expiryThresholds.packaged, LIMITS.packaged.min, LIMITS.packaged.max),
+    };
+  }, [cookedFoodMaxHours, cookedFoodWindowCutoffHours, dairyBufferHours, expiryThresholds]);
+
+  const isFormInvalid = Object.values(errors).some((err) => err !== null);
 
   const fetchRules = React.useCallback(async () => {
     try {
@@ -70,6 +106,10 @@ export default function AdminSafetyRulesPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isFormInvalid) {
+      setMessage({ type: "error", text: "Please correct invalid fields exceeding allowed limits before saving." });
+      return;
+    }
     setSaving(true);
     setMessage(null);
 
@@ -77,53 +117,11 @@ export default function AdminSafetyRulesPage() {
     const numCutoff = Number(cookedFoodWindowCutoffHours);
     const numDairy = Number(dairyBufferHours);
 
-    if (isNaN(numCooked) || numCooked < 0 || numCooked > 72) {
-      setMessage({ type: "error", text: "Cooked food max age must be between 0 and 72 hours." });
-      setSaving(false);
-      return;
-    }
-    if (isNaN(numCutoff) || numCutoff < 0 || numCutoff > 72) {
-      setMessage({ type: "error", text: "Pickup window cutoff must be between 0 and 72 hours." });
-      setSaving(false);
-      return;
-    }
-    if (isNaN(numDairy) || numDairy < 0 || numDairy > 72) {
-      setMessage({ type: "error", text: "Dairy buffer window must be between 0 and 72 hours." });
-      setSaving(false);
-      return;
-    }
-
     const cf = Number(expiryThresholds.cooked_food);
     const dy = Number(expiryThresholds.dairy);
     const bk = Number(expiryThresholds.bakery);
     const rp = Number(expiryThresholds.raw_produce);
     const pk = Number(expiryThresholds.packaged);
-
-    if (isNaN(cf) || cf < 0 || cf > 72) {
-      setMessage({ type: "error", text: "Cooked food warning threshold must be between 0 and 72 hours." });
-      setSaving(false);
-      return;
-    }
-    if (isNaN(dy) || dy < 0 || dy > 168) {
-      setMessage({ type: "error", text: "Dairy warning threshold must be between 0 and 168 hours." });
-      setSaving(false);
-      return;
-    }
-    if (isNaN(bk) || bk < 0 || bk > 168) {
-      setMessage({ type: "error", text: "Bakery warning threshold must be between 0 and 168 hours." });
-      setSaving(false);
-      return;
-    }
-    if (isNaN(rp) || rp < 0 || rp > 336) {
-      setMessage({ type: "error", text: "Produce warning threshold must be between 0 and 336 hours." });
-      setSaving(false);
-      return;
-    }
-    if (isNaN(pk) || pk < 0 || pk > 720) {
-      setMessage({ type: "error", text: "Packaged warning threshold must be between 0 and 720 hours." });
-      setSaving(false);
-      return;
-    }
 
     try {
       const res = await fetch("/api/v1/admin/safety-rules", {
@@ -160,6 +158,20 @@ export default function AdminSafetyRulesPage() {
       setSaving(false);
     }
   };
+
+  const getInputClasses = (hasError: boolean) =>
+    `w-full px-3 py-2 text-xs rounded-xl font-medium outline-none transition-all shadow-xs ${
+      hasError
+        ? "bg-rose-50/70 border border-rose-400 text-rose-900 ring-2 ring-rose-400/30 focus:border-rose-500 focus:ring-rose-500/20"
+        : "bg-slate-50/70 border border-slate-200 text-zinc-900 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+    }`;
+
+  const getCategoryInputClasses = (hasError: boolean) =>
+    `w-full px-2.5 py-2 text-xs rounded-xl font-medium outline-none transition-all shadow-xs ${
+      hasError
+        ? "bg-rose-50/70 border border-rose-400 text-rose-900 ring-2 ring-rose-400/30 focus:border-rose-500 focus:ring-rose-500/20"
+        : "bg-slate-50/70 border border-slate-200 text-zinc-900 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+    }`;
 
   if (loading) {
     return (
@@ -242,12 +254,20 @@ export default function AdminSafetyRulesPage() {
               max="72"
               value={cookedFoodMaxHours}
               onChange={(e) => setCookedFoodMaxHours(e.target.value)}
+              aria-invalid={!!errors.cookedFoodMaxHours}
               required
-              className="w-full px-3 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
+              className={getInputClasses(!!errors.cookedFoodMaxHours)}
             />
-            <span className="text-[11px] text-zinc-400 block mt-1">
-              Standard: 4 hours (Allowed: 0h – 72h)
-            </span>
+            {errors.cookedFoodMaxHours ? (
+              <span className="text-[11px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errors.cookedFoodMaxHours}
+              </span>
+            ) : (
+              <span className="text-[11px] text-zinc-400 block mt-1">
+                Standard: 4 hours (Allowed: 0h – 72h)
+              </span>
+            )}
           </div>
 
           <div>
@@ -261,12 +281,20 @@ export default function AdminSafetyRulesPage() {
               max="72"
               value={cookedFoodWindowCutoffHours}
               onChange={(e) => setCookedFoodWindowCutoffHours(e.target.value)}
+              aria-invalid={!!errors.cookedFoodWindowCutoffHours}
               required
-              className="w-full px-3 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
+              className={getInputClasses(!!errors.cookedFoodWindowCutoffHours)}
             />
-            <span className="text-[11px] text-zinc-400 block mt-1">
-              Pickup must finish within window (Allowed: 0h – 72h)
-            </span>
+            {errors.cookedFoodWindowCutoffHours ? (
+              <span className="text-[11px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errors.cookedFoodWindowCutoffHours}
+              </span>
+            ) : (
+              <span className="text-[11px] text-zinc-400 block mt-1">
+                Pickup must finish within window (Allowed: 0h – 72h)
+              </span>
+            )}
           </div>
 
           <div>
@@ -280,12 +308,20 @@ export default function AdminSafetyRulesPage() {
               max="72"
               value={dairyBufferHours}
               onChange={(e) => setDairyBufferHours(e.target.value)}
+              aria-invalid={!!errors.dairyBufferHours}
               required
-              className="w-full px-3 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
+              className={getInputClasses(!!errors.dairyBufferHours)}
             />
-            <span className="text-[11px] text-zinc-400 block mt-1">
-              Minimum time before expiry (Allowed: 0h – 72h)
-            </span>
+            {errors.dairyBufferHours ? (
+              <span className="text-[11px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errors.dairyBufferHours}
+              </span>
+            ) : (
+              <span className="text-[11px] text-zinc-400 block mt-1">
+                Minimum time before expiry (Allowed: 0h – 72h)
+              </span>
+            )}
           </div>
         </div>
 
@@ -310,12 +346,20 @@ export default function AdminSafetyRulesPage() {
               max="72"
               value={expiryThresholds.cooked_food}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, cooked_food: e.target.value })}
+              aria-invalid={!!errors.cooked_food}
               required
-              className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
+              className={getCategoryInputClasses(!!errors.cooked_food)}
             />
-            <span className="text-[10px] text-zinc-400 block mt-1">
-              Allowed: 0h – 72h
-            </span>
+            {errors.cooked_food ? (
+              <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errors.cooked_food}
+              </span>
+            ) : (
+              <span className="text-[10px] text-zinc-400 block mt-1">
+                Allowed: 0h – 72h
+              </span>
+            )}
           </div>
 
           <div>
@@ -329,12 +373,20 @@ export default function AdminSafetyRulesPage() {
               max="168"
               value={expiryThresholds.dairy}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, dairy: e.target.value })}
+              aria-invalid={!!errors.dairy}
               required
-              className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
+              className={getCategoryInputClasses(!!errors.dairy)}
             />
-            <span className="text-[10px] text-zinc-400 block mt-1">
-              Allowed: 0h – 168h
-            </span>
+            {errors.dairy ? (
+              <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errors.dairy}
+              </span>
+            ) : (
+              <span className="text-[10px] text-zinc-400 block mt-1">
+                Allowed: 0h – 168h
+              </span>
+            )}
           </div>
 
           <div>
@@ -348,12 +400,20 @@ export default function AdminSafetyRulesPage() {
               max="168"
               value={expiryThresholds.bakery}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, bakery: e.target.value })}
+              aria-invalid={!!errors.bakery}
               required
-              className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
+              className={getCategoryInputClasses(!!errors.bakery)}
             />
-            <span className="text-[10px] text-zinc-400 block mt-1">
-              Allowed: 0h – 168h
-            </span>
+            {errors.bakery ? (
+              <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errors.bakery}
+              </span>
+            ) : (
+              <span className="text-[10px] text-zinc-400 block mt-1">
+                Allowed: 0h – 168h
+              </span>
+            )}
           </div>
 
           <div>
@@ -367,12 +427,20 @@ export default function AdminSafetyRulesPage() {
               max="336"
               value={expiryThresholds.raw_produce}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, raw_produce: e.target.value })}
+              aria-invalid={!!errors.raw_produce}
               required
-              className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
+              className={getCategoryInputClasses(!!errors.raw_produce)}
             />
-            <span className="text-[10px] text-zinc-400 block mt-1">
-              Allowed: 0h – 336h
-            </span>
+            {errors.raw_produce ? (
+              <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errors.raw_produce}
+              </span>
+            ) : (
+              <span className="text-[10px] text-zinc-400 block mt-1">
+                Allowed: 0h – 336h
+              </span>
+            )}
           </div>
 
           <div>
@@ -386,12 +454,20 @@ export default function AdminSafetyRulesPage() {
               max="720"
               value={expiryThresholds.packaged}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, packaged: e.target.value })}
+              aria-invalid={!!errors.packaged}
               required
-              className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
+              className={getCategoryInputClasses(!!errors.packaged)}
             />
-            <span className="text-[10px] text-zinc-400 block mt-1">
-              Allowed: 0h – 720h
-            </span>
+            {errors.packaged ? (
+              <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errors.packaged}
+              </span>
+            ) : (
+              <span className="text-[10px] text-zinc-400 block mt-1">
+                Allowed: 0h – 720h
+              </span>
+            )}
           </div>
         </div>
 
@@ -401,11 +477,19 @@ export default function AdminSafetyRulesPage() {
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          {isFormInvalid ? (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200/80 px-3 py-1.5 rounded-xl">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>One or more values exceed allowed limits (0h – max). Fix errors to save.</span>
+            </div>
+          ) : (
+            <div />
+          )}
           <Button
             type="submit"
-            disabled={saving}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+            disabled={saving || isFormInvalid}
+            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
           >
             {saving ? "Saving Configuration..." : "Save Gating Rules"}
           </Button>
