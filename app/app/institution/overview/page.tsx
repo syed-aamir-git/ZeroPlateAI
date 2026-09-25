@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ImpactCounter } from "@/components/public/impact-counter";
-import { StatusBadge } from "@/components/ui/status-badge";
 import {
   CrateIcon,
   TicketIcon,
@@ -69,7 +68,6 @@ interface MetricsData {
 export default function InstitutionOverviewPage() {
   const [data, setData] = React.useState<MetricsData | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [auditFilter, setAuditFilter] = React.useState<"all" | "safe" | "flagged">("all");
 
   const fetchMetrics = React.useCallback(async () => {
     try {
@@ -120,13 +118,6 @@ export default function InstitutionOverviewPage() {
     hasData: false,
   };
 
-  // Filtered audit activity
-  const filteredActivity = (data?.recentActivity || []).filter((act) => {
-    if (auditFilter === "safe") return act.status === "verified_safe";
-    if (auditFilter === "flagged") return act.status !== "verified_safe";
-    return true;
-  });
-
   return (
     <div className="max-w-6xl mx-auto space-y-8 text-left pb-16 px-2 sm:px-4">
       {/* 1. Header Bar with Institution Title and Fast CTAs */}
@@ -148,7 +139,7 @@ export default function InstitutionOverviewPage() {
             {institution?.name || "Kitchen Operations Ledger"}
           </h1>
           <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl leading-relaxed">
-            Real-time kitchen ledger, active surplus redistribution batches, and audited food safety gate decisions.
+            Real-time kitchen ledger, active surplus redistribution batches, and automated redistribution tracking.
           </p>
         </div>
 
@@ -535,140 +526,6 @@ export default function InstitutionOverviewPage() {
           </Link>
         </div>
       </div>
-
-      {/* 6. Empty State vs Recent Activity Audit Trail (With Filtering) */}
-      {!m.hasData ? (
-        <div className="border border-stone-200 bg-white p-8 sm:p-10 rounded-2xl text-center space-y-4 shadow-xs">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 mx-auto flex items-center justify-center text-emerald-600">
-            <Package className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
-              No inventory or surplus logged yet
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto leading-relaxed">
-              Begin by logging your kitchen&apos;s active batch or prep items. 
-              Once recorded, our AI engine monitors shelf-life and surfaces automated surplus opportunities.
-            </p>
-          </div>
-          <div className="pt-2 flex items-center justify-center gap-3">
-            <Button asChild variant="default" className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl">
-              <Link href="/app/institution/inventory">
-                Add your first inventory item
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="rounded-xl border-stone-200">
-              <Link href="/app/institution/analytics">
-                Explore Batch Sizer
-              </Link>
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="border border-stone-200 bg-white rounded-2xl overflow-hidden shadow-xs space-y-0">
-          <div className="p-4 sm:p-5 border-b border-stone-200 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="font-serif font-bold text-base text-stone-900 flex items-center gap-2">
-                Recent Safety Gate Decisions &amp; Audit Trail
-                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Immutable Log
-                </span>
-              </h2>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Automated food safety compliance checks, temperature validations, and listing status
-              </p>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1 bg-stone-100 border border-stone-200 p-1 rounded-xl self-start sm:self-auto text-xs font-mono">
-              <button
-                type="button"
-                onClick={() => setAuditFilter("all")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  auditFilter === "all"
-                    ? "bg-stone-900 text-white shadow-2xs"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                All ({data?.recentActivity?.length ?? 0})
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuditFilter("safe")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  auditFilter === "safe"
-                    ? "bg-emerald-700 text-white shadow-2xs"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                Verified Safe
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuditFilter("flagged")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  auditFilter === "flagged"
-                    ? "bg-amber-600 text-white shadow-2xs"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                Flagged / Caution
-              </button>
-            </div>
-          </div>
-
-          {filteredActivity.length === 0 ? (
-            <div className="py-12 text-center text-xs text-stone-500 font-mono space-y-1">
-              <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-2 opacity-80" />
-              <p>No activity logs match the selected filter.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-stone-100 text-xs">
-              {filteredActivity.map((act) => {
-                const isSafe = act.status === "verified_safe";
-                return (
-                  <div
-                    key={act.id}
-                    className="p-4 sm:p-5 flex items-start justify-between gap-4 hover:bg-stone-50/70 transition-colors"
-                  >
-                    <div className="space-y-1.5 max-w-2xl">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <StatusBadge
-                          variant={isSafe ? "verified_safe" : "rejected"}
-                          className="text-[10px] py-0.5 px-2.5 rounded-full font-semibold"
-                        />
-                        <span className="font-semibold text-stone-900 text-sm">
-                          {act.action === "safety_gate_evaluation"
-                            ? "Food Safety Gating Evaluation"
-                            : act.action.replace("_", " ")}
-                        </span>
-                        {act.ruleApplied && (
-                          <span className="text-[10px] font-mono text-stone-500 bg-stone-100 px-2 py-0.2 rounded border border-stone-200">
-                            Rule: {act.ruleApplied}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-stone-600 leading-relaxed text-xs">
-                        {act.reason || act.ruleApplied || "Passed automated quality safety threshold."}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-stone-400 font-mono text-[11px] shrink-0">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>
-                        {new Date(act.timestamp).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
