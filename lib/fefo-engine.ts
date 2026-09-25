@@ -18,6 +18,40 @@
  * 5. Mitigate waste before it exists: Pre-consumption prevention first, redistribution second.
  */
 
+import { formatFoodQuantity } from "./surplus-engine";
+
+export type MealType = "breakfast" | "lunch" | "snacks" | "dinner";
+
+export interface MealSlotRecommendation {
+  mealType: MealType;
+  mealLabel: string; // e.g. "Breakfast", "Lunch", "Evening Snacks", "Dinner"
+  timeWindow: string; // e.g. "07:30 – 09:30 AM", "12:30 – 02:30 PM", "04:30 – 06:00 PM", "07:30 – 09:30 PM"
+  suggestedDishes: string[];
+  ingredientsToAbsorb: Array<{
+    name: string;
+    quantity: string;
+    urgency: string;
+    category?: string;
+  }>;
+  aiRationale: string;
+}
+
+export interface DayCookingPlan {
+  dayKey: "today" | "tomorrow" | "day_after_tomorrow";
+  dayTitle: string; // "Today's Plan", "Tomorrow's Plan", "Day After Tomorrow's Plan"
+  dateLabel: string; // formatted date (e.g. "Today · Fri, Sep 26")
+  urgencyBadge: string;
+  badgeVariant: "urgent" | "moderate" | "scheduled";
+  absorptionSummary: string;
+  totalKgToAbsorb: number;
+  meals: {
+    breakfast: MealSlotRecommendation;
+    lunch: MealSlotRecommendation;
+    snacks: MealSlotRecommendation;
+    dinner: MealSlotRecommendation;
+  };
+}
+
 export type FefoShelfLifeTier =
   | "expiring_soon" // <= 48 hours / 2 days (Priority 1: High Priority - Use First)
   | "moderate" // 3 - 7 days (Priority 2: Medium Priority - Use Next)
@@ -137,6 +171,7 @@ export interface FefoIntelligenceReport {
     advisoryNote: string;
     items: RawMaterialProcurementItem[];
   };
+  dailyCookingPlans: DayCookingPlan[];
   recipeUtilizationSchedule: Array<{
     mealSlot: string; // e.g. "Tomorrow Lunch", "Tomorrow Dinner", "Day 3 Prep"
     ingredientsToAbsorb: Array<{ name: string; quantity: string; urgency: string }>;
@@ -181,6 +216,402 @@ const INGREDIENT_RECIPE_MAP: Record<string, { dish: string; meal: string; yieldP
   flour: { dish: "Poori / Fresh Flatbreads", meal: "Tomorrow's Meals", yieldPerKg: 4 },
   oil: { dish: "Tempering / Sautéing Buffer", meal: "Daily Cooking Buffer", yieldPerKg: 10 },
 };
+
+export interface MealDishesProfile {
+  breakfast: { dishes: string[]; rationale: string };
+  lunch: { dishes: string[]; rationale: string };
+  snacks: { dishes: string[]; rationale: string };
+  dinner: { dishes: string[]; rationale: string };
+}
+
+export const INGREDIENT_4MEAL_MAP: Record<string, MealDishesProfile> = {
+  tomato: {
+    breakfast: { dishes: ["Fresh Tomato Upma", "Tomato Herb Toast"], rationale: "Morning acidity activates appetite while absorbing ripe tomatoes before wilting." },
+    lunch: { dishes: ["Fresh Tomato Gravy with Rice", "Tomato Dal Tadka"], rationale: "High-volume curry and gravy bases absorb up to 15–20 kg of ripe tomatoes in a single service." },
+    snacks: { dishes: ["Tomato Basil Soup with Croutons", "Sev Puri Chutney"], rationale: "Comforting evening soup and savory street-food pairing." },
+    dinner: { dishes: ["Slow-Simmered Tomato Gravy", "Mixed Veg Stew with Rotis"], rationale: "Gentle aromatic gravy utilizing remaining ripe tomato inventory." },
+  },
+  tomatoes: {
+    breakfast: { dishes: ["Fresh Tomato Upma", "Tomato Herb Toast"], rationale: "Morning acidity activates appetite while absorbing ripe tomatoes before wilting." },
+    lunch: { dishes: ["Fresh Tomato Gravy with Rice", "Tomato Dal Tadka"], rationale: "High-volume curry and gravy bases absorb up to 15–20 kg of ripe tomatoes in a single service." },
+    snacks: { dishes: ["Tomato Basil Soup with Croutons", "Sev Puri Chutney"], rationale: "Comforting evening soup and savory street-food pairing." },
+    dinner: { dishes: ["Slow-Simmered Tomato Gravy", "Mixed Veg Stew with Rotis"], rationale: "Gentle aromatic gravy utilizing remaining ripe tomato inventory." },
+  },
+  milk: {
+    breakfast: { dishes: ["Fresh Paneer Coagulation", "Warm Oatmeal with Boiled Milk", "Fruit Smoothies"], rationale: "Early morning boiling eliminates microbial proliferation in ambient storage." },
+    lunch: { dishes: ["Fresh Curd (Dahi)", "Spiced Buttermilk (Chaas)"], rationale: "Cooling midday digestive accompaniment absorbing bulk liquid dairy." },
+    snacks: { dishes: ["Special Masala Chai & Filter Coffee", "Fresh Milk Peda"], rationale: "High afternoon beverage turnover absorbs remaining liquid milk reserves." },
+    dinner: { dishes: ["Light Kheer", "Golden Turmeric Milk", "Cream Finish for Curries"], rationale: "Evening dessert/night-cap ensuring zero unboiled milk carries overnight." },
+  },
+  spinach: {
+    breakfast: { dishes: ["Palak Cheela", "Spinach Corn Sandwich"], rationale: "Quick flash-cooking in morning savory pancakes preserves vivid color and iron." },
+    lunch: { dishes: ["Palak Dal", "Palak Paneer with Jeera Rice"], rationale: "Classic institutional lunch staple absorbing bulk leafy greens before wilting." },
+    snacks: { dishes: ["Crispy Palak Pakoda", "Spinach Cheese Rolls"], rationale: "Crispy fried or baked snack with high turnover during tea time." },
+    dinner: { dishes: ["Palak Khichdi", "Aloo Palak with Phulkas"], rationale: "Light, soothing dinner khichdi utilizing remaining steamed spinach puree." },
+  },
+  palak: {
+    breakfast: { dishes: ["Palak Cheela", "Spinach Corn Sandwich"], rationale: "Quick flash-cooking in morning savory pancakes preserves vivid color and iron." },
+    lunch: { dishes: ["Palak Dal", "Palak Paneer with Jeera Rice"], rationale: "Classic institutional lunch staple absorbing bulk leafy greens before wilting." },
+    snacks: { dishes: ["Crispy Palak Pakoda", "Spinach Cheese Rolls"], rationale: "Crispy fried or baked snack with high turnover during tea time." },
+    dinner: { dishes: ["Palak Khichdi", "Aloo Palak with Phulkas"], rationale: "Light, soothing dinner khichdi utilizing remaining steamed spinach puree." },
+  },
+  paneer: {
+    breakfast: { dishes: ["Paneer Stuffed Parathas", "Spiced Paneer Bhurji"], rationale: "High-protein scramble providing lasting morning energy." },
+    lunch: { dishes: ["Matar Paneer", "Shahi Paneer with Steamed Rice"], rationale: "Signature luncheon crowd-pleaser that rapidly consumes cottage cheese blocks." },
+    snacks: { dishes: ["Grilled Paneer Tikka", "Paneer Bread Pockets"], rationale: "High-value afternoon snack with guaranteed zero kitchen leftover." },
+    dinner: { dishes: ["Paneer Lababdar", "Paneer Bhurji with Phulkas"], rationale: "Savory evening centerpiece pairing seamlessly with flatbreads." },
+  },
+  potato: {
+    breakfast: { dishes: ["Aloo Parathas", "Batata Poha"], rationale: "Boiled potato mash integrated smoothly into warm morning flatbreads." },
+    lunch: { dishes: ["Aloo Gobhi", "Dum Aloo with Steamed Rice"], rationale: "Hearty vegetable main course filling dining hall lunch trays." },
+    snacks: { dishes: ["Aloo Samosa", "Mashed Potato Cutlets", "Aloo Bonda"], rationale: "Quintessential afternoon snack absorbing starch reserves rapidly." },
+    dinner: { dishes: ["Jeera Aloo", "Vegetable Pulao with Dal"], rationale: "Mild, fragrant dinner side dish with excellent dining satisfaction." },
+  },
+  potatoes: {
+    breakfast: { dishes: ["Aloo Parathas", "Batata Poha"], rationale: "Boiled potato mash integrated smoothly into warm morning flatbreads." },
+    lunch: { dishes: ["Aloo Gobhi", "Dum Aloo with Steamed Rice"], rationale: "Hearty vegetable main course filling dining hall lunch trays." },
+    snacks: { dishes: ["Aloo Samosa", "Mashed Potato Cutlets", "Aloo Bonda"], rationale: "Quintessential afternoon snack absorbing starch reserves rapidly." },
+    dinner: { dishes: ["Jeera Aloo", "Vegetable Pulao with Dal"], rationale: "Mild, fragrant dinner side dish with excellent dining satisfaction." },
+  },
+  onion: {
+    breakfast: { dishes: ["Onion Uttapam", "Kanda Poha"], rationale: "Tempered onions sautéed with mustard seeds and curry leaves." },
+    lunch: { dishes: ["Caramelized Onion Gravy Base", "Onion Sambar"], rationale: "Fundamental aromatic base for institutional lunch curries and sambars." },
+    snacks: { dishes: ["Crispy Kanda Bhajiya (Onion Fritters)", "Onion Rings"], rationale: "High-demand crispy tea-time snack requiring generous onion slicing." },
+    dinner: { dishes: ["Onion Dal Tadka", "Mixed Vegetable Handi"], rationale: "Golden browned onion tempering elevating evening lentils." },
+  },
+  onions: {
+    breakfast: { dishes: ["Onion Uttapam", "Kanda Poha"], rationale: "Tempered onions sautéed with mustard seeds and curry leaves." },
+    lunch: { dishes: ["Caramelized Onion Gravy Base", "Onion Sambar"], rationale: "Fundamental aromatic base for institutional lunch curries and sambars." },
+    snacks: { dishes: ["Crispy Kanda Bhajiya (Onion Fritters)", "Onion Rings"], rationale: "High-demand crispy tea-time snack requiring generous onion slicing." },
+    dinner: { dishes: ["Onion Dal Tadka", "Mixed Vegetable Handi"], rationale: "Golden browned onion tempering elevating evening lentils." },
+  },
+  rice: {
+    breakfast: { dishes: ["Steamed Idli", "Ven Pongal with Chutney"], rationale: "Fermented or boiled grain breakfast that starts digestion gently." },
+    lunch: { dishes: ["Vegetable Dum Biryani", "Lemon Rice", "Steamed Basmati"], rationale: "Primary midday carbohydrate staple served to all institutional diners." },
+    snacks: { dishes: ["Crispy Rice Flakes Chivda", "Rice Cutlets"], rationale: "Crunchy snack blend from cooked or flaked rice reserves." },
+    dinner: { dishes: ["Soothing Moong Dal Khichdi", "Veg Pulao"], rationale: "Light, nourishing evening comfort food promoting restful digestion." },
+  },
+  dal: {
+    breakfast: { dishes: ["Moong Dal Cheela", "Sprouted Salad"], rationale: "High-protein savory morning crepes from soaked and ground lentils." },
+    lunch: { dishes: ["Tadka Dal", "South Indian Sambar", "Dal Makhani"], rationale: "Core protein pillar of the midday institutional dining tray." },
+    snacks: { dishes: ["Chana Chaat", "Crispy Moong Dal Vadas"], rationale: "Zesty street-style afternoon snack packed with dietary fiber." },
+    dinner: { dishes: ["Light Yellow Moong Dal", "Homestyle Dal Fry with Rotis"], rationale: "Gentle evening pulse preparation easy on the stomach." },
+  },
+  lentils: {
+    breakfast: { dishes: ["Moong Dal Cheela", "Sprouted Salad"], rationale: "High-protein savory morning crepes from soaked and ground lentils." },
+    lunch: { dishes: ["Tadka Dal", "South Indian Sambar", "Dal Makhani"], rationale: "Core protein pillar of the midday institutional dining tray." },
+    snacks: { dishes: ["Chana Chaat", "Crispy Moong Dal Vadas"], rationale: "Zesty street-style afternoon snack packed with dietary fiber." },
+    dinner: { dishes: ["Light Yellow Moong Dal", "Homestyle Dal Fry with Rotis"], rationale: "Gentle evening pulse preparation easy on the stomach." },
+  },
+  atta: {
+    breakfast: { dishes: ["Fresh Poori", "Methi Parathas"], rationale: "Fluffy fried pooris or griddled flatbreads kickstarting the day." },
+    lunch: { dishes: ["Soft Tawa Phulkas", "Wholewheat Chapatis"], rationale: "Freshly puffed flatbreads accompanying all lunch gravies." },
+    snacks: { dishes: ["Crispy Salted Mathri", "Baked Wholewheat Crackers"], rationale: "Savory baked bites that store well and satisfy afternoon cravings." },
+    dinner: { dishes: ["Fresh Multigrain Rotis", "Plain Chapatis"], rationale: "Warm staple bread rounding out the daily dinner service." },
+  },
+  flour: {
+    breakfast: { dishes: ["Fresh Poori", "Methi Parathas"], rationale: "Fluffy fried pooris or griddled flatbreads kickstarting the day." },
+    lunch: { dishes: ["Soft Tawa Phulkas", "Wholewheat Chapatis"], rationale: "Freshly puffed flatbreads accompanying all lunch gravies." },
+    snacks: { dishes: ["Crispy Salted Mathri", "Baked Wholewheat Crackers"], rationale: "Savory baked bites that store well and satisfy afternoon cravings." },
+    dinner: { dishes: ["Fresh Multigrain Rotis", "Plain Chapatis"], rationale: "Warm staple bread rounding out the daily dinner service." },
+  },
+  bread: {
+    breakfast: { dishes: ["Toasted Bread with Jam & Butter", "French Toast"], rationale: "Standard institutional breakfast staple with high morning turnover." },
+    lunch: { dishes: ["Herb Bread Crumbs for Vegetable Cutlets"], rationale: "Converts slightly stale bread slices into versatile crunchy breading." },
+    snacks: { dishes: ["Spiced Bread Upma", "Stuffed Bread Rolls"], rationale: "Quick 15-minute savory afternoon snack utilizing sliced bread loaves." },
+    dinner: { dishes: ["Golden Garlic Croutons for Vegetable Soup"], rationale: "Baked cubes adding crunch to dinner soups while preventing bread waste." },
+  },
+  banana: {
+    breakfast: { dishes: ["Fresh Fruit Platter", "Banana Smoothie Bowl"], rationale: "Natural morning sugars and potassium providing sustained mental alertness." },
+    lunch: { dishes: ["Sweet & Savory Banana Raita"], rationale: "Cooling yogurt side dish balancing spicy curries." },
+    snacks: { dishes: ["Banana Walnut Loaf", "Fruit Custard"], rationale: "Chilled custard or baked loaf absorbing ripe bananas rapidly." },
+    dinner: { dishes: ["Light Fruit Compote", "Stewed Fruit with Cinnamon"], rationale: "Refined, naturally sweet dinner conclusion without heavy refined sugars." },
+  },
+  bananas: {
+    breakfast: { dishes: ["Fresh Fruit Platter", "Banana Smoothie Bowl"], rationale: "Natural morning sugars and potassium providing sustained mental alertness." },
+    lunch: { dishes: ["Sweet & Savory Banana Raita"], rationale: "Cooling yogurt side dish balancing spicy curries." },
+    snacks: { dishes: ["Banana Walnut Loaf", "Fruit Custard"], rationale: "Chilled custard or baked loaf absorbing ripe bananas rapidly." },
+    dinner: { dishes: ["Light Fruit Compote", "Stewed Fruit with Cinnamon"], rationale: "Refined, naturally sweet dinner conclusion without heavy refined sugars." },
+  },
+  carrot: {
+    breakfast: { dishes: ["Carrot Porridge", "Vegetable Vermicelli Upma"], rationale: "Sweet grated carrots brightening morning vermicelli and breakfast bowls." },
+    lunch: { dishes: ["Mixed Vegetable Sambar", "Carrot Poriyal"], rationale: "Crisp diced carrot chunks adding natural sweetness to lunch curries." },
+    snacks: { dishes: ["Gajar Halwa", "Fresh Carrot Sticks with Hummus"], rationale: "Delightful warm sweet treat for evening gatherings." },
+    dinner: { dishes: ["Mixed Vegetable Stew", "Carrot Peas Sabzi"], rationale: "Colorful nutrient-rich dinner medley cooked with mild spices." },
+  },
+  carrots: {
+    breakfast: { dishes: ["Carrot Porridge", "Vegetable Vermicelli Upma"], rationale: "Sweet grated carrots brightening morning vermicelli and breakfast bowls." },
+    lunch: { dishes: ["Mixed Vegetable Sambar", "Carrot Poriyal"], rationale: "Crisp diced carrot chunks adding natural sweetness to lunch curries." },
+    snacks: { dishes: ["Gajar Halwa", "Fresh Carrot Sticks with Hummus"], rationale: "Delightful warm sweet treat for evening gatherings." },
+    dinner: { dishes: ["Mixed Vegetable Stew", "Carrot Peas Sabzi"], rationale: "Colorful nutrient-rich dinner medley cooked with mild spices." },
+  },
+  cabbage: {
+    breakfast: { dishes: ["Cabbage Paratha", "Spiced Veggie Sandwich"], rationale: "Shredded cabbage seasoned with green chillies in stuffed griddle breads." },
+    lunch: { dishes: ["Cabbage Poriyal", "Mixed Veg Korma"], rationale: "Tempered cabbage with coconut and mustard seeds." },
+    snacks: { dishes: ["Crispy Vegetable Spring Rolls", "Cabbage Pakoda"], rationale: "Crunchy shredded cabbage fritters served with tangy chutney." },
+    dinner: { dishes: ["Cabbage Peas Sabzi with Phulkas"], rationale: "Homestyle, light sautéed cabbage dish for relaxed dinner service." },
+  },
+  curd: {
+    breakfast: { dishes: ["Sweet Lassi", "Yogurt Parfait with Honey"], rationale: "Probiotic morning refreshment promoting gut microbiome health." },
+    lunch: { dishes: ["Kadhi Pakora", "Cucumber Boondi Raita"], rationale: "Creamy, tangy lunch centerpiece utilizing cultured milk reserves." },
+    snacks: { dishes: ["Dahi Vada", "Chaat with Spiced Chilled Curd"], rationale: "Savory afternoon delight featuring tempered yogurt." },
+    dinner: { dishes: ["Fresh Set Curd", "Tadka Dahi with Rotis"], rationale: "Simple cooling finish for institutional evening meals." },
+  },
+};
+
+export function getDishesForIngredient(
+  name: string,
+  category: string,
+  meal: MealType
+): { dishes: string[]; rationale: string } {
+  const normName = name.toLowerCase().trim();
+  for (const [key, profile] of Object.entries(INGREDIENT_4MEAL_MAP)) {
+    if (normName.includes(key)) {
+      return profile[meal];
+    }
+  }
+
+  // Category based fallback
+  const normCat = category.toLowerCase().trim();
+  if (normCat.includes("dairy")) {
+    if (meal === "breakfast") return { dishes: ["Morning Dairy Porridge", "Fresh Smoothies"], rationale: "Early morning dairy processing halts microbial growth." };
+    if (meal === "lunch") return { dishes: ["Luncheon Gravy Enrichment", "Fresh Curd"], rationale: "Absorbs bulk dairy into high-volume meal trays." };
+    if (meal === "snacks") return { dishes: ["Hot Dairy Beverage Batch", "Milk Sweets"], rationale: "Afternoon tea service utilization." };
+    return { dishes: ["Homestyle Kheer", "Warm Golden Milk"], rationale: "Evening service clearance." };
+  }
+
+  if (normCat.includes("raw_produce")) {
+    if (meal === "breakfast") return { dishes: ["Vegetable Stuffed Parathas", "Vegetable Poha"], rationale: "Morning fresh vegetable integration." };
+    if (meal === "lunch") return { dishes: ["Seasonal Mixed Vegetable Curry", "Fresh Sambar"], rationale: "High volume lunch service absorbs maximum produce." };
+    if (meal === "snacks") return { dishes: ["Crispy Vegetable Cutlets", "Veg Pakoras"], rationale: "High afternoon turnover snack." };
+    return { dishes: ["Mixed Vegetable Stew with Phulkas"], rationale: "Light dinner preparation." };
+  }
+
+  if (normCat.includes("bakery")) {
+    if (meal === "breakfast") return { dishes: ["Toasted Bread with Preserves"], rationale: "Morning breakfast rush turnover." };
+    if (meal === "snacks") return { dishes: ["Savory Bread Upma", "Garlic Croutons"], rationale: "Quick tea-time savory." };
+    if (meal === "lunch") return { dishes: ["Herb Bread Crumbs for Patties"], rationale: "Pantry crumb utilization." };
+    return { dishes: ["Soup Crouton Topping"], rationale: "Dinner soup accompaniment." };
+  }
+
+  // Default staples
+  if (meal === "breakfast") return { dishes: ["Pantry Savory Crepes", "Warm Porridge"], rationale: "Balanced morning breakfast." };
+  if (meal === "lunch") return { dishes: ["Signature Dining Hall Main Course", "Rice & Dal Base"], rationale: "Institutional lunch staple." };
+  if (meal === "snacks") return { dishes: ["Savory Pulse Chaat", "Roasted Crisp Bites"], rationale: "Afternoon snack buffer." };
+  return { dishes: ["Homestyle Khichdi", "Fresh Flatbreads"], rationale: "Comforting evening dinner." };
+}
+
+/**
+ * Generates an institutional 3-Day Cooking Schedule (Today, Tomorrow, Day After Tomorrow ONLY).
+ * Differentiates each day into 4 clear meal distinctions: Breakfast, Lunch, Snacks, Dinner.
+ */
+export function generate3DayCookingPlans(
+  evaluatedItems: FefoEvaluatedItem[],
+  now: Date = new Date()
+): DayCookingPlan[] {
+  const validItems = evaluatedItems.filter((i) => i.shelfLifeTier !== "expired");
+  const sorted = [...validItems].sort((a, b) => a.hoursUntilExpiry - b.hoursUntilExpiry);
+
+  // Group into 3 days based on FEFO shelf-life
+  let todayItems = sorted.filter((i) => i.hoursUntilExpiry <= 36 || i.shelfLifeTier === "expiring_soon");
+  if (todayItems.length === 0 && sorted.length > 0) {
+    todayItems = sorted.slice(0, Math.min(4, sorted.length));
+  }
+
+  let tomorrowItems = sorted.filter(
+    (i) => (i.hoursUntilExpiry > 36 && i.hoursUntilExpiry <= 64) || i.shelfLifeTier === "moderate" || i.shelfLifeTier === "overstocked"
+  );
+  if (tomorrowItems.length === 0 && sorted.length > 1) {
+    tomorrowItems = sorted.slice(1, Math.min(5, sorted.length));
+  }
+
+  let dayAfterTomorrowItems = sorted.filter((i) => i.hoursUntilExpiry > 64 || i.shelfLifeTier === "long_shelf_life");
+  if (dayAfterTomorrowItems.length === 0 && sorted.length > 0) {
+    dayAfterTomorrowItems = sorted.slice(Math.max(0, sorted.length - 4));
+  }
+
+  const dayConfigs: Array<{
+    dayKey: "today" | "tomorrow" | "day_after_tomorrow";
+    dayTitle: string;
+    dateOffsetDays: number;
+    urgencyBadge: string;
+    badgeVariant: "urgent" | "moderate" | "scheduled";
+    poolItems: FefoEvaluatedItem[];
+  }> = [
+    {
+      dayKey: "today",
+      dayTitle: "Today's Plan",
+      dateOffsetDays: 0,
+      urgencyBadge: "🔴 Urgent Absorption (Highest FEFO Priority)",
+      badgeVariant: "urgent",
+      poolItems: todayItems,
+    },
+    {
+      dayKey: "tomorrow",
+      dayTitle: "Tomorrow's Plan",
+      dateOffsetDays: 1,
+      urgencyBadge: "🟡 Scheduled FEFO Absorption",
+      badgeVariant: "moderate",
+      poolItems: tomorrowItems,
+    },
+    {
+      dayKey: "day_after_tomorrow",
+      dayTitle: "Day After Tomorrow's Plan",
+      dateOffsetDays: 2,
+      urgencyBadge: "🟢 Proactive Buffer Rotation",
+      badgeVariant: "scheduled",
+      poolItems: dayAfterTomorrowItems,
+    },
+  ];
+
+  const mealSlotsConfig: Array<{
+    type: MealType;
+    label: string;
+    timeWindow: string;
+  }> = [
+    { type: "breakfast", label: "Breakfast", timeWindow: "07:30 – 09:30 AM" },
+    { type: "lunch", label: "Lunch", timeWindow: "12:30 – 02:30 PM" },
+    { type: "snacks", label: "Evening Snacks", timeWindow: "04:30 – 06:00 PM" },
+    { type: "dinner", label: "Dinner", timeWindow: "07:30 – 09:30 PM" },
+  ];
+
+  return dayConfigs.map((cfg) => {
+    const targetDate = new Date(now.getTime() + cfg.dateOffsetDays * 24 * 3600 * 1000);
+    const dateFormatted = targetDate.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+
+    const totalKg = Math.round(
+      cfg.poolItems.reduce((acc, curr) => acc + (normalizeQuantityToKg(curr.quantity, curr.unit) || 0), 0) * 10
+    ) / 10;
+
+    const mealsRecord: Record<MealType, MealSlotRecommendation> = {} as any;
+
+    for (const slot of mealSlotsConfig) {
+      const assignedItems = cfg.poolItems.filter((item) => {
+        const norm = item.name.toLowerCase();
+        const cat = item.category.toLowerCase();
+        if (slot.type === "breakfast") {
+          return (
+            norm.includes("milk") ||
+            norm.includes("bread") ||
+            norm.includes("banana") ||
+            norm.includes("atta") ||
+            norm.includes("flour") ||
+            norm.includes("curd") ||
+            norm.includes("paneer") ||
+            norm.includes("spinach") ||
+            norm.includes("tomato") ||
+            cat.includes("dairy") ||
+            cat.includes("bakery")
+          );
+        }
+        if (slot.type === "lunch") {
+          return (
+            norm.includes("rice") ||
+            norm.includes("dal") ||
+            norm.includes("spinach") ||
+            norm.includes("tomato") ||
+            norm.includes("onion") ||
+            norm.includes("paneer") ||
+            norm.includes("cabbage") ||
+            norm.includes("carrot") ||
+            norm.includes("potato") ||
+            cat.includes("raw_produce") ||
+            cat.includes("packaged_dry")
+          );
+        }
+        if (slot.type === "snacks") {
+          return (
+            norm.includes("potato") ||
+            norm.includes("onion") ||
+            norm.includes("bread") ||
+            norm.includes("milk") ||
+            norm.includes("tea") ||
+            norm.includes("banana") ||
+            norm.includes("cabbage") ||
+            norm.includes("spinach") ||
+            norm.includes("paneer")
+          );
+        }
+        // dinner
+        return (
+          norm.includes("paneer") ||
+          norm.includes("dal") ||
+          norm.includes("atta") ||
+          norm.includes("flour") ||
+          norm.includes("rice") ||
+          norm.includes("potato") ||
+          norm.includes("tomato") ||
+          norm.includes("carrot") ||
+          cat.includes("raw_produce")
+        );
+      });
+
+      const finalItems = assignedItems.length > 0 ? assignedItems : cfg.poolItems.slice(0, 2);
+
+      const dishList: string[] = [];
+      const rationaleParts: string[] = [];
+
+      for (const item of finalItems) {
+        const info = getDishesForIngredient(item.name, item.category, slot.type);
+        dishList.push(...info.dishes);
+        if (!rationaleParts.includes(info.rationale)) {
+          rationaleParts.push(info.rationale);
+        }
+      }
+
+      const uniqueDishes = Array.from(new Set(dishList)).slice(0, 3);
+      if (uniqueDishes.length === 0) {
+        uniqueDishes.push(`Chef's Balanced ${slot.label} Special`);
+      }
+
+      const aiRationale =
+        rationaleParts.length > 0
+          ? rationaleParts.join(" ")
+          : `Utilizes active raw inventory for high-efficiency ${slot.label.toLowerCase()} batch prep.`;
+
+      mealsRecord[slot.type] = {
+        mealType: slot.type,
+        mealLabel: slot.label,
+        timeWindow: slot.timeWindow,
+        suggestedDishes: uniqueDishes,
+        ingredientsToAbsorb: finalItems.map((i) => ({
+          name: i.name,
+          quantity: formatFoodQuantity(i.quantity, i.unit, i.category),
+          urgency: `${i.daysUntilExpiry <= 1 ? `${Math.max(1, Math.round(i.hoursUntilExpiry))}h` : `${i.daysUntilExpiry}d`} safe window`,
+          category: i.category,
+        })),
+        aiRationale,
+      };
+    }
+
+    const absorptionSummary =
+      cfg.badgeVariant === "urgent"
+        ? `Absorbs ${totalKg} kg nearing-expiry raw ingredients across 4 daily meal shifts (100% pre-consumption save).`
+        : cfg.badgeVariant === "moderate"
+        ? `Sequential FEFO allocation absorbs ${totalKg} kg raw ingredients before reaching urgent deadline.`
+        : `Proactive batch rotation ensures steady pantry turnaround for ${totalKg} kg staple ingredients.`;
+
+    return {
+      dayKey: cfg.dayKey,
+      dayTitle: cfg.dayTitle,
+      dateLabel: `${cfg.dayTitle.replace(" Plan", "")} · ${dateFormatted}`,
+      urgencyBadge: cfg.urgencyBadge,
+      badgeVariant: cfg.badgeVariant,
+      absorptionSummary,
+      totalKgToAbsorb: totalKg,
+      meals: {
+        breakfast: mealsRecord.breakfast,
+        lunch: mealsRecord.lunch,
+        snacks: mealsRecord.snacks,
+        dinner: mealsRecord.dinner,
+      },
+    };
+  });
+}
 
 /**
  * Standardizes units to approximate kilograms for demand comparison
@@ -581,42 +1012,19 @@ export function evaluateFefoInventory(
   const totalUrgent = expiringSoonCount + overstockedCount;
   const fefoAdherenceScorePercent = totalUrgent > 0 ? 98 : 100;
 
-  // 5. Generate AI Recipe Utilization Schedule for Upcoming Meals
-  const expiringItems = evaluatedItems.filter((i) => i.shelfLifeTier === "expiring_soon");
-  const moderateItems = evaluatedItems.filter((i) => i.shelfLifeTier === "moderate" || i.shelfLifeTier === "overstocked");
+  // 5. Generate AI 3-Day Cooking Plans (Today, Tomorrow, Day After Tomorrow ONLY - 4 Meals: Breakfast, Lunch, Snacks, Dinner)
+  const dailyCookingPlans = generate3DayCookingPlans(evaluatedItems, now);
 
-  const recipeUtilizationSchedule: FefoIntelligenceReport["recipeUtilizationSchedule"] = [
-    {
-      mealSlot: "Tomorrow Lunch (High Priority - Cook Urgently)",
-      ingredientsToAbsorb: expiringItems.map((i) => ({
-        name: i.name,
-        quantity: `${i.quantity} ${i.unit}`,
-        urgency: `${i.daysUntilExpiry}d safe window`,
-      })),
-      suggestedDishes: expiringItems.length > 0
-        ? Array.from(new Set(expiringItems.map((i) => i.suggestedRecipeUse)))
-        : ["Standard Balanced Kitchen Menu (No urgent ingredients)"],
-      preventionOutcome: expiringItems.length > 0
-        ? `Absorbs ${expiringSoonKg} kg nearing-expiry raw ingredients before waste occurs (100% pre-consumption save).`
-        : "All inventory within safe multi-day buffer.",
-    },
-    {
-      mealSlot: "Days 3–5 Batch Cooking (Medium Priority - Moderate Shelf Life)",
-      ingredientsToAbsorb: moderateItems.map((i) => ({
-        name: i.name,
-        quantity: `${i.quantity} ${i.unit}`,
-        urgency: `${Math.round(i.daysUntilExpiry)}d safe window`,
-      })),
-      suggestedDishes: moderateItems.length > 0
-        ? Array.from(new Set(moderateItems.map((i) => i.suggestedRecipeUse)))
-        : ["Pantry staples & scheduled fresh batches"],
-      preventionOutcome: `Sequential FEFO rotation prevents ${moderateShelfLifeKg} kg from lapsing into urgent status.`,
-    },
-  ];
+  const recipeUtilizationSchedule: FefoIntelligenceReport["recipeUtilizationSchedule"] = dailyCookingPlans.map((dp) => ({
+    mealSlot: `${dp.dayTitle} (${dp.urgencyBadge})`,
+    ingredientsToAbsorb: [dp.meals.breakfast, dp.meals.lunch, dp.meals.snacks, dp.meals.dinner].flatMap((m: MealSlotRecommendation) => m.ingredientsToAbsorb).slice(0, 8),
+    suggestedDishes: [dp.meals.breakfast, dp.meals.lunch, dp.meals.snacks, dp.meals.dinner].flatMap((m: MealSlotRecommendation) => m.suggestedDishes).slice(0, 4),
+    preventionOutcome: dp.absorptionSummary,
+  }));
 
   // 6. Action Plan Notes
   const aiActionPlanNotes: string[] = [
-    `Pre-consumption Priority: ${expiringSoonKg} kg of raw materials nearing expiry scheduled into tomorrow's cooking recipes first.`,
+    `Pre-consumption Priority: ${expiringSoonKg} kg of raw materials nearing expiry scheduled into today's and tomorrow's cooking recipes first across 4 meal shifts.`,
     `Procurement Reorder Gating: ${itemsOverstockedCount} raw items are already well-stocked; purchasing is blocked to prevent overstock spoilage.`,
     `Overstock Savings: Saved ~₹${procurementBudgetSavedInr.toLocaleString()} by preventing unnecessary ingredient purchase.`,
   ];
@@ -651,6 +1059,7 @@ export function evaluateFefoInventory(
         : "Raw material inventory levels are balanced with upcoming dining demand.",
       items: procurementItems,
     },
+    dailyCookingPlans,
     recipeUtilizationSchedule,
     aiActionPlanNotes,
   };

@@ -18,6 +18,9 @@ import {
   Flame,
   Snowflake,
   Sun,
+  Sunrise,
+  Coffee,
+  Moon,
   Scale,
   Calendar,
   Zap,
@@ -39,6 +42,8 @@ import {
   FefoRawItemInput,
   StorageEnvironment,
   RawMaterialProcurementItem,
+  DayCookingPlan,
+  generate3DayCookingPlans,
 } from "@/lib/fefo-engine";
 
 interface FefoResourceIntelligenceProps {
@@ -56,6 +61,16 @@ export default function FefoResourceIntelligence({
   const [activeTab, setActiveTab] = useState<"live_matrix" | "procurement" | "simulator" | "correlation">(
     "live_matrix"
   );
+  const [selectedPlanDay, setSelectedPlanDay] = useState<"today" | "tomorrow" | "day_after_tomorrow">("today");
+
+  const dailyPlans: DayCookingPlan[] = React.useMemo(() => {
+    if (report.dailyCookingPlans && report.dailyCookingPlans.length > 0) {
+      return report.dailyCookingPlans;
+    }
+    return generate3DayCookingPlans(report.evaluatedItems || []);
+  }, [report.dailyCookingPlans, report.evaluatedItems]);
+
+  const activePlan = dailyPlans.find((p) => p.dayKey === selectedPlanDay) || dailyPlans[0];
 
   // Filter state for matrix
   const [tierFilter, setTierFilter] = useState<"all" | "expiring_soon" | "moderate" | "long_shelf_life" | "overstocked" | "expired">(
@@ -962,73 +977,198 @@ export default function FefoResourceIntelligence({
             <div className="flex items-center gap-2">
               <Utensils className="w-5 h-5 text-amber-600" />
               <h3 className="font-serif font-bold text-lg text-stone-900">
-                What to Make Urgently: Raw Material Cooking Schedule
+                What to Make Urgently: 3-Day Raw Material Cooking Schedule
               </h3>
             </div>
             <p className="text-xs text-stone-500 mt-1">
-              Correlates raw ingredients directly into upcoming kitchen batch preparation to absorb stock before shelf-life expires.
+              Correlates raw ingredients directly into today, tomorrow, and day after tomorrow kitchen batch preparation to absorb stock before shelf-life expires.
             </p>
           </div>
 
-          <div className="space-y-4">
-            {report.recipeUtilizationSchedule.map((slot, index) => (
-              <div
-                key={index}
-                className="p-5 rounded-xl border border-stone-200 bg-stone-50/70 hover:bg-stone-50 transition-colors space-y-3"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200/60 pb-2.5">
-                  <div className="flex items-center gap-2 font-serif font-bold text-stone-900">
-                    <Calendar className="w-4 h-4 text-emerald-600" />
-                    <span>{slot.mealSlot}</span>
-                  </div>
-                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    {slot.preventionOutcome}
+          {/* 3-Day Selector Bar (Today, Tomorrow, Day After Tomorrow ONLY) */}
+          <div className="flex items-center gap-2 p-1.5 bg-stone-100/90 rounded-2xl border border-stone-200/80 overflow-x-auto">
+            {dailyPlans.map((plan) => {
+              const isActive = selectedPlanDay === plan.dayKey;
+              return (
+                <button
+                  key={plan.dayKey}
+                  type="button"
+                  onClick={() => setSelectedPlanDay(plan.dayKey)}
+                  className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? "bg-white text-stone-900 shadow-xs font-bold border border-stone-200"
+                      : "text-stone-600 hover:text-stone-900 hover:bg-white/60"
+                  }`}
+                >
+                  <Calendar className={`w-3.5 h-3.5 ${isActive ? "text-emerald-700" : "text-stone-400"}`} />
+                  <span>{plan.dayTitle}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                      plan.badgeVariant === "urgent"
+                        ? "bg-rose-100 text-rose-800 border border-rose-200"
+                        : plan.badgeVariant === "moderate"
+                        ? "bg-amber-100 text-amber-800 border border-amber-200"
+                        : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                    }`}
+                  >
+                    {plan.totalKgToAbsorb > 0 ? `${plan.totalKgToAbsorb} kg` : "Balanced"}
                   </span>
-                </div>
+                </button>
+              );
+            })}
+          </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-stone-500 font-bold block">
-                      Target Raw Ingredients to Absorb (FEFO):
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {slot.ingredientsToAbsorb.length > 0 ? (
-                        slot.ingredientsToAbsorb.map((ing, iIdx) => (
-                          <span
-                            key={iIdx}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-xs font-medium text-stone-800 shadow-2xs"
-                          >
-                            <Package className="w-3 h-3 text-stone-400" />
-                            <strong>{ing.name}</strong>
-                            <span className="text-stone-500 font-mono">({ing.quantity})</span>
-                            <span className="text-[10px] text-rose-600 font-semibold">
-                              · {ing.urgency}
+          {/* Active Day Summary Banner */}
+          <div className="p-4 rounded-xl border border-stone-200 bg-stone-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-serif font-bold text-stone-900 text-sm sm:text-base">
+                  {activePlan.dayTitle}
+                </span>
+                <span className="text-xs text-stone-500 font-mono">
+                  ({activePlan.dateLabel})
+                </span>
+              </div>
+              <p className="text-xs text-stone-600 mt-0.5">
+                {activePlan.absorptionSummary}
+              </p>
+            </div>
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border shrink-0 ${
+                activePlan.badgeVariant === "urgent"
+                  ? "bg-rose-50 text-rose-800 border-rose-200"
+                  : activePlan.badgeVariant === "moderate"
+                  ? "bg-amber-50 text-amber-800 border-amber-200"
+                  : "bg-emerald-50 text-emerald-800 border-emerald-200"
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>{activePlan.urgencyBadge}</span>
+            </span>
+          </div>
+
+          {/* 4 Distinct Meal Cards: Breakfast, Lunch, Snacks, Dinner */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {(
+              [
+                {
+                  key: "breakfast" as const,
+                  label: "Breakfast",
+                  icon: <Sunrise className="w-4 h-4 text-amber-600" />,
+                  accentBorder: "border-amber-200/80 hover:border-amber-300",
+                  headerBg: "bg-gradient-to-r from-amber-50/80 via-white to-amber-50/40",
+                  tagColor: "text-amber-800 bg-amber-100/80 border-amber-200",
+                  data: activePlan.meals.breakfast,
+                },
+                {
+                  key: "lunch" as const,
+                  label: "Lunch",
+                  icon: <Sun className="w-4 h-4 text-emerald-600" />,
+                  accentBorder: "border-emerald-200/80 hover:border-emerald-300",
+                  headerBg: "bg-gradient-to-r from-emerald-50/80 via-white to-emerald-50/40",
+                  tagColor: "text-emerald-800 bg-emerald-100/80 border-emerald-200",
+                  data: activePlan.meals.lunch,
+                },
+                {
+                  key: "snacks" as const,
+                  label: "Evening Snacks",
+                  icon: <Coffee className="w-4 h-4 text-orange-600" />,
+                  accentBorder: "border-orange-200/80 hover:border-orange-300",
+                  headerBg: "bg-gradient-to-r from-orange-50/80 via-white to-orange-50/40",
+                  tagColor: "text-orange-800 bg-orange-100/80 border-orange-200",
+                  data: activePlan.meals.snacks,
+                },
+                {
+                  key: "dinner" as const,
+                  label: "Dinner",
+                  icon: <Moon className="w-4 h-4 text-indigo-600" />,
+                  accentBorder: "border-indigo-200/80 hover:border-indigo-300",
+                  headerBg: "bg-gradient-to-r from-indigo-50/80 via-white to-indigo-50/40",
+                  tagColor: "text-indigo-800 bg-indigo-100/80 border-indigo-200",
+                  data: activePlan.meals.dinner,
+                },
+              ] as const
+            ).map((mealSlot) => {
+              const meal = mealSlot.data;
+              return (
+                <div
+                  key={mealSlot.key}
+                  className={`p-4 sm:p-5 rounded-2xl border ${mealSlot.accentBorder} bg-white shadow-xs hover:shadow-sm transition-all space-y-3.5 flex flex-col justify-between`}
+                >
+                  <div className="space-y-3">
+                    {/* Meal Header */}
+                    <div className={`p-2.5 rounded-xl border border-stone-100 ${mealSlot.headerBg} flex items-center justify-between gap-2`}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-white border border-stone-200/70 flex items-center justify-center shadow-2xs">
+                          {mealSlot.icon}
+                        </div>
+                        <div>
+                          <h4 className="font-serif font-bold text-stone-900 text-sm">
+                            {meal.mealLabel}
+                          </h4>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border ${mealSlot.tagColor}`}>
+                        {meal.timeWindow}
+                      </span>
+                    </div>
+
+                    {/* Target Raw Ingredients to Absorb (FEFO) */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-bold block">
+                        Target Raw Ingredients to Absorb (FEFO):
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {meal.ingredientsToAbsorb.length > 0 ? (
+                          meal.ingredientsToAbsorb.map((ing, iIdx) => (
+                            <span
+                              key={iIdx}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-50 border border-stone-200 text-xs font-medium text-stone-800 shadow-2xs"
+                            >
+                              <Package className="w-3 h-3 text-stone-400 shrink-0" />
+                              <strong>{ing.name}</strong>
+                              <span className="text-stone-500 font-mono">({ing.quantity})</span>
+                              <span className="text-[10px] text-rose-600 font-semibold whitespace-nowrap">
+                                · {ing.urgency}
+                              </span>
                             </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-stone-500 italic">
+                            Standard pantry rotation (No nearing-expiry raw materials)
                           </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-stone-500 italic">
-                          Standard pantry rotation (No nearing-expiry raw materials)
-                        </span>
-                      )}
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Recommended Dishes to Prepare */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-bold block">
+                        Recommended Dishes to Prepare:
+                      </span>
+                      <ul className="text-xs text-stone-700 space-y-1">
+                        {meal.suggestedDishes.map((dish, dIdx) => (
+                          <li key={dIdx} className="flex items-baseline gap-1.5 leading-snug">
+                            <span className="w-1.5 h-1.5 rounded-full bg-stone-400 shrink-0 mt-1" />
+                            <strong className="text-stone-900 font-semibold">{dish}</strong>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-stone-500 font-bold block">
-                      Recommended Dishes to Prepare:
-                    </span>
-                    <ul className="text-xs text-stone-700 space-y-1 list-disc list-inside">
-                      {slot.suggestedDishes.map((dish, dIdx) => (
-                        <li key={dIdx} className="leading-snug">
-                          <strong className="text-stone-900">{dish}</strong>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {/* AI Central Reasoning */}
+                  {meal.aiRationale && (
+                    <div className="pt-2 border-t border-stone-100 flex items-start gap-1.5 text-[11px] text-stone-600 bg-stone-50/60 p-2 rounded-lg">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                      <span className="leading-tight">
+                        <strong className="text-stone-700">AI Chef Rationale:</strong> {meal.aiRationale}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="p-4 rounded-xl bg-purple-50/70 border border-purple-200 text-xs text-purple-900 space-y-1.5">
