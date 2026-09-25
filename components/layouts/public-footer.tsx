@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ZeroPlateLogo } from "@/components/brand/zero-plate-logo";
 
 export function PublicFooter() {
   return (
@@ -6,9 +7,7 @@ export function PublicFooter() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-10">
         {/* Col 1: Brand & Positioning */}
         <div className="md:col-span-1 space-y-3">
-          <div className="font-display text-2xl font-bold text-[#F3EEE2] tracking-tight">
-            ZeroPlate<span className="text-saffron">.ai</span>
-          </div>
+          <ZeroPlateLogo size="md" variant="dark" href="/" />
           <p className="text-xs text-[#A8A193] leading-relaxed">
             The B2B operating system for institutional food waste — forecasting,
             redistribution, and ESG reporting.

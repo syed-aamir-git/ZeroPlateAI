@@ -1,37 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <!-- Subtle off-white circular background (matching the authentic paper ground in the logo) -->
-  <circle cx="64" cy="64" r="62" fill="#F7F6F2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <!-- Emerald Gradient for Environmental Food Rescue -->
+    <linearGradient id="zp-emerald-flow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="50%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
 
-  <!-- Logo Graphics in authentic ZeroPlate forest green (#2E5439) -->
-  <g stroke="#2E5439" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <!-- Top arc of the outer circle (from top-right gap around top and left) -->
-    <path d="M 95.5 25.2 A 50 50 0 0 0 23.0 92.7"/>
+    <!-- Warm Amber/Saffron Gradient for Nourishing Meals -->
+    <linearGradient id="zp-amber-glow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="50%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
 
-    <!-- Bottom-right arc of the outer circle (from bottom-left around to the top-right gap) -->
-    <path d="M 31.9 102.3 A 50 50 0 0 0 108.9 42.1"/>
+    <!-- Porcelain Plate Surface Gradient -->
+    <radialGradient id="zp-porcelain-base" cx="48%" cy="46%" r="50%" fx="40%" fy="35%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </radialGradient>
+  </defs>
 
-    <!-- Top horizontal capsule bar of 'Z' with rounded left end -->
-    <path d="M 42 39.5 L 83.5 39.5 C 85.5 39.5 86.8 41.2 86 43.2 L 84 46 L 42 46 C 39.8 46 38 44.5 38 42.75 C 38 41 39.8 39.5 42 39.5 Z" fill="#2E5439" stroke-width="1"/>
+  <!-- Outer Circular Dish (Zero Waste Round Plate) -->
+  <circle cx="50" cy="50" r="46" fill="url(#zp-porcelain-base)" stroke="#CBD5E1" stroke-width="2" />
 
-    <!-- Primary diagonal of 'Z' -->
-    <path d="M 84 43 L 43.6 85.7"/>
+  <!-- Subtle Inner Plate Well Inset -->
+  <circle cx="50" cy="50" r="36" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" />
 
-    <!-- Parallel inner diagonal line of 'Z' -->
-    <path d="M 75 46 L 47 79" stroke-width="2.2"/>
+  <!-- 1. Circular Redistribution Arc: Emerald Fresh Food Stream (Top/Left) -->
+  <path d="M 22 50 C 22 34.5 34.5 22 50 22 C 60.5 22 69.8 27.8 74.8 36.5" stroke="url(#zp-emerald-flow)" stroke-width="6" stroke-linecap="round" />
+  <!-- Emerald Stream Arrowhead -->
+  <path d="M 72 30 L 77.5 38 L 68.5 39 Z" fill="#059669" />
 
-    <!-- Bottom horizontal bar of 'Z' with upward hook terminal -->
-    <path d="M 43.6 85.7 L 85.7 85.7 C 88 85.7 89.5 84 89 81"/>
+  <!-- 2. Circular Redistribution Arc: Golden Amber Meal Delivery Stream (Bottom/Right) -->
+  <path d="M 78 50 C 78 65.5 65.5 78 50 78 C 39.5 78 30.2 72.2 25.2 63.5" stroke="url(#zp-amber-glow)" stroke-width="6" stroke-linecap="round" />
+  <!-- Golden Stream Arrowhead -->
+  <path d="M 28 70 L 22.5 62 L 31.5 61 Z" fill="#D97706" />
 
-    <!-- Monoline loop from bottom of 'Z' into the bottom outer circle -->
-    <path d="M 43.6 85.7 C 33 85.7 24 95 31.9 102.3"/>
+  <!-- Center Fork -->
+  <path d="M 43 65 L 43 47" stroke="#0F172A" stroke-width="3" stroke-linecap="round" />
+  <path d="M 38 47 C 38 51 48 51 48 47 L 48 36" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round" fill="none" />
+  <path d="M 38 36 L 38 47 M 43 36 L 43 47" stroke="#0F172A" stroke-width="2" stroke-linecap="round" />
 
-    <!-- Rising stem branching from diagonal towards top-right -->
-    <path d="M 71 59 L 77.5 59 L 98.5 34.5"/>
-  </g>
+  <!-- Fresh Sprouting Leaf -->
+  <path d="M 45 62 C 48 58 59 55 61 41 C 51 40 47 49 46 57 Z" fill="url(#zp-emerald-flow)" />
+  <path d="M 46 60 C 48 54 53 48 59 43" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.9" />
 
-  <!-- Botanical Leaf at the top-right opening -->
-  <path d="M 98.5 34.5 C 99.5 25.5 107.5 17 114 14 C 112 21.5 106.5 31.5 98.5 34.5 Z" fill="#2E5439" stroke="#2E5439" stroke-width="0.5"/>
-
-  <!-- Leaf center vein -->
-  <path d="M 100 32.5 C 104 26 108.5 20 113 15" stroke="#F7F6F2" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+  <!-- Warm Golden Grain / Nourishment Drop -->
+  <circle cx="50" cy="30" r="3.5" fill="url(#zp-amber-glow)" />
 </svg>

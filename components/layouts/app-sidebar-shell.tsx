@@ -27,6 +27,7 @@ import {
   Boxes,
 } from "lucide-react";
 import { NotificationBell } from "@/components/ui/notification-bell";
+import { ZeroPlateLogo } from "@/components/brand/zero-plate-logo";
 
 export interface NavItem {
   href: string;
@@ -257,12 +258,10 @@ export function AppSidebarShell({
               )}
             >
               <div className="flex items-center gap-2.5">
-                <span className="font-display text-xl font-bold tracking-tight">
-                  ZeroPlate<span className="text-saffron">.ai</span>
-                </span>
+                <ZeroPlateLogo size="sm" showTagline={false} href={`/dashboard/${role}`} />
                 <span
                   className={cn(
-                    "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap shadow-2xs",
+                    "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 whitespace-nowrap shadow-2xs",
                     isAdmin
                       ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-0 font-bold"
                       : "bg-basil/10 text-basil border-basil/20"
@@ -332,21 +331,10 @@ export function AppSidebarShell({
               : "border-line bg-ledger-paper"
           )}
         >
-          <Link href={`/dashboard/${role}`} className="flex items-center gap-2 group">
-            <span
-              className={cn(
-                "font-display text-xl font-bold tracking-tight transition-colors",
-                isAdmin
-                  ? "text-emerald-800 group-hover:text-emerald-950"
-                  : "text-basil group-hover:text-basil-dark"
-              )}
-            >
-              ZeroPlate<span className="text-saffron">.ai</span>
-            </span>
-          </Link>
+          <ZeroPlateLogo size="sm" showTagline={false} href={`/dashboard/${role}`} />
           <span
             className={cn(
-              "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap shadow-2xs",
+              "text-[10px] font-mono-numeral font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 whitespace-nowrap shadow-2xs",
               isAdmin
                 ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-0 font-bold"
                 : "bg-basil/10 text-basil border-basil/20"

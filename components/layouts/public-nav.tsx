@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Sparkles, Menu, X, ArrowRight, ShieldCheck } from "lucide-react";
+import { Menu, X, ArrowRight, ShieldCheck } from "lucide-react";
+import { ZeroPlateLogo } from "@/components/brand/zero-plate-logo";
 
 interface PublicNavProps {
   hideAuthButtons?: boolean;
@@ -49,20 +50,8 @@ export function PublicNav({ hideAuthButtons = false }: PublicNavProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Left: Brand Identity */}
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5 text-amber-300" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-slate-900 flex items-center">
-                ZeroPlate
-                <span className="ml-0.5 text-amber-500 font-extrabold">.ai</span>
-              </span>
-              <span className="text-[10px] font-medium text-emerald-700 tracking-wide uppercase -mt-1 hidden sm:block">
-                AI Food Rescue Network
-              </span>
-            </div>
-          </Link>
+          <ZeroPlateLogo size="md" href="/" />
+
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1">
