@@ -17,7 +17,7 @@ import {
   Leaf,
   Sparkles,
   TrendingUp,
-  Calculator,
+  BarChart3,
   Truck,
   FileSpreadsheet,
   AlertTriangle,
@@ -179,8 +179,8 @@ export default function InstitutionOverviewPage() {
             href="/app/institution/analytics"
             className="group inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-stone-200/90 bg-stone-50 hover:bg-stone-100 active:scale-[0.98] text-stone-700 text-xs font-semibold shadow-2xs transition-all whitespace-nowrap"
           >
-            <Calculator className="w-4 h-4 text-stone-500 shrink-0" />
-            <span>Batch Sizing</span>
+            <BarChart3 className="w-4 h-4 text-stone-500 shrink-0" />
+            <span>Consumption Analytics</span>
             <ArrowRight className="w-3.5 h-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
           </Link>
         </div>
@@ -494,13 +494,13 @@ export default function InstitutionOverviewPage() {
             className="group p-4 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 shadow-2xs hover:shadow-xs transition-all space-y-2"
           >
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Calculator className="w-4 h-4" />
+              <BarChart3 className="w-4 h-4" />
             </div>
             <h3 className="font-semibold text-sm text-stone-900 group-hover:text-emerald-700 transition-colors">
-              Ample-Prep Batching
+              Consumption Analytics
             </h3>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Calculate exact batch sizes with calibrated safety buffers so diners eat amply with 0 runout.
+              Analyze historical consumption patterns, category trends, and verified food audit logs.
             </p>
           </Link>
 
