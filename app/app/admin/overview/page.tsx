@@ -469,11 +469,20 @@ export default function AdminOverviewPage() {
               Real-time map showing where food is being picked up, driven, and dropped off right now.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
               {dispatches.length} Active Dispatches
             </span>
+            <Link
+              href="/app/admin/food-items"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-stone-900 text-stone-100 hover:bg-stone-800 hover:text-white border border-stone-800 shadow-xs transition-all group"
+              title="Open full food items directory"
+            >
+              <Utensils className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span>All Food Items</span>
+              <ArrowRight className="w-3.5 h-3.5 text-stone-400 group-hover:translate-x-0.5 group-hover:text-white transition-all" />
+            </Link>
           </div>
         </div>
 
@@ -506,89 +515,106 @@ export default function AdminOverviewPage() {
             </p>
           </div>
         ) : (
-          <div className="border border-stone-200/90 bg-white rounded-2xl overflow-x-auto shadow-sm">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-stone-50/90 border-b border-stone-200 text-zinc-600 uppercase font-mono text-[11px]">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Food Item</th>
-                  <th className="px-4 py-3 font-semibold">Pickup &amp; Drop-off</th>
-                  <th className="px-4 py-3 font-semibold">Assigned Driver</th>
-                  <th className="px-4 py-3 font-semibold">Delivery Status</th>
-                  <th className="px-4 py-3 font-semibold text-right">Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 text-zinc-700">
-                {dispatches.map((d) => {
-                  const statusInfo = formatDeliveryStatus(d.status, Boolean(d.courier));
-                  return (
-                    <tr key={d._id} className="hover:bg-stone-50/70 transition-colors">
-                      {/* Food Item */}
-                      <td className="px-4 py-3.5 font-medium text-zinc-900">
-                        <div className="font-semibold text-sm">{d.itemName}</div>
-                        <div className="text-xs text-amber-700 font-mono font-bold mt-0.5">
-                          {formatFoodQuantity(d.quantity, d.unit, d.category || "general")}
-                        </div>
-                      </td>
-
-                      {/* Pickup & Destination */}
-                      <td className="px-4 py-3.5 space-y-1">
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-zinc-400">From:</span>
-                          <span className="font-medium text-zinc-900">{d.institutionName}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-zinc-400">To:</span>
-                          <span className="font-medium text-emerald-800">{d.ngoName}</span>
-                        </div>
-                      </td>
-
-                      {/* Courier Information */}
-                      <td className="px-4 py-3.5">
-                        {d.courier ? (
-                          <div className="space-y-1">
-                            <div className="font-semibold text-zinc-900 flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                              <span>{d.courier.name}</span>
-                              {d.courier.vehicleNumber && (
-                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-mono font-bold text-[10px] border border-amber-300">
-                                  {d.courier.vehicleNumber}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[11px] text-zinc-500 capitalize">
-                              {d.courier.vehicleType?.replace("_", " ")} · {d.courier.phone}
-                            </div>
+          <div className="border border-stone-200/90 bg-white rounded-2xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-stone-50/90 border-b border-stone-200 text-zinc-600 uppercase font-mono text-[11px]">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Food Item</th>
+                    <th className="px-4 py-3 font-semibold">Pickup &amp; Drop-off</th>
+                    <th className="px-4 py-3 font-semibold">Assigned Driver</th>
+                    <th className="px-4 py-3 font-semibold">Delivery Status</th>
+                    <th className="px-4 py-3 font-semibold text-right">Time</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 text-zinc-700">
+                  {dispatches.slice(0, 4).map((d) => {
+                    const statusInfo = formatDeliveryStatus(d.status, Boolean(d.courier));
+                    return (
+                      <tr key={d._id} className="hover:bg-stone-50/70 transition-colors">
+                        {/* Food Item */}
+                        <td className="px-4 py-3.5 font-medium text-zinc-900">
+                          <div className="font-semibold text-sm">{d.itemName}</div>
+                          <div className="text-xs text-amber-700 font-mono font-bold mt-0.5">
+                            {formatFoodQuantity(d.quantity, d.unit, d.category || "general")}
                           </div>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            Looking for nearby driver...
+                        </td>
+
+                        {/* Pickup & Destination */}
+                        <td className="px-4 py-3.5 space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="text-zinc-400">From:</span>
+                            <span className="font-medium text-zinc-900">{d.institutionName}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="text-zinc-400">To:</span>
+                            <span className="font-medium text-emerald-800">{d.ngoName}</span>
+                          </div>
+                        </td>
+
+                        {/* Courier Information */}
+                        <td className="px-4 py-3.5">
+                          {d.courier ? (
+                            <div className="space-y-1">
+                              <div className="font-semibold text-zinc-900 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                                <span>{d.courier.name}</span>
+                                {d.courier.vehicleNumber && (
+                                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-mono font-bold text-[10px] border border-amber-300">
+                                    {d.courier.vehicleNumber}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-zinc-500 capitalize">
+                                {d.courier.vehicleType?.replace("_", " ")} · {d.courier.phone}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              Looking for nearby driver...
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-3.5">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusInfo.color}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
+                            {statusInfo.label}
                           </span>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Status */}
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusInfo.color}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
-                          {statusInfo.label}
-                        </span>
-                      </td>
+                        {/* Time */}
+                        <td className="px-4 py-3.5 font-mono text-right text-zinc-500">
+                          {new Date(d.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-                      {/* Time */}
-                      <td className="px-4 py-3.5 font-mono text-right text-zinc-500">
-                        {new Date(d.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            {/* Footer with redirect to all food items */}
+            <div className="px-4 py-3 bg-stone-50/90 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="text-zinc-500 font-medium">
+                Showing <span className="font-bold text-zinc-900">{Math.min(dispatches.length, 4)}</span> latest food items of <span className="font-bold text-zinc-900">{dispatches.length}</span> total listings
+              </div>
+              <Link
+                href="/app/admin/food-items"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-800 shadow-2xs transition-all group"
+              >
+                <Utensils className="w-3.5 h-3.5 text-emerald-200" />
+                <span>View All Food Items Directory</span>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
           </div>
         )}
       </div>

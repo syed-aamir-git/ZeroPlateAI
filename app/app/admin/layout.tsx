@@ -11,6 +11,7 @@ export default async function AdminLayout({
 
   const navItems = [
     { href: "/app/admin/overview", label: "Platform Overview", icon: "overview" },
+    { href: "/app/admin/food-items", label: "Food Items Directory", icon: "food_items" },
     { href: "/app/admin/ngo-verification", label: "NGO Verification", icon: "verification" },
     { href: "/app/admin/institutions", label: "Institutions", icon: "institutions" },
     { href: "/app/admin/safety-rules", label: "Safety Rules Config", icon: "safety_rules" },

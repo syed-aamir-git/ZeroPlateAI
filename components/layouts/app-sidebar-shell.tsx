@@ -50,6 +50,7 @@ function getIconComponent(key?: string) {
     case "utilization":
     case "resource":
       return ResourceIcon;
+    case "food_items":
     case "surplus":
     case "ticket":
     case "browse":
