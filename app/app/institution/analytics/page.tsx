@@ -145,7 +145,10 @@ export default function InstitutionAnalyticsPage() {
     async function loadAnalytics() {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/v1/institution/analytics");
+        const res = await fetch("/api/v1/institution/analytics", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
           throw new Error(errJson.error || "Failed to load consumption analytics.");

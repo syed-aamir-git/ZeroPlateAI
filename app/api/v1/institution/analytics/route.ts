@@ -398,6 +398,12 @@ export async function GET(request: NextRequest) {
         costPerKgInr: SUSTAINABILITY_FACTORS.COST_SAVED_INR_PER_KG,
         co2ePerKg: SUSTAINABILITY_FACTORS.CO2E_PER_KG,
       },
+    }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      },
     });
   } catch (error: unknown) {
     console.error("Error generating kitchen consumption analytics from real data:", error);
