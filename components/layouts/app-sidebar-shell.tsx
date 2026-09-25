@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/auth-client";
 import {
@@ -91,11 +92,13 @@ export function AppSidebarShell({
   role,
   roleLabel,
   navItems,
-  currentPath = "",
+  currentPath,
   children,
   userEmail,
   userName,
 }: AppSidebarShellProps) {
+  const pathname = usePathname();
+  const activePath = currentPath || pathname || "";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = React.useState(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
@@ -138,13 +141,15 @@ export function AppSidebarShell({
   };
 
   const renderNavLinks = (onItemClick?: () => void) => (
-    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+    <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
       {navItems.map((item) => {
         const Icon = getIconComponent(item.icon);
         const isActive =
-          currentPath === item.href ||
+          activePath === item.href ||
           (item.href !== `/dashboard/${role}` &&
-            currentPath.startsWith(item.href));
+            item.href !== `/app/${role}` &&
+            item.href !== `/app/${role}/overview` &&
+            activePath.startsWith(item.href));
 
         return (
           <Link
@@ -152,39 +157,55 @@ export function AppSidebarShell({
             href={item.href}
             onClick={onItemClick}
             className={cn(
-              "flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-all relative rounded-xl",
+              "flex items-center justify-between px-3.5 py-2.5 text-sm font-medium transition-all relative rounded-xl group select-none",
               isActive
                 ? isAdmin
-                  ? "text-emerald-950 font-bold border-l-[3.5px] border-emerald-600 pl-3 bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-transparent shadow-2xs"
-                  : "text-basil font-semibold border-l-[3px] border-basil pl-[9px] bg-[#EAE3D4]/50"
+                  ? "text-emerald-950 font-bold bg-emerald-500/10 border border-emerald-500/25 shadow-xs before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r-full before:bg-emerald-600"
+                  : "text-basil font-bold border-l-[3.5px] border-basil pl-3 bg-[#EAE3D4]/80 shadow-xs"
                 : isAdmin
-                ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border-l-[3.5px] border-transparent pl-3"
-                : "text-ink-soft hover:text-ink hover:bg-[#EAE3D4]/40 border-l-[3px] border-transparent pl-[9px]"
+                ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border border-transparent"
+                : "text-ink-soft hover:text-ink hover:bg-[#EAE3D4]/40 border-l-[3.5px] border-transparent pl-3"
             )}
           >
             <div className="flex items-center gap-3">
               <Icon
                 size={18}
-                strokeWidth={1.5}
+                strokeWidth={isActive ? 2.2 : 1.75}
                 className={cn(
+                  "transition-colors shrink-0",
                   isActive
                     ? isAdmin
                       ? "text-emerald-700"
                       : "text-basil"
                     : isAdmin
                     ? "text-slate-400 group-hover:text-slate-700"
-                    : "text-ink-soft"
+                    : "text-ink-soft group-hover:text-ink"
                 )}
               />
-              <span>{item.label}</span>
+              <span
+                className={cn(
+                  "transition-colors",
+                  isActive
+                    ? isAdmin
+                      ? "text-emerald-950 font-bold"
+                      : "text-basil font-bold"
+                    : ""
+                )}
+              >
+                {item.label}
+              </span>
             </div>
             {item.badge !== undefined && (
               <span
                 className={cn(
                   "text-xs px-2 py-0.5 rounded-full font-mono-numeral",
-                  isAdmin
-                    ? "bg-amber-100 text-amber-900 border border-amber-300 font-bold shadow-2xs"
-                    : "bg-basil/10 text-basil"
+                  isActive
+                    ? isAdmin
+                      ? "bg-emerald-600 text-white font-bold"
+                      : "bg-basil text-white font-bold"
+                    : isAdmin
+                    ? "bg-amber-100 text-amber-900 border border-amber-300 font-bold"
+                    : "bg-basil/10 text-basil font-semibold"
                 )}
               >
                 {item.badge}
