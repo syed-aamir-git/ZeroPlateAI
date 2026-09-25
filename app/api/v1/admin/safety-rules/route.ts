@@ -98,21 +98,61 @@ export async function PUT(request: NextRequest) {
     };
 
     if (cookedFoodMaxHours !== undefined) {
-      updates.cookedFoodMaxHours = Number(cookedFoodMaxHours);
+      const val = Number(cookedFoodMaxHours);
+      if (isNaN(val) || val < 0 || val > 72) {
+        return NextResponse.json(
+          { error: "Cooked food max age must be between 0 and 72 hours." },
+          { status: 400 }
+        );
+      }
+      updates.cookedFoodMaxHours = val;
     }
     if (cookedFoodWindowCutoffHours !== undefined) {
-      updates.cookedFoodWindowCutoffHours = Number(cookedFoodWindowCutoffHours);
+      const val = Number(cookedFoodWindowCutoffHours);
+      if (isNaN(val) || val < 0 || val > 72) {
+        return NextResponse.json(
+          { error: "Pickup window cutoff must be between 0 and 72 hours." },
+          { status: 400 }
+        );
+      }
+      updates.cookedFoodWindowCutoffHours = val;
     }
     if (dairyBufferHours !== undefined) {
-      updates.dairyBufferHours = Number(dairyBufferHours);
+      const val = Number(dairyBufferHours);
+      if (isNaN(val) || val < 0 || val > 72) {
+        return NextResponse.json(
+          { error: "Dairy buffer window must be between 0 and 72 hours." },
+          { status: 400 }
+        );
+      }
+      updates.dairyBufferHours = val;
     }
     if (expiryWindowThresholdHours && typeof expiryWindowThresholdHours === "object") {
+      const cf = Number(expiryWindowThresholdHours.cooked_food ?? 2);
+      const dy = Number(expiryWindowThresholdHours.dairy ?? 12);
+      const bk = Number(expiryWindowThresholdHours.bakery ?? 12);
+      const rp = Number(expiryWindowThresholdHours.raw_produce ?? 24);
+      const pk = Number(expiryWindowThresholdHours.packaged ?? 48);
+
+      if (
+        isNaN(cf) || cf < 0 || cf > 72 ||
+        isNaN(dy) || dy < 0 || dy > 168 ||
+        isNaN(bk) || bk < 0 || bk > 168 ||
+        isNaN(rp) || rp < 0 || rp > 336 ||
+        isNaN(pk) || pk < 0 || pk > 720
+      ) {
+        return NextResponse.json(
+          { error: "Category warning thresholds must be within limits (min: 0h; max: 72h–720h)." },
+          { status: 400 }
+        );
+      }
+
       updates.expiryWindowThresholdHours = {
-        cooked_food: Number(expiryWindowThresholdHours.cooked_food || 2),
-        dairy: Number(expiryWindowThresholdHours.dairy || 12),
-        bakery: Number(expiryWindowThresholdHours.bakery || 12),
-        raw_produce: Number(expiryWindowThresholdHours.raw_produce || 24),
-        packaged: Number(expiryWindowThresholdHours.packaged || 48),
+        cooked_food: cf,
+        dairy: dy,
+        bakery: bk,
+        raw_produce: rp,
+        packaged: pk,
       };
     }
 

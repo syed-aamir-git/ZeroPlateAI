@@ -73,20 +73,72 @@ export default function AdminSafetyRulesPage() {
     setSaving(true);
     setMessage(null);
 
+    const numCooked = Number(cookedFoodMaxHours);
+    const numCutoff = Number(cookedFoodWindowCutoffHours);
+    const numDairy = Number(dairyBufferHours);
+
+    if (isNaN(numCooked) || numCooked < 0 || numCooked > 72) {
+      setMessage({ type: "error", text: "Cooked food max age must be between 0 and 72 hours." });
+      setSaving(false);
+      return;
+    }
+    if (isNaN(numCutoff) || numCutoff < 0 || numCutoff > 72) {
+      setMessage({ type: "error", text: "Pickup window cutoff must be between 0 and 72 hours." });
+      setSaving(false);
+      return;
+    }
+    if (isNaN(numDairy) || numDairy < 0 || numDairy > 72) {
+      setMessage({ type: "error", text: "Dairy buffer window must be between 0 and 72 hours." });
+      setSaving(false);
+      return;
+    }
+
+    const cf = Number(expiryThresholds.cooked_food);
+    const dy = Number(expiryThresholds.dairy);
+    const bk = Number(expiryThresholds.bakery);
+    const rp = Number(expiryThresholds.raw_produce);
+    const pk = Number(expiryThresholds.packaged);
+
+    if (isNaN(cf) || cf < 0 || cf > 72) {
+      setMessage({ type: "error", text: "Cooked food warning threshold must be between 0 and 72 hours." });
+      setSaving(false);
+      return;
+    }
+    if (isNaN(dy) || dy < 0 || dy > 168) {
+      setMessage({ type: "error", text: "Dairy warning threshold must be between 0 and 168 hours." });
+      setSaving(false);
+      return;
+    }
+    if (isNaN(bk) || bk < 0 || bk > 168) {
+      setMessage({ type: "error", text: "Bakery warning threshold must be between 0 and 168 hours." });
+      setSaving(false);
+      return;
+    }
+    if (isNaN(rp) || rp < 0 || rp > 336) {
+      setMessage({ type: "error", text: "Produce warning threshold must be between 0 and 336 hours." });
+      setSaving(false);
+      return;
+    }
+    if (isNaN(pk) || pk < 0 || pk > 720) {
+      setMessage({ type: "error", text: "Packaged warning threshold must be between 0 and 720 hours." });
+      setSaving(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/v1/admin/safety-rules", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cookedFoodMaxHours: Number(cookedFoodMaxHours),
-          cookedFoodWindowCutoffHours: Number(cookedFoodWindowCutoffHours),
-          dairyBufferHours: Number(dairyBufferHours),
+          cookedFoodMaxHours: numCooked,
+          cookedFoodWindowCutoffHours: numCutoff,
+          dairyBufferHours: numDairy,
           expiryWindowThresholdHours: {
-            cooked_food: Number(expiryThresholds.cooked_food),
-            dairy: Number(expiryThresholds.dairy),
-            bakery: Number(expiryThresholds.bakery),
-            raw_produce: Number(expiryThresholds.raw_produce),
-            packaged: Number(expiryThresholds.packaged),
+            cooked_food: cf,
+            dairy: dy,
+            bakery: bk,
+            raw_produce: rp,
+            packaged: pk,
           },
         }),
       });
@@ -186,13 +238,15 @@ export default function AdminSafetyRulesPage() {
             <input
               type="number"
               step="any"
+              min="0"
+              max="72"
               value={cookedFoodMaxHours}
               onChange={(e) => setCookedFoodMaxHours(e.target.value)}
               required
               className="w-full px-3 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
             />
             <span className="text-[11px] text-zinc-400 block mt-1">
-              Standard: 4 hours
+              Standard: 4 hours (Allowed: 0h – 72h)
             </span>
           </div>
 
@@ -203,13 +257,15 @@ export default function AdminSafetyRulesPage() {
             <input
               type="number"
               step="any"
+              min="0"
+              max="72"
               value={cookedFoodWindowCutoffHours}
               onChange={(e) => setCookedFoodWindowCutoffHours(e.target.value)}
               required
               className="w-full px-3 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
             />
             <span className="text-[11px] text-zinc-400 block mt-1">
-              Pickup must finish within window
+              Pickup must finish within window (Allowed: 0h – 72h)
             </span>
           </div>
 
@@ -220,13 +276,15 @@ export default function AdminSafetyRulesPage() {
             <input
               type="number"
               step="any"
+              min="0"
+              max="72"
               value={dairyBufferHours}
               onChange={(e) => setDairyBufferHours(e.target.value)}
               required
               className="w-full px-3 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
             />
             <span className="text-[11px] text-zinc-400 block mt-1">
-              Minimum time before expiry
+              Minimum time before expiry (Allowed: 0h – 72h)
             </span>
           </div>
         </div>
@@ -247,11 +305,17 @@ export default function AdminSafetyRulesPage() {
             </label>
             <input
               type="number"
+              step="any"
+              min="0"
+              max="72"
               value={expiryThresholds.cooked_food}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, cooked_food: e.target.value })}
               required
               className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
             />
+            <span className="text-[10px] text-zinc-400 block mt-1">
+              Allowed: 0h – 72h
+            </span>
           </div>
 
           <div>
@@ -260,11 +324,17 @@ export default function AdminSafetyRulesPage() {
             </label>
             <input
               type="number"
+              step="any"
+              min="0"
+              max="168"
               value={expiryThresholds.dairy}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, dairy: e.target.value })}
               required
               className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
             />
+            <span className="text-[10px] text-zinc-400 block mt-1">
+              Allowed: 0h – 168h
+            </span>
           </div>
 
           <div>
@@ -273,11 +343,17 @@ export default function AdminSafetyRulesPage() {
             </label>
             <input
               type="number"
+              step="any"
+              min="0"
+              max="168"
               value={expiryThresholds.bakery}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, bakery: e.target.value })}
               required
               className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
             />
+            <span className="text-[10px] text-zinc-400 block mt-1">
+              Allowed: 0h – 168h
+            </span>
           </div>
 
           <div>
@@ -286,11 +362,17 @@ export default function AdminSafetyRulesPage() {
             </label>
             <input
               type="number"
+              step="any"
+              min="0"
+              max="336"
               value={expiryThresholds.raw_produce}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, raw_produce: e.target.value })}
               required
               className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
             />
+            <span className="text-[10px] text-zinc-400 block mt-1">
+              Allowed: 0h – 336h
+            </span>
           </div>
 
           <div>
@@ -299,11 +381,17 @@ export default function AdminSafetyRulesPage() {
             </label>
             <input
               type="number"
+              step="any"
+              min="0"
+              max="720"
               value={expiryThresholds.packaged}
               onChange={(e) => setExpiryThresholds({ ...expiryThresholds, packaged: e.target.value })}
               required
               className="w-full px-2.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-zinc-900 font-medium focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all shadow-xs"
             />
+            <span className="text-[10px] text-zinc-400 block mt-1">
+              Allowed: 0h – 720h
+            </span>
           </div>
         </div>
 
