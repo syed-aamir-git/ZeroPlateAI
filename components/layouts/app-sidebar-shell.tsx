@@ -64,6 +64,9 @@ function getIconComponent(key?: string) {
     case "organization":
     case "users":
       return UserIcon;
+    case "notifications":
+    case "bell":
+      return BellIcon;
     case "overview":
     case "impact":
     case "audit":
@@ -445,7 +448,7 @@ export function AppSidebarShell({
         {/* Top App Bar (Navbar) */}
         <header
           className={cn(
-            "h-16 px-4 sm:px-6 lg:px-8 border-b flex items-center justify-between shrink-0",
+            "relative z-40 h-16 px-4 sm:px-6 lg:px-8 border-b flex items-center justify-between shrink-0",
             isAdmin
               ? "bg-white/95 backdrop-blur-md text-slate-900 border-slate-200/90 shadow-2xs"
               : "bg-ledger-paper border-line text-ink"
@@ -488,12 +491,21 @@ export function AppSidebarShell({
           </div>
 
           {/* Top-Right: Notifications Bell + Role Badge */}
-          <div className="flex items-center gap-3">
-            <NotificationBell isAdmin={isAdmin} />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <NotificationBell
+              isAdmin={isAdmin}
+              notificationsHref={
+                isAdmin
+                  ? "/app/admin/notifications"
+                  : role === "ngo"
+                  ? "/app/ngo/notifications"
+                  : "/app/institution/notifications"
+              }
+            />
 
             <div
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium shrink-0",
+                "flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-medium shrink-0",
                 isAdmin
                   ? "border-emerald-200 bg-emerald-50/80 text-emerald-950 font-semibold shadow-2xs"
                   : "border-line bg-ledger-paper text-ink"
@@ -505,7 +517,8 @@ export function AppSidebarShell({
                   isAdmin ? "bg-emerald-600 animate-pulse" : "bg-basil"
                 )}
               />
-              <span className="whitespace-nowrap">{roleLabel}</span>
+              <span className="whitespace-nowrap hidden sm:inline">{roleLabel}</span>
+              <span className="whitespace-nowrap sm:hidden">{getRolePill(role)}</span>
             </div>
           </div>
         </header>

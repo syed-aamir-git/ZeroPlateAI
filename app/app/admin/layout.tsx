@@ -16,6 +16,7 @@ export default async function AdminLayout({
     { href: "/app/admin/safety-rules", label: "Safety Rules Config", icon: "safety_rules" },
     { href: "/app/admin/audit-log", label: "Audit Trail", icon: "audit" },
     { href: "/app/admin/users", label: "User Accounts", icon: "users" },
+    { href: "/app/admin/notifications", label: "Notification Center", icon: "notifications" },
   ];
 
   return (

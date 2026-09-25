@@ -17,15 +17,18 @@ interface NotificationItem {
 
 interface NotificationBellProps {
   isAdmin?: boolean;
+  notificationsHref?: string;
 }
 
-export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
+export function NotificationBell({ isAdmin = false, notificationsHref }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const isFetchingRef = useRef(false);
+
+  const destinationHref = notificationsHref || (isAdmin ? "/app/admin/notifications" : "/app/notifications");
 
   const fetchNotifications = useCallback(async (signal?: AbortSignal) => {
     if (isFetchingRef.current) return;
@@ -164,7 +167,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
       {isOpen && (
         <div
           className={cn(
-            "absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border z-50 overflow-hidden",
+            "absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border z-[1050] overflow-hidden",
             isAdmin
               ? "bg-white border-slate-200 text-slate-900"
               : "bg-[#FAF6EE] border-line text-ink"
@@ -277,7 +280,7 @@ export function NotificationBell({ isAdmin = false }: NotificationBellProps) {
             )}
           >
             <Link
-              href="/app/notifications"
+              href={destinationHref}
               onClick={() => setIsOpen(false)}
               className={cn(
                 "text-xs font-medium transition-colors",

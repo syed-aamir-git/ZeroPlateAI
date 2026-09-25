@@ -13,6 +13,7 @@ export default async function NgoLayout({
     { href: "/app/ngo/browse", label: "Browse Surplus", icon: "ticket" },
     { href: "/app/ngo/my-claims", label: "My Claims", icon: "crate" },
     { href: "/app/ngo/impact", label: "Redistribution Impact", icon: "overview" },
+    { href: "/app/ngo/notifications", label: "Notifications", icon: "notifications" },
     { href: "/app/ngo/organization", label: "Organization KYC", icon: "settings" },
   ];
 
