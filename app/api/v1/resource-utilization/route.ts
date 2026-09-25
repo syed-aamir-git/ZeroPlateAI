@@ -63,20 +63,31 @@ export async function GET(request: NextRequest) {
       unitCostInr: doc.unitCostInr || 50,
     }));
 
-    // If no raw materials are recorded yet in this kitchen's DB, supply calibrated seed raw materials
-    const itemsToEvaluate = rawItems.length > 0 ? rawItems : getDefaultFefoBaselineItems();
+    // Only evaluate genuine user-entered raw materials
+    const itemsToEvaluate = rawItems;
 
     // 2. Evaluate FEFO Intelligence & Procurement Optimization
     const fefoReport = evaluateFefoInventory(itemsToEvaluate);
 
-    // 3. Query NVIDIA NIM for deep biochemical/culinary reasoning and procurement advice
-    const nvidiaInsights = await analyzeRawMaterialsWithNvidia(itemsToEvaluate, 28);
-    fefoReport.nvidiaAiInsights = {
-      model: "meta/llama-3.2-11b-vision-instruct",
-      isLiveAi: nvidiaInsights.isLiveAi,
-      urgentDishes: nvidiaInsights.urgentDishes,
-      procurementAdviceNotes: nvidiaInsights.procurementAdviceNotes,
-    };
+    // 3. Query NVIDIA NIM if user has logged raw materials
+    if (itemsToEvaluate.length > 0) {
+      const nvidiaInsights = await analyzeRawMaterialsWithNvidia(itemsToEvaluate, 28);
+      fefoReport.nvidiaAiInsights = {
+        model: "meta/llama-3.2-11b-vision-instruct",
+        isLiveAi: nvidiaInsights.isLiveAi,
+        urgentDishes: nvidiaInsights.urgentDishes,
+        procurementAdviceNotes: nvidiaInsights.procurementAdviceNotes,
+      };
+    } else {
+      fefoReport.nvidiaAiInsights = {
+        model: "meta/llama-3.2-11b-vision-instruct",
+        isLiveAi: true,
+        urgentDishes: [],
+        procurementAdviceNotes: [
+          "No raw ingredients logged yet. Click 'Log Raw Ingredient' to track inventory and activate predictive FEFO analytics.",
+        ],
+      };
+    }
 
     return NextResponse.json({
       success: true,

@@ -255,12 +255,7 @@ export async function GET(
     const { evaluateFefoInventory, getDefaultFefoBaselineItems } = await import("@/lib/fefo-engine");
     
     const activeInventoryInputs = inventoryItems
-      .filter(
-        (i) =>
-          i.status !== "delivered" &&
-          i.category !== "cooked_food" &&
-          !/aadi|raj|burger|roll|lollipop|coke|pizza|aamir/i.test(i.name)
-      )
+      .filter((i) => i.status !== "delivered" && i.category !== "cooked_food")
       .map((i) => ({
         id: String(i._id),
         name: i.name,
@@ -272,9 +267,7 @@ export async function GET(
         preparedOrReceivedAt: i.preparedOrReceivedAt || i.createdAt,
       }));
 
-    const itemsForFefo = activeInventoryInputs.length > 0
-      ? activeInventoryInputs
-      : getDefaultFefoBaselineItems();
+    const itemsForFefo = activeInventoryInputs;
 
     const fefoReport = evaluateFefoInventory(itemsForFefo);
 
