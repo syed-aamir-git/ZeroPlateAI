@@ -187,7 +187,7 @@ export default function AdminOverviewPage() {
       if (isMounted) {
         fetchOverview(abortController.signal);
       }
-    }, 15000);
+    }, 1000);
 
     return () => {
       isMounted = false;
@@ -228,9 +228,6 @@ export default function AdminOverviewPage() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
               Live Network Active
-            </span>
-            <span className="text-xs font-mono text-zinc-400 hidden sm:inline">
-              Auto-syncs every 15s
             </span>
           </div>
 
