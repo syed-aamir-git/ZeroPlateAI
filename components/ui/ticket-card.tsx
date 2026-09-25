@@ -16,14 +16,14 @@ export function TicketCard({
   return (
     <div
       className={cn(
-        "relative bg-[#FAF6EE] text-ink border border-line p-5 shadow-none transition-colors",
+        "relative bg-white text-slate-900 border border-slate-200/90 rounded-xl p-4.5 shadow-xs transition-all hover:shadow-md",
         hasNotch && "ticket-notch",
         className
       )}
       {...props}
     >
-      {/* Decorative hairline corner notch indicator if needed */}
       {children}
     </div>
   );
 }
+

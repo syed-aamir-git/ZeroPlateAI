@@ -264,15 +264,15 @@ export function TicketStrip({ tickets }: TicketStripProps) {
       }}
     >
       {/* Visual fading gradient edges for seamless horizon blending */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-24 bg-gradient-to-r from-[#F3EEE2] via-[#F3EEE2]/85 to-transparent z-10 pointer-events-none hidden sm:block" />
-      <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-24 bg-gradient-to-l from-[#F3EEE2] via-[#F3EEE2]/85 to-transparent z-10 pointer-events-none hidden sm:block" />
+      <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-24 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none hidden sm:block" />
+      <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-24 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none hidden sm:block" />
 
       {/* Interactive Navigation Chevron Buttons (Fade in on Hover) */}
       <button
         type="button"
         onClick={() => scrollByAmount(-340)}
         aria-label="Scroll redistribution tickets left"
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FAF6EE]/95 border border-line shadow-sm flex items-center justify-center text-ink hover:bg-[#F2ECE1] transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-xs"
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 border border-slate-200 shadow-md flex items-center justify-center text-slate-700 hover:text-slate-950 hover:bg-slate-50 transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-xs"
       >
         <ChevronLeftIcon size={18} strokeWidth={2} />
       </button>
@@ -281,7 +281,7 @@ export function TicketStrip({ tickets }: TicketStripProps) {
         type="button"
         onClick={() => scrollByAmount(340)}
         aria-label="Scroll redistribution tickets right"
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FAF6EE]/95 border border-line shadow-sm flex items-center justify-center text-ink hover:bg-[#F2ECE1] transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-xs"
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 border border-slate-200 shadow-md flex items-center justify-center text-slate-700 hover:text-slate-950 hover:bg-slate-50 transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-xs"
       >
         <ChevronRightIcon size={18} strokeWidth={2} />
       </button>
@@ -314,23 +314,23 @@ export function TicketStrip({ tickets }: TicketStripProps) {
           return (
             <div
               key={`${ticket.id}-${index}`}
-              className="w-[280px] sm:w-[310px] shrink-0 pointer-events-auto transition-transform duration-200 hover:-translate-y-0.5"
+              className="w-[280px] sm:w-[310px] shrink-0 pointer-events-auto transition-transform duration-200 hover:-translate-y-1"
             >
-              <TicketCard className="bg-[#FAF6EE] p-4 text-left select-none shadow-xs border-line/80 hover:border-line transition-all">
-                <div className="flex items-start justify-between gap-2 mb-2">
+              <TicketCard className="bg-white p-4.5 text-left select-none shadow-xs border-slate-200/90 hover:border-emerald-400 hover:shadow-md transition-all rounded-xl">
+                <div className="flex items-start justify-between gap-2 mb-2.5">
                   <span
-                    className="font-mono-numeral text-[11px] uppercase tracking-wider text-ink-soft truncate max-w-[170px]"
+                    className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate max-w-[170px]"
                     title={ticket.institutionType}
                   >
                     {ticket.institutionType}
                   </span>
 
                   {isDelivered ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-basil/15 text-basil border border-basil/30 uppercase tracking-wider shrink-0">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider shrink-0">
                       <StampIcon size={11} strokeWidth={2} /> Delivered
                     </span>
                   ) : isClaimed ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-basil/15 text-basil border border-basil/30 uppercase tracking-wider shrink-0">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wider shrink-0">
                       <StampIcon size={11} strokeWidth={2} /> Claimed
                     </span>
                   ) : (
@@ -343,22 +343,22 @@ export function TicketStrip({ tickets }: TicketStripProps) {
                 </div>
 
                 <div
-                  className="font-display text-base font-medium text-ink truncate mb-2"
+                  className="text-base font-semibold text-slate-900 truncate mb-2.5"
                   title={ticket.item}
                 >
                   {ticket.item}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-line/70 pt-2 text-xs">
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
                   <div>
-                    <span className="text-ink-soft text-[11px] block">Volume</span>
-                    <span className="font-ledger-mono font-semibold text-ink">
+                    <span className="text-slate-400 text-[10px] font-medium uppercase tracking-wider block">Quantity</span>
+                    <span className="font-semibold text-slate-800">
                       {ticket.quantity}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-ink-soft text-[11px] block">Impact</span>
-                    <span className="font-ledger-mono font-semibold text-basil">
+                    <span className="text-slate-400 text-[10px] font-medium uppercase tracking-wider block">Impact</span>
+                    <span className="font-semibold text-emerald-600">
                       {ticket.meals}
                     </span>
                   </div>
