@@ -326,3 +326,8 @@ svg *:active {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Smooth motion for live food delivery courier marker (Swiggy / Zomato style) */
+.leaflet-marker-icon.zeroplate-courier-live-icon {
+  transition: transform 0.6s linear, opacity 0.3s ease !important;
+}

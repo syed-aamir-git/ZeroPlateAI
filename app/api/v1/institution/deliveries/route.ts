@@ -173,6 +173,7 @@ export async function GET(request: NextRequest) {
               serviceArea: driver.serviceArea,
             }
           : null,
+        currentLocation: a.currentLocation || driver?.currentLocation || null,
       };
     });
 

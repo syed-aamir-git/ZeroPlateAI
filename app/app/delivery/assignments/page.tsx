@@ -57,6 +57,13 @@ interface Assignment {
     lat?: number;
     lng?: number;
   };
+  currentLocation?: {
+    lat: number;
+    lng: number;
+    heading?: number;
+    speed?: number;
+    updatedAt?: string;
+  } | null;
 }
 
 interface PartnerInfo {
@@ -99,6 +106,21 @@ export default function DeliveryAssignmentsPage() {
     setOpenMapIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const sendLocationUpdate = React.useCallback(
+    async (assignmentId: string, loc: { lat: number; lng: number; heading?: number; speed?: number }) => {
+      try {
+        await fetch(`/api/v1/delivery/assignments/${assignmentId}/location`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(loc),
+        });
+      } catch (e) {
+        console.warn("Failed to stream GPS location:", e);
+      }
+    },
+    []
+  );
+
   const isFetchingRef = React.useRef(false);
 
   const fetchAssignments = React.useCallback(async (signal?: AbortSignal) => {
@@ -109,10 +131,24 @@ export default function DeliveryAssignmentsPage() {
       const res = await fetch("/api/v1/delivery/assignments", { signal });
       if (res.ok) {
         const json = await res.json();
-        setAssignments(json.assignments || []);
+        const items: Assignment[] = json.assignments || [];
+        setAssignments(items);
         if (json.partner) {
           setPartner(json.partner);
         }
+
+        // Auto-expand route map for any active in-transit delivery assignments
+        setOpenMapIds((prev) => {
+          const next = { ...prev };
+          for (const a of items) {
+            if (a.status === "accepted" || a.status === "picked_up") {
+              if (next[a._id] === undefined) {
+                next[a._id] = true;
+              }
+            }
+          }
+          return next;
+        });
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
@@ -123,23 +159,67 @@ export default function DeliveryAssignmentsPage() {
     }
   }, []);
 
+  // Poll assignments every 6 seconds if an active delivery is running, else 25 seconds
   React.useEffect(() => {
     let isMounted = true;
     const abortController = new AbortController();
 
     fetchAssignments(abortController.signal);
+
+    const hasActiveMission = assignments.some(
+      (a) => a.isAssignedToMe && (a.status === "accepted" || a.status === "picked_up")
+    );
+    const pollInterval = hasActiveMission ? 6000 : 25000;
+
     const interval = setInterval(() => {
       if (isMounted) {
         fetchAssignments(abortController.signal);
       }
-    }, 30000);
+    }, pollInterval);
 
     return () => {
       isMounted = false;
       abortController.abort();
       clearInterval(interval);
     };
-  }, [fetchAssignments]);
+  }, [fetchAssignments, assignments]);
+
+  // Real-time GPS Location streaming from driver device
+  React.useEffect(() => {
+    const active = assignments.find(
+      (a) => a.isAssignedToMe && (a.status === "accepted" || a.status === "picked_up")
+    );
+    if (!active || typeof navigator === "undefined" || !("geolocation" in navigator)) return;
+
+    let lastSent = 0;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        // Throttle to update every 4 seconds
+        if (now - lastSent >= 4000) {
+          lastSent = now;
+          sendLocationUpdate(active._id, {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            heading: pos.coords.heading || undefined,
+            speed: pos.coords.speed || undefined,
+          });
+        }
+      },
+      (err) => {
+        console.warn("GPS watch position notice:", err.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 4000,
+        timeout: 10000,
+      }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [assignments, sendLocationUpdate]);
 
   const handleAdvanceStatus = async (
     assignmentId: string,
@@ -367,6 +447,7 @@ export default function DeliveryAssignmentsPage() {
             );
             const isRed = urgency.urgencyTier === "critical_red";
             const isYellow = urgency.urgencyTier === "urgent_yellow";
+            const isActiveMission = assignment.status === "accepted" || assignment.status === "picked_up";
 
             return (
               <div
@@ -459,12 +540,61 @@ export default function DeliveryAssignmentsPage() {
                   </div>
                 </div>
 
-                {/* Pickup and Drop Details */}
-                <div className="space-y-3 text-xs">
+                {/* Active Mission Directive (Displayed during accepted or picked_up) */}
+                {isActiveMission && (
+                  <div
+                    className={`p-3.5 rounded-[8px] border text-xs space-y-2 ${
+                      assignment.status === "accepted"
+                        ? "bg-[#D9A441]/10 border-[#D9A441]/50 text-[#F3EEE2]"
+                        : "bg-[#2F4B3A]/25 border-emerald-500/50 text-[#F3EEE2]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <span className="font-mono-numeral text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                          {assignment.status === "accepted"
+                            ? "🛵 Mission Phase 1: Proceed to Pickup Point"
+                            : "🍲 Mission Phase 2: Proceed to NGO Drop-Off"}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono-numeral text-stone-400 bg-[#1D1B17] px-2 py-0.5 rounded border border-[#3B362E]">
+                        GPS Active
+                      </span>
+                    </div>
+
+                    <div className="font-semibold text-sm">
+                      {assignment.status === "accepted"
+                        ? `Proceed to: ${assignment.pickup.name}`
+                        : `Proceed to: ${assignment.drop.name}`}
+                    </div>
+
+                    <div className="text-[11px] text-[#D4CBBF]">
+                      {assignment.status === "accepted"
+                        ? `Collect verified batch "${assignment.item.name}" (${assignment.item.quantity} ${assignment.item.unit}) from the donor facility.`
+                        : `Deliver batch "${assignment.item.name}" safely to the recipient shelter.`}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pickup and Drop Details with Navigation Action Links */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                   {/* Pickup Point */}
-                  <div className="bg-[#24211C] border border-[#3B362E] p-3 rounded-[6px] space-y-1">
+                  <div
+                    className={`p-3 rounded-[6px] space-y-2 transition-all border ${
+                      assignment.status === "accepted"
+                        ? "bg-[#2A241A] border-[#D9A441] shadow-sm"
+                        : "bg-[#24211C] border-[#3B362E]"
+                    }`}
+                  >
                     <div className="flex items-center justify-between text-[#9E9587] text-[11px] font-mono-numeral uppercase">
-                      <span>1. Pickup Point (Kitchen)</span>
+                      <span className="font-bold text-[#D9A441] flex items-center gap-1">
+                        <span>📍</span>
+                        <span>1. Pickup Point (Kitchen)</span>
+                      </span>
                       {windowStart && windowEnd && (
                         <span>
                           {windowStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} –{" "}
@@ -472,14 +602,37 @@ export default function DeliveryAssignmentsPage() {
                         </span>
                       )}
                     </div>
-                    <div className="font-semibold text-[#F3EEE2]">{assignment.pickup.name}</div>
-                    <div className="text-[#D4CBBF]">{assignment.pickup.address}</div>
+                    <div>
+                      <div className="font-semibold text-sm text-[#F3EEE2]">{assignment.pickup.name}</div>
+                      <div className="text-[#D4CBBF] mt-0.5 leading-relaxed">{assignment.pickup.address}</div>
+                    </div>
+                    <div className="pt-1 flex items-center gap-2">
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                          assignment.pickup.address
+                        )}&travelmode=driving`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#D9A441]/20 hover:bg-[#D9A441]/30 border border-[#D9A441]/40 text-[#D9A441] text-[11px] font-mono-numeral transition-colors"
+                      >
+                        🧭 Navigate to Pickup
+                      </a>
+                    </div>
                   </div>
 
                   {/* Drop Point */}
-                  <div className="bg-[#24211C] border border-[#3B362E] p-3 rounded-[6px] space-y-1">
+                  <div
+                    className={`p-3 rounded-[6px] space-y-2 transition-all border ${
+                      assignment.status === "picked_up"
+                        ? "bg-[#1E2922] border-emerald-500 shadow-sm"
+                        : "bg-[#24211C] border-[#3B362E]"
+                    }`}
+                  >
                     <div className="flex items-center justify-between text-[#9E9587] text-[11px] font-mono-numeral uppercase">
-                      <span>2. Drop Point (NGO Recipient)</span>
+                      <span className="font-bold text-emerald-400 flex items-center gap-1">
+                        <span>🎯</span>
+                        <span>2. Drop Point (NGO Recipient)</span>
+                      </span>
                       {assignment.drop.contactPhone && (
                         <a
                           href={`tel:${assignment.drop.contactPhone}`}
@@ -489,8 +642,30 @@ export default function DeliveryAssignmentsPage() {
                         </a>
                       )}
                     </div>
-                    <div className="font-semibold text-[#F3EEE2]">{assignment.drop.name}</div>
-                    <div className="text-[#D4CBBF]">{assignment.drop.address}</div>
+                    <div>
+                      <div className="font-semibold text-sm text-[#F3EEE2]">{assignment.drop.name}</div>
+                      <div className="text-[#D4CBBF] mt-0.5 leading-relaxed">{assignment.drop.address}</div>
+                    </div>
+                    <div className="pt-1 flex items-center gap-2">
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                          assignment.drop.address
+                        )}&travelmode=driving`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-400 text-[11px] font-mono-numeral transition-colors"
+                      >
+                        🧭 Navigate to Drop
+                      </a>
+                      {assignment.drop.contactPhone && (
+                        <a
+                          href={`tel:${assignment.drop.contactPhone}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 border border-[#3B362E] text-[#F3EEE2] text-[11px] font-mono-numeral transition-colors"
+                        >
+                          📞 {assignment.drop.contactPhone}
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -506,8 +681,9 @@ export default function DeliveryAssignmentsPage() {
                       <span>{openMapIds[assignment._id] ? "Hide Route Map" : "View Live Route on Map 🗺️"}</span>
                     </button>
                     {openMapIds[assignment._id] && (
-                      <span className="text-[10px] font-mono-numeral text-[#9E9587]">
-                        Interactive Leaflet Map
+                      <span className="text-[10px] font-mono-numeral text-emerald-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        Live GPS Telemetry
                       </span>
                     )}
                   </div>
@@ -518,8 +694,17 @@ export default function DeliveryAssignmentsPage() {
                         pickup={assignment.pickup}
                         drop={assignment.drop}
                         status={assignment.status}
+                        courierLocation={assignment.currentLocation}
+                        courierInfo={{
+                          name: partner?.name || "You (Driver)",
+                          phone: partner?.phone,
+                          vehicleType: partner?.vehicleType,
+                          vehicleNumber: partner?.vehicleNumber,
+                        }}
+                        role="driver"
                         urgencyTier={urgency.urgencyTier}
                         theme="dark"
+                        onLocationUpdate={(loc) => sendLocationUpdate(assignment._id, loc)}
                       />
                     </div>
                   )}

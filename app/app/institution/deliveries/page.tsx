@@ -72,6 +72,13 @@ interface DeliveryItem {
     phone: string;
     serviceArea: string;
   } | null;
+  currentLocation?: {
+    lat: number;
+    lng: number;
+    heading?: number;
+    speed?: number;
+    updatedAt?: string;
+  } | null;
 }
 
 const STEPS = [
@@ -103,7 +110,21 @@ export default function InstitutionDeliveriesPage() {
       const res = await fetch("/api/v1/institution/deliveries");
       if (res.ok) {
         const data = await res.json();
-        setDeliveries(data.deliveries || []);
+        const items: DeliveryItem[] = data.deliveries || [];
+        setDeliveries(items);
+
+        // Auto-expand route map for any deliveries in transit/accepted
+        setOpenMapIds((prev) => {
+          const next = { ...prev };
+          for (const d of items) {
+            if (d.status === "accepted" || d.status === "picked_up") {
+              if (next[d._id] === undefined) {
+                next[d._id] = true;
+              }
+            }
+          }
+          return next;
+        });
       }
     } catch (err: unknown) {
       console.warn("Failed to load deliveries:", err);
@@ -113,15 +134,21 @@ export default function InstitutionDeliveriesPage() {
     }
   }, []);
 
-  // Fetch immediately on mount and poll in the background every 15 seconds
+  // Poll faster (every 5s) if there is an in-transit delivery to show live vehicle movement
   useEffect(() => {
     fetchDeliveries();
+
+    const hasActiveDelivery = deliveries.some(
+      (d) => d.status === "accepted" || d.status === "picked_up"
+    );
+    const pollInterval = hasActiveDelivery ? 5000 : 20000;
+
     const interval = setInterval(() => {
       fetchDeliveries();
-    }, 15000);
+    }, pollInterval);
 
     return () => clearInterval(interval);
-  }, [fetchDeliveries]);
+  }, [fetchDeliveries, deliveries]);
 
   const getStepIndex = (status: string) => {
     const idx = STEPS.findIndex((s) => s.key === status);
@@ -607,6 +634,40 @@ export default function InstitutionDeliveriesPage() {
                     )}
                   </div>
 
+                  {/* Live Food Delivery Tracking Alert for In-Transit Dispatches */}
+                  {(d.status === "accepted" || d.status === "picked_up") && (
+                    <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <div>
+                          <div className="font-bold text-stone-900 flex items-center gap-1.5">
+                            <span>
+                              {d.status === "accepted"
+                                ? "🛵 Delivery Partner Arriving for Pickup"
+                                : "🍲 Surplus Batch In Transit to NGO"}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-stone-600">
+                            {d.courier?.name ? `${d.courier.name} (${d.courier.vehicleType.replace("_", " ")})` : "Delivery Partner Assigned"}
+                            {d.courier?.vehicleNumber ? ` • Plate: ${d.courier.vehicleNumber}` : ""}
+                          </div>
+                        </div>
+                      </div>
+
+                      {d.courier?.phone && (
+                        <a
+                          href={`tel:${d.courier.phone}`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto"
+                        >
+                          📞 Call Driver
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   {isMapOpen && (
                     <div className="rounded-2xl overflow-hidden border border-stone-200 shadow-xs animate-in fade-in duration-200">
                       <DeliveryRouteMap
@@ -628,8 +689,11 @@ export default function InstitutionDeliveriesPage() {
                           }
                         }
                         status={d.status}
+                        courierLocation={d.currentLocation}
+                        courierInfo={d.courier}
+                        role="institution"
                         theme="light"
-                        className="w-full h-64 sm:h-72"
+                        className="w-full h-72 sm:h-80"
                       />
                     </div>
                   )}

@@ -53,6 +53,13 @@ interface ClaimRecord {
     vehicleType: string;
     vehicleNumber?: string;
   } | null;
+  currentLocation?: {
+    lat: number;
+    lng: number;
+    heading?: number;
+    speed?: number;
+    updatedAt?: string;
+  } | null;
 }
 
 export default function NgoMyClaimsPage() {
@@ -79,7 +86,21 @@ export default function NgoMyClaimsPage() {
       const res = await fetch("/api/v1/ngo/claims");
       if (res.ok) {
         const json = await res.json();
-        setClaims(json.claims || []);
+        const items: ClaimRecord[] = json.claims || [];
+        setClaims(items);
+
+        // Auto-expand route map for any active in-transit deliveries
+        setOpenMapIds((prev) => {
+          const next = { ...prev };
+          for (const c of items) {
+            if (c.deliveryStatus === "accepted" || c.deliveryStatus === "picked_up") {
+              if (next[c._id] === undefined) {
+                next[c._id] = true;
+              }
+            }
+          }
+          return next;
+        });
       }
     } catch (err: unknown) {
       console.warn("NGO claims sync paused:", err);
@@ -89,14 +110,21 @@ export default function NgoMyClaimsPage() {
     }
   }, []);
 
+  // Poll faster (every 5s) if there is an in-transit delivery to show live vehicle movement
   React.useEffect(() => {
     fetchClaims();
+
+    const hasActiveDelivery = claims.some(
+      (c) => c.deliveryStatus === "accepted" || c.deliveryStatus === "picked_up"
+    );
+    const pollInterval = hasActiveDelivery ? 5000 : 20000;
+
     const interval = setInterval(() => {
       fetchClaims();
-    }, 15000);
+    }, pollInterval);
 
     return () => clearInterval(interval);
-  }, [fetchClaims]);
+  }, [fetchClaims, claims]);
 
   const handleConfirmReceipt = async (claimId: string) => {
     setFeedback(null);
@@ -649,6 +677,44 @@ export default function NgoMyClaimsPage() {
                                   Direct Dispatch Telemetry
                                 </span>
                               </div>
+                              {/* Live Food Delivery Tracking Alert (Zomato/Swiggy style for NGO) */}
+                              {(claim.deliveryStatus === "accepted" || claim.deliveryStatus === "picked_up") && (
+                                <div className="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                                  <div className="flex items-center gap-2.5">
+                                    <span className="relative flex h-3 w-3 shrink-0">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                    </span>
+                                    <div>
+                                      <div className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                                        <span>
+                                          {claim.deliveryStatus === "accepted"
+                                            ? "🛵 Driver En Route to Donor Kitchen"
+                                            : "🍲 Food is On The Way to Your Shelter!"}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-stone-600 mt-0.5">
+                                        {claim.courier?.name
+                                          ? `${claim.courier.name} (${claim.courier.vehicleType.replace("_", " ")})`
+                                          : "Assigned Delivery Partner"}
+                                        {claim.courier?.vehicleNumber ? ` • Plate: ${claim.courier.vehicleNumber}` : ""}
+                                        {" — Bringing "}
+                                        <strong className="text-stone-800">{claim.itemName} ({claim.quantity} {claim.unit})</strong>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {claim.courier?.phone && (
+                                    <a
+                                      href={`tel:${claim.courier.phone}`}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto shrink-0"
+                                    >
+                                      📞 Call Driver: {claim.courier.phone}
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+
                               <div className="rounded-2xl overflow-hidden border border-stone-200 shadow-xs bg-white">
                                 <DeliveryRouteMap
                                   pickup={{
@@ -668,8 +734,11 @@ export default function NgoMyClaimsPage() {
                                       : 77.24,
                                   }}
                                   status={claim.deliveryStatus}
+                                  courierLocation={claim.currentLocation}
+                                  courierInfo={claim.courier}
+                                  role="ngo"
                                   theme="light"
-                                  className="w-full h-56 sm:h-64"
+                                  className="w-full h-72 sm:h-80"
                                 />
                               </div>
                             </div>

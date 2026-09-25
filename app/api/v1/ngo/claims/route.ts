@@ -132,10 +132,12 @@ export async function GET(request: NextRequest) {
       return {
         ...listing,
         deliveryAssignment: assignment || null,
+        deliveryAssignmentId: assignment?._id || null,
         deliveryStatus: assignment?.status || listing.status || "assigned",
         isConfirmed: assignment?.status === "confirmed",
         confirmedAt: assignment?.confirmedAt || null,
         courier,
+        currentLocation: assignment?.currentLocation || partner?.currentLocation || null,
       };
     });
 

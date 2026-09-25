@@ -199,6 +199,7 @@ export async function GET(request: NextRequest) {
           lat: ngo?.location?.lat,
           lng: ngo?.location?.lng,
         },
+        currentLocation: a.currentLocation || partner.currentLocation || null,
       };
     });
 

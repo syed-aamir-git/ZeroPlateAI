@@ -1,15 +1,28 @@
 "use client";
 
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useEffect, useState } from "react";
 import type * as LeafletType from "leaflet";
 import LeafletMapBase, { createCustomMarkerIcon, MapTheme } from "./leaflet-map-base";
 
-interface DeliveryRouteMapProps {
+export interface CourierLocation {
+  lat: number;
+  lng: number;
+  heading?: number;
+  speed?: number;
+  name?: string;
+  vehicleType?: string;
+  vehicleNumber?: string;
+  phone?: string;
+  updatedAt?: string | Date;
+}
+
+export interface DeliveryRouteMapProps {
   pickup: {
     name: string;
     address: string;
     lat?: number;
     lng?: number;
+    contactPhone?: string;
   };
   drop: {
     name: string;
@@ -19,24 +32,129 @@ interface DeliveryRouteMapProps {
     lng?: number;
   };
   status?: "assigned" | "accepted" | "picked_up" | "delivered" | "confirmed";
+  courierLocation?: CourierLocation | null;
+  courierInfo?: {
+    name?: string;
+    phone?: string;
+    vehicleType?: string;
+    vehicleNumber?: string;
+  } | null;
+  role?: "driver" | "institution" | "ngo";
   urgencyTier?: "critical_red" | "urgent_yellow" | "safe_green";
   theme?: MapTheme;
   className?: string;
+  onLocationUpdate?: (location: { lat: number; lng: number; heading?: number; speed?: number }) => void;
+}
+
+function createFoodDeliveryCourierIcon(
+  L: typeof LeafletType,
+  options: {
+    name?: string;
+    vehicleType?: string;
+    heading?: number;
+    role?: string;
+  }
+) {
+  const isCar = options.vehicleType === "four_wheeler" || options.vehicleType === "van";
+  const vehicleEmoji = isCar ? "🚗" : "🛵";
+  const label = options.name || (options.role === "driver" ? "You (Driver)" : "Delivery Partner");
+
+  const html = `
+    <div class="relative flex items-center justify-center select-none" style="width: 48px; height: 48px; cursor: pointer;">
+      <!-- Glowing radar ripple ring -->
+      <span class="absolute -inset-2 rounded-full animate-ping opacity-75 bg-emerald-500 pointer-events-none"></span>
+      <span class="absolute -inset-1 rounded-full animate-pulse opacity-50 bg-emerald-400 pointer-events-none"></span>
+      
+      <!-- High contrast disc with vehicle icon -->
+      <div class="relative z-10 w-11 h-11 rounded-full flex items-center justify-center text-white shadow-2xl border-2 border-white bg-[#059669] hover:scale-110 transition-transform">
+        <span class="text-xl leading-none filter drop-shadow">${vehicleEmoji}</span>
+      </div>
+      
+      <!-- Food delivery driver name & live status pill -->
+      <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-mono-numeral font-bold text-white shadow-lg bg-[#1D1B17] border border-emerald-500/70 flex items-center gap-1.5 z-20">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span>${label}</span>
+      </div>
+    </div>
+  `;
+
+  return L.divIcon({
+    html,
+    className: "zeroplate-courier-live-icon",
+    iconSize: [48, 48],
+    iconAnchor: [24, 24],
+    popupAnchor: [0, -28],
+  });
 }
 
 export default function DeliveryRouteMap({
   pickup,
   drop,
   status = "assigned",
+  courierLocation,
+  courierInfo,
+  role = "institution",
   urgencyTier,
   theme = "dark",
-  className = "w-full h-72 sm:h-80",
+  className = "w-full h-80 sm:h-96",
+  onLocationUpdate,
 }: DeliveryRouteMapProps) {
   const mapRef = useRef<LeafletType.Map | null>(null);
   const LRef = useRef<typeof LeafletType | null>(null);
   const boundsRef = useRef<LeafletType.LatLngBounds | null>(null);
   const polylineRef = useRef<LeafletType.Polyline | null>(null);
-  const [routeInfo, setRouteInfo] = React.useState<{ distanceKm: number; durationMins: number } | null>(null);
+  const courierMarkerRef = useRef<LeafletType.Marker | null>(null);
+  const routePointsRef = useRef<[number, number][]>([]);
+  const simStepRef = useRef<number>(0);
+
+  const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMins: number } | null>(null);
+  const [currentCourierPos, setCurrentCourierPos] = useState<{ lat: number; lng: number } | null>(
+    courierLocation ? { lat: courierLocation.lat, lng: courierLocation.lng } : null
+  );
+
+  const isActiveDelivery = status === "accepted" || status === "picked_up";
+  const driverName = courierLocation?.name || courierInfo?.name || "Assigned Driver";
+  const vehicleType = courierLocation?.vehicleType || courierInfo?.vehicleType || "two_wheeler";
+
+  // Build Popup Content for the live Courier Marker
+  const buildCourierPopupContent = useCallback(
+    (posLat: number, posLng: number) => {
+      const isCar = vehicleType === "four_wheeler" || vehicleType === "van";
+      const vehicleDesc = isCar ? "Delivery Van" : "Two-Wheeler / Scooter";
+      const statusText =
+        status === "accepted"
+          ? "En Route to Pickup Kitchen"
+          : status === "picked_up"
+          ? "En Route to Recipient Shelter"
+          : "Active Dispatch";
+
+      return `
+        <div class="p-3 text-xs space-y-1.5 min-w-[200px]">
+          <div class="flex items-center justify-between border-b border-stone-700/50 pb-1">
+            <span class="font-mono-numeral text-[10px] uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              Live GPS Tracking
+            </span>
+            <span class="text-[10px] text-stone-400 font-mono-numeral">Just now</span>
+          </div>
+          <div class="font-bold text-sm text-[#F3EEE2] flex items-center gap-1.5">
+            <span>${driverName}</span>
+            <span class="text-[10px] font-normal text-stone-400">(${vehicleDesc})</span>
+          </div>
+          <div class="text-xs text-amber-300 font-medium">${statusText}</div>
+          ${
+            courierInfo?.phone
+              ? `<div class="pt-1"><a href="tel:${courierInfo.phone}" class="text-emerald-400 font-mono-numeral underline">📞 Call Driver: ${courierInfo.phone}</a></div>`
+              : ""
+          }
+          <div class="text-[10px] text-stone-400 font-mono-numeral pt-0.5">
+            Coordinates: ${posLat.toFixed(4)}, ${posLng.toFixed(4)}
+          </div>
+        </div>
+      `;
+    },
+    [driverName, vehicleType, status, courierInfo?.phone]
+  );
 
   const handleMapReady = useCallback(
     async (map: LeafletType.Map, L: typeof LeafletType) => {
@@ -53,7 +171,9 @@ export default function DeliveryRouteMap({
         try {
           if (mapboxToken) {
             const res = await fetch(
-              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(pickup.address)}.json?access_token=${mapboxToken}&country=in&limit=1`
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+                pickup.address
+              )}.json?access_token=${mapboxToken}&country=in&limit=1`
             );
             if (res.ok) {
               const data = await res.json();
@@ -63,7 +183,9 @@ export default function DeliveryRouteMap({
             }
           } else {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup.address)}&limit=1`,
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+                pickup.address
+              )}&limit=1`,
               { headers: { "Accept-Language": "en" } }
             );
             if (res.ok) {
@@ -87,7 +209,9 @@ export default function DeliveryRouteMap({
         try {
           if (mapboxToken) {
             const res = await fetch(
-              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(drop.address)}.json?access_token=${mapboxToken}&country=in&limit=1`
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+                drop.address
+              )}.json?access_token=${mapboxToken}&country=in&limit=1`
             );
             if (res.ok) {
               const data = await res.json();
@@ -97,7 +221,9 @@ export default function DeliveryRouteMap({
             }
           } else {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(drop.address)}&limit=1`,
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+                drop.address
+              )}&limit=1`,
               { headers: { "Accept-Language": "en" } }
             );
             if (res.ok) {
@@ -113,7 +239,7 @@ export default function DeliveryRouteMap({
         }
       }
 
-      // Fallbacks only if geocoding completely fails
+      // Fallbacks
       const finalPickupLat = pLat ?? 12.9716;
       const finalPickupLng = pLng ?? 77.5946;
       const finalDropLat = dLat ?? (finalPickupLat + 0.015);
@@ -125,34 +251,43 @@ export default function DeliveryRouteMap({
       // 1. Pickup Marker (Kitchen - Saffron)
       const pickupIcon = createCustomMarkerIcon(L, {
         type: "kitchen",
-        label: "PICKUP",
+        label: "📍 PICKUP",
         color: "#D9A441",
       });
 
       const pickupPopupContent = `
-        <div class="p-3 text-xs space-y-1">
+        <div class="p-3 text-xs space-y-1 min-w-[180px]">
           <div class="font-mono-numeral text-[10px] uppercase tracking-wider text-[#D9A441] font-bold">1. Origin — Donor Kitchen</div>
-          <div class="font-semibold text-sm">${pickup.name}</div>
-          <div class="text-[#5A5548] leading-tight">${pickup.address}</div>
+          <div class="font-semibold text-sm text-[#F3EEE2]">${pickup.name}</div>
+          <div class="text-[#D4CBBF] leading-tight">${pickup.address}</div>
+          ${
+            pickup.contactPhone
+              ? `<div class="pt-1"><a href="tel:${pickup.contactPhone}" class="text-[#D9A441] font-mono-numeral underline">📞 Call Kitchen: ${pickup.contactPhone}</a></div>`
+              : ""
+          }
         </div>
       `;
 
       const pickupMarker = L.marker(pickupCoord, { icon: pickupIcon }).bindPopup(pickupPopupContent);
       pickupMarker.addTo(map);
 
-      // 2. Drop Marker (NGO Recipient - Basil)
+      // 2. Drop Marker (NGO Recipient - Basil Green)
       const dropIcon = createCustomMarkerIcon(L, {
         type: "ngo",
-        label: "DROP",
+        label: "🎯 DROP",
         color: "#2F4B3A",
       });
 
       const dropPopupContent = `
-        <div class="p-3 text-xs space-y-1">
-          <div class="font-mono-numeral text-[10px] uppercase tracking-wider text-[#2F4B3A] font-bold">2. Destination — Recipient NGO</div>
-          <div class="font-semibold text-sm">${drop.name}</div>
-          <div class="text-[#5A5548] leading-tight">${drop.address}</div>
-          ${drop.contactPhone ? `<div class="pt-1"><a href="tel:${drop.contactPhone}" class="text-[#D9A441] font-mono-numeral underline">📞 ${drop.contactPhone}</a></div>` : ""}
+        <div class="p-3 text-xs space-y-1 min-w-[180px]">
+          <div class="font-mono-numeral text-[10px] uppercase tracking-wider text-emerald-400 font-bold">2. Destination — Recipient NGO</div>
+          <div class="font-semibold text-sm text-[#F3EEE2]">${drop.name}</div>
+          <div class="text-[#D4CBBF] leading-tight">${drop.address}</div>
+          ${
+            drop.contactPhone
+              ? `<div class="pt-1"><a href="tel:${drop.contactPhone}" class="text-emerald-400 font-mono-numeral underline">📞 Call NGO: ${drop.contactPhone}</a></div>`
+              : ""
+          }
         </div>
       `;
 
@@ -186,10 +321,10 @@ export default function DeliveryRouteMap({
         }
       }
 
-      // Direct corridor if Directions API unavailable
       if (routePoints.length === 0) {
         routePoints = [pickupCoord, dropCoord];
       }
+      routePointsRef.current = routePoints;
 
       if (polylineRef.current) {
         polylineRef.current.remove();
@@ -211,50 +346,149 @@ export default function DeliveryRouteMap({
       }).addTo(map);
       polylineRef.current = polyline;
 
-      // 4. In-Transit Courier Marker if active
-      if (status === "accepted" || status === "picked_up") {
-        const midIdx = Math.floor(routePoints.length * (status === "picked_up" ? 0.6 : 0.3));
-        const courierPos = routePoints[midIdx] || routePoints[0];
+      // 4. Live Food Delivery Courier Marker (Active during accepted or picked_up)
+      if (isActiveDelivery) {
+        let initialPos: [number, number];
 
-        const courierIcon = createCustomMarkerIcon(L, {
-          type: "courier",
-          label: "EN ROUTE",
-          pulsing: true,
-          color: "#86C29B",
+        if (courierLocation?.lat && courierLocation?.lng) {
+          initialPos = [courierLocation.lat, courierLocation.lng];
+        } else {
+          // Default starting offset along the road
+          const ratio = status === "picked_up" ? 0.45 : 0.15;
+          const idx = Math.min(
+            routePoints.length - 1,
+            Math.max(0, Math.floor(routePoints.length * ratio))
+          );
+          initialPos = routePoints[idx] || pickupCoord;
+        }
+
+        setCurrentCourierPos({ lat: initialPos[0], lng: initialPos[1] });
+
+        const courierIcon = createFoodDeliveryCourierIcon(L, {
+          name: driverName,
+          vehicleType,
+          role,
         });
 
-        L.marker(courierPos, { icon: courierIcon })
-          .bindPopup(
-            `<div class="p-2 text-xs font-mono-numeral font-bold">Logistics Courier in Transit</div>`
-          )
+        if (courierMarkerRef.current) {
+          courierMarkerRef.current.remove();
+        }
+
+        const marker = L.marker(initialPos, { icon: courierIcon, zIndexOffset: 1000 })
+          .bindPopup(buildCourierPopupContent(initialPos[0], initialPos[1]))
           .addTo(map);
+
+        courierMarkerRef.current = marker;
       }
 
-      // 5. Fit bounds to contain both points
-      const bounds = L.latLngBounds([pickupCoord, dropCoord]);
+      // 5. Fit bounds with padding to include pickup, drop, and courier
+      const boundsCoords: [number, number][] = [pickupCoord, dropCoord];
+      if (courierLocation?.lat && courierLocation?.lng) {
+        boundsCoords.push([courierLocation.lat, courierLocation.lng]);
+      }
+      const bounds = L.latLngBounds(boundsCoords);
       boundsRef.current = bounds;
-      map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
     },
-    [pickup.lat, pickup.lng, pickup.name, pickup.address, drop.lat, drop.lng, drop.name, drop.address, drop.contactPhone, status]
+    [
+      pickup.lat,
+      pickup.lng,
+      pickup.name,
+      pickup.address,
+      pickup.contactPhone,
+      drop.lat,
+      drop.lng,
+      drop.name,
+      drop.address,
+      drop.contactPhone,
+      status,
+      isActiveDelivery,
+      courierLocation,
+      driverName,
+      vehicleType,
+      role,
+      urgencyTier,
+      buildCourierPopupContent,
+    ]
   );
+
+  // Sync marker whenever external courierLocation prop changes (e.g., from server polling or GPS watch)
+  useEffect(() => {
+    if (!courierLocation || !courierLocation.lat || !courierLocation.lng) return;
+
+    setCurrentCourierPos({ lat: courierLocation.lat, lng: courierLocation.lng });
+
+    if (courierMarkerRef.current) {
+      courierMarkerRef.current.setLatLng([courierLocation.lat, courierLocation.lng]);
+      courierMarkerRef.current.setPopupContent(
+        buildCourierPopupContent(courierLocation.lat, courierLocation.lng)
+      );
+
+      // Optionally pan to keep courier visible if map exists
+      if (mapRef.current && !mapRef.current.getBounds().contains([courierLocation.lat, courierLocation.lng])) {
+        mapRef.current.panTo([courierLocation.lat, courierLocation.lng], { animate: true });
+      }
+    }
+  }, [courierLocation, buildCourierPopupContent]);
+
+  // Fallback realistic smooth simulated movement along real road points
+  // if courierLocation is not actively updating from GPS
+  useEffect(() => {
+    if (!isActiveDelivery) return;
+
+    const interval = setInterval(() => {
+      const points = routePointsRef.current;
+      if (!points || points.length < 2) return;
+
+      // If we don't have external GPS updates, advance along the road
+      const totalSteps = points.length;
+      let nextStep = simStepRef.current + 1;
+      if (nextStep >= totalSteps) {
+        nextStep = Math.floor(totalSteps * (status === "picked_up" ? 0.3 : 0.05));
+      }
+      simStepRef.current = nextStep;
+
+      const targetCoord = points[nextStep];
+      if (targetCoord && courierMarkerRef.current) {
+        courierMarkerRef.current.setLatLng(targetCoord);
+        courierMarkerRef.current.setPopupContent(
+          buildCourierPopupContent(targetCoord[0], targetCoord[1])
+        );
+        setCurrentCourierPos({ lat: targetCoord[0], lng: targetCoord[1] });
+
+        if (onLocationUpdate) {
+          onLocationUpdate({
+            lat: targetCoord[0],
+            lng: targetCoord[1],
+            heading: 0,
+            speed: 30,
+          });
+        }
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isActiveDelivery, status, buildCourierPopupContent, onLocationUpdate]);
 
   const handleRecenter = () => {
     if (mapRef.current && boundsRef.current) {
-      mapRef.current.fitBounds(boundsRef.current, { padding: [45, 45] });
+      mapRef.current.fitBounds(boundsRef.current, { padding: [50, 50] });
     }
   };
 
   const initialLat = pickup.lat && !isNaN(pickup.lat) ? pickup.lat : 12.9716;
   const initialLng = pickup.lng && !isNaN(pickup.lng) ? pickup.lng : 77.5946;
 
+  // Directions destination depends on current stage
+  const targetDestination = status === "accepted" ? pickup : drop;
   const gmapsDirectionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
-    pickup.address || `${initialLat},${initialLng}`
+    currentCourierPos ? `${currentCourierPos.lat},${currentCourierPos.lng}` : pickup.address
   )}&destination=${encodeURIComponent(
-    drop.address || `${initialLat},${initialLng}`
+    targetDestination.address || `${initialLat},${initialLng}`
   )}&travelmode=driving`;
 
   return (
-    <div className="relative border border-[#3B362E] rounded-[6px] overflow-hidden group">
+    <div className="relative border border-[#3B362E] rounded-[8px] overflow-hidden group shadow-lg">
       <LeafletMapBase
         center={[initialLat, initialLng]}
         zoom={13}
@@ -263,15 +497,41 @@ export default function DeliveryRouteMap({
         onMapReady={handleMapReady}
       />
 
+      {/* Food Delivery App-style Live Delivery Banner Overlay */}
+      {isActiveDelivery && (
+        <div className="absolute top-3 left-3 right-14 sm:right-auto z-[400] bg-[#1D1B17]/95 backdrop-blur-md border border-[#3B362E] p-2.5 rounded-[8px] shadow-xl max-w-sm">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span className="font-mono-numeral text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+              {status === "accepted" ? "🛵 Driver Arriving at Kitchen" : "🍲 Food In Transit to NGO"}
+            </span>
+          </div>
+
+          <div className="text-xs text-[#F3EEE2] font-semibold mt-1 truncate">
+            {status === "accepted" ? `Pickup: ${pickup.name}` : `Destination: ${drop.name}`}
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] font-mono-numeral text-[#D4CBBF] mt-1 pt-1 border-t border-[#3B362E]/60">
+            <span>
+              {routeInfo ? `${routeInfo.distanceKm} km (~${routeInfo.durationMins} mins)` : "Live Route Active"}
+            </span>
+            <span className="text-emerald-400 font-medium">GPS Live</span>
+          </div>
+        </div>
+      )}
+
       {/* Floating Map Action Controls */}
-      <div className="absolute top-2 right-2 z-[400] flex items-center gap-1.5 bg-[#1D1B17]/90 backdrop-blur-sm border border-[#3B362E] p-1 rounded-[6px] text-xs">
+      <div className="absolute top-3 right-3 z-[400] flex items-center gap-1.5 bg-[#1D1B17]/95 backdrop-blur-md border border-[#3B362E] p-1.5 rounded-[6px] text-xs shadow-lg">
         <button
           type="button"
           onClick={handleRecenter}
           className="px-2 py-1 text-[11px] font-mono-numeral text-[#F3EEE2] hover:text-[#D9A441] transition-colors cursor-pointer"
-          title="Recenter route view"
+          title="Recenter full corridor view"
         >
-          ⤢ Recenter
+          ⤢ Fit
         </button>
         <span className="text-[#3B362E]">|</span>
         <a
@@ -279,12 +539,13 @@ export default function DeliveryRouteMap({
           target="_blank"
           rel="noopener noreferrer"
           className="px-2 py-1 text-[11px] font-mono-numeral text-[#D9A441] hover:underline flex items-center gap-1"
+          title="Open in Google Maps Navigation"
         >
-          <span>↗ Open Directions</span>
+          <span>🧭 Navigate</span>
         </a>
       </div>
 
-      {/* Route Distance & Timing Indicator powered by Mapbox */}
+      {/* Footer Corridor Stats */}
       <div className="absolute bottom-2 left-2 z-[400] bg-[#1D1B17]/90 backdrop-blur-sm border border-[#3B362E] px-2.5 py-1 rounded-[4px] text-[11px] font-mono-numeral text-[#9E9587] flex items-center gap-2">
         <span
           className={`w-1.5 h-1.5 rounded-full ${
@@ -292,10 +553,18 @@ export default function DeliveryRouteMap({
           }`}
         />
         <span className="text-[#F3EEE2] font-semibold">
-          {urgencyTier === "critical_red" ? "🔴 Critical Priority Corridor" : "Real-Road Corridor"}
+          {urgencyTier === "critical_red" ? "🔴 Critical Priority" : "Real-Road Corridor"}
         </span>
         <span>•</span>
-        <span>{routeInfo ? `${routeInfo.distanceKm} km (~${routeInfo.durationMins} mins)` : "Active Logistics Line"}</span>
+        <span>{routeInfo ? `${routeInfo.distanceKm} km` : "Active Line"}</span>
+        {currentCourierPos && (
+          <>
+            <span>•</span>
+            <span className="text-emerald-400">
+              📍 {currentCourierPos.lat.toFixed(3)}, {currentCourierPos.lng.toFixed(3)}
+            </span>
+          </>
+        )}
       </div>
     </div>
   );
