@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { ObjectId } from "mongodb";
 import { evaluateSafetyGating } from "@/lib/safety-gating";
+import { evaluateSurplusUrgency } from "@/lib/surplus-engine";
 import { rankAndCreateMatches } from "@/lib/matching";
 import { createNotification } from "@/lib/notifications";
 import { geocodeAddress } from "@/lib/geocoding";
@@ -278,6 +279,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Safety Gating Passed: Create Verified Safe Listing
+    const urgency = evaluateSurplusUrgency({
+      category: item.category,
+      quantity: listingQty,
+      unit: item.unit,
+      expiryDeadline: endWindow,
+      storageCondition,
+    });
+
     const newListing = {
       inventoryItemId: item._id,
       institutionId: institution._id,
@@ -294,6 +303,7 @@ export async function POST(request: NextRequest) {
       pickupLocation: locationData,
       safetyStatus: "verified_safe",
       status: "pending",
+      urgencyTier: urgency.urgencyTier,
       createdAt: new Date(),
     };
 

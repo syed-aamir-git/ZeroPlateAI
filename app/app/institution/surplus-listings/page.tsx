@@ -40,6 +40,7 @@ interface SurplusListing {
   category: string;
   quantity: number;
   unit: string;
+  storageCondition?: string;
   pickupWindow: {
     start: string;
     end: string;
@@ -53,7 +54,150 @@ interface SurplusListing {
   status: "pending" | "matched" | "claimed" | "delivered" | "expired";
   rejectionReason?: string;
   ruleApplied?: string;
+  urgencyTier?: "critical_red" | "urgent_yellow" | "safe_green";
   createdAt: string;
+}
+
+interface LedgerUrgencyInfo {
+  tier: "critical_red" | "urgent_yellow" | "safe_green" | "completed" | "blocked" | "expired";
+  label: string;
+  badgeClass: string;
+  dotClass: string;
+  ping: boolean;
+  isPriority: boolean;
+  rowBg: string;
+}
+
+function getListingUrgency(item: SurplusListing): LedgerUrgencyInfo {
+  // 1. Safety Blocked / Rejected items are NOT active dispatches
+  if (item.safetyStatus === "rejected") {
+    return {
+      tier: "blocked",
+      label: "Blocked",
+      badgeClass: "bg-stone-100 text-stone-600 border-stone-200",
+      dotClass: "bg-stone-400",
+      ping: false,
+      isPriority: false,
+      rowBg: "hover:bg-stone-50/80 transition-colors opacity-85",
+    };
+  }
+
+  // 2. Delivered / Completed items are fulfilled
+  if (item.status === "delivered") {
+    return {
+      tier: "completed",
+      label: "Fulfilled",
+      badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+      dotClass: "bg-emerald-500",
+      ping: false,
+      isPriority: false,
+      rowBg: "hover:bg-stone-50/80 transition-colors",
+    };
+  }
+
+  const now = Date.now();
+  const endDate = item.pickupWindow?.end ? new Date(item.pickupWindow.end).getTime() : 0;
+  const isPastDeadline = endDate > 0 && endDate < now;
+
+  // 3. Expired items
+  if (item.status === "expired" || (item.status === "pending" && isPastDeadline)) {
+    return {
+      tier: "expired",
+      label: "Expired",
+      badgeClass: "bg-stone-100 text-stone-600 border-stone-200",
+      dotClass: "bg-stone-400",
+      ping: false,
+      isPriority: false,
+      rowBg: "hover:bg-stone-50/80 transition-colors opacity-75",
+    };
+  }
+
+  // 4. Packaged or dry goods (e.g. Coke, canned goods, pulses)
+  const normCat = (item.category || "").toLowerCase();
+  const isPackagedOrDry = normCat.includes("package") || normCat.includes("dry");
+
+  // 5. Calculate remaining window time for active dispatches
+  const hoursRemaining = endDate > 0 ? (endDate - now) / (1000 * 60 * 60) : 4;
+
+  if (isPackagedOrDry && hoursRemaining > 0.5) {
+    return {
+      tier: "safe_green",
+      label: "Safe",
+      badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+      dotClass: "bg-emerald-500",
+      ping: false,
+      isPriority: false,
+      rowBg: "hover:bg-stone-50/80 transition-colors",
+    };
+  }
+
+  // If item has explicit urgencyTier recorded
+  if (item.urgencyTier) {
+    if (item.urgencyTier === "critical_red") {
+      return {
+        tier: "critical_red",
+        label: "Critical",
+        badgeClass: "bg-rose-50 text-rose-700 border-rose-200",
+        dotClass: "bg-rose-500",
+        ping: true,
+        isPriority: true,
+        rowBg: "bg-rose-50/20 hover:bg-rose-50/40 transition-colors",
+      };
+    }
+    if (item.urgencyTier === "urgent_yellow") {
+      return {
+        tier: "urgent_yellow",
+        label: "Urgent",
+        badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
+        dotClass: "bg-amber-500",
+        ping: false,
+        isPriority: false,
+        rowBg: "hover:bg-stone-50/80 transition-colors",
+      };
+    }
+    return {
+      tier: "safe_green",
+      label: "Safe",
+      badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+      dotClass: "bg-emerald-500",
+      ping: false,
+      isPriority: false,
+      rowBg: "hover:bg-stone-50/80 transition-colors",
+    };
+  }
+
+  // Dynamic calculation for perishable/cooked food active dispatches:
+  if (hoursRemaining < 2.0 && hoursRemaining > 0) {
+    return {
+      tier: "critical_red",
+      label: "Critical",
+      badgeClass: "bg-rose-50 text-rose-700 border-rose-200",
+      dotClass: "bg-rose-500",
+      ping: true,
+      isPriority: true,
+      rowBg: "bg-rose-50/20 hover:bg-rose-50/40 transition-colors",
+    };
+  } else if (hoursRemaining <= 5.0) {
+    return {
+      tier: "urgent_yellow",
+      label: "Urgent",
+      badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
+      dotClass: "bg-amber-500",
+      ping: false,
+      isPriority: false,
+      rowBg: "hover:bg-stone-50/80 transition-colors",
+    };
+  } else {
+    return {
+      tier: "safe_green",
+      label: "Safe",
+      badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+      dotClass: "bg-emerald-500",
+      ping: false,
+      isPriority: false,
+      rowBg: "hover:bg-stone-50/80 transition-colors",
+    };
+  }
 }
 
 interface InventoryItem {
@@ -404,25 +548,22 @@ function SurplusListingsContent() {
     return matchesFilter && matchesSearch;
   });
 
-  // Sort with 🔴 Critical Red items (<2 hours remaining) pinned to the top
+  // Sort listings: Active critical first, active urgent, active safe, fulfilled, expired, blocked
   const sortedListings = React.useMemo(() => {
     return [...filteredListings].sort((a, b) => {
-      const urgencyA = evaluateSurplusUrgency({
-        category: a.category,
-        quantity: a.quantity,
-        unit: a.unit,
-        expiryDeadline: a.pickupWindow?.end || new Date(),
-      });
-      const urgencyB = evaluateSurplusUrgency({
-        category: b.category,
-        quantity: b.quantity,
-        unit: b.unit,
-        expiryDeadline: b.pickupWindow?.end || new Date(),
-      });
-      const rank: Record<string, number> = { critical_red: 3, urgent_yellow: 2, safe_green: 1 };
-      const diff = (rank[urgencyB.urgencyTier] || 0) - (rank[urgencyA.urgencyTier] || 0);
+      const uA = getListingUrgency(a);
+      const uB = getListingUrgency(b);
+      const rank: Record<string, number> = {
+        critical_red: 5,
+        urgent_yellow: 4,
+        safe_green: 3,
+        completed: 2,
+        expired: 1,
+        blocked: 0,
+      };
+      const diff = (rank[uB.tier] || 0) - (rank[uA.tier] || 0);
       if (diff !== 0) return diff;
-      return new Date(a.pickupWindow?.end || 0).getTime() - new Date(b.pickupWindow?.end || 0).getTime();
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
   }, [filteredListings]);
 
@@ -782,40 +923,25 @@ function SurplusListingsContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 text-xs font-sans">
-                {filteredListings.map((item) => {
+                {sortedListings.map((item) => {
                   const isRejected = item.safetyStatus === "rejected";
                   const startDate = new Date(item.pickupWindow.start);
                   const endDate = new Date(item.pickupWindow.end);
-                  const urgency = evaluateSurplusUrgency({
-                    category: item.category,
-                    quantity: item.quantity,
-                    unit: item.unit,
-                    expiryDeadline: item.pickupWindow.end,
-                  });
-                  const isRed = urgency.urgencyTier === "critical_red";
+                  const urgency = getListingUrgency(item);
+                  const meals = calculatePiecesToPlates(item.quantity, item.unit, item.category).plates;
 
                   return (
                     <tr
                       key={item._id}
-                      className={`hover:bg-stone-50/90 transition-colors ${
-                        isRejected
-                          ? "bg-rose-50/40"
-                          : isRed
-                          ? "bg-rose-50/20 font-medium"
-                          : ""
-                      }`}
+                      className={`transition-colors ${urgency.rowBg}`}
                     >
                       {/* Urgency Tier */}
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${urgency.tierColor.bg} ${urgency.tierColor.text} ${urgency.tierColor.border}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${urgency.badgeClass}`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${urgency.tierColor.dot} ${isRed ? "animate-ping" : ""}`} />
-                          {urgency.urgencyTier === "critical_red"
-                            ? "🔴 Critical"
-                            : urgency.urgencyTier === "urgent_yellow"
-                            ? "🟡 Urgent"
-                            : "🟢 Safe"}
+                          <span className={`w-1.5 h-1.5 rounded-full ${urgency.dotClass} ${urgency.ping ? "animate-ping" : ""}`} />
+                          <span>{urgency.label}</span>
                         </span>
                       </td>
 
@@ -824,27 +950,31 @@ function SurplusListingsContent() {
                         <div className="flex items-center gap-2">
                           {isRejected ? (
                             <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                          ) : item.status === "delivered" ? (
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          ) : urgency.isPriority ? (
+                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                           ) : (
                             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                           )}
                           <div>
                             <div className="font-semibold text-stone-900 flex items-center gap-1.5">
-                              {item.itemName}
-                              {isRed && (
+                              <span>{item.itemName}</span>
+                              {urgency.isPriority && (
                                 <span className="text-[9px] uppercase font-mono px-1 py-0.2 bg-red-600 text-white rounded font-bold">
                                   PRIORITY
                                 </span>
                               )}
                             </div>
                             <div className="text-[11px] text-stone-500 capitalize">
-                              {item.category.replace("_", " ")}
+                              {item.category.replace(/_/g, " ")}
                             </div>
                           </div>
                         </div>
                       </td>
 
                       {/* Quantity */}
-                      <td className="py-3 px-4 font-mono text-right font-bold text-stone-900">
+                      <td className="py-3 px-4 font-mono text-right font-bold text-stone-900 whitespace-nowrap">
                         <div>
                           {item.quantity}{" "}
                           <span className="text-xs font-sans font-normal text-stone-500">
@@ -852,12 +982,12 @@ function SurplusListingsContent() {
                           </span>
                           {isPiecesUnit(item.unit) && (
                             <span className="text-xs font-sans font-medium text-emerald-700 ml-1.5 whitespace-nowrap">
-                              (~{calculatePiecesToPlates(item.quantity, item.unit, item.category).plates} plates)
+                              (~{meals} plates)
                             </span>
                           )}
                         </div>
                         <div className="text-[10px] text-emerald-700 font-sans font-normal">
-                          ≈ {urgency.estimatedMeals} meals
+                          ≈ {meals} meals
                         </div>
                       </td>
 
@@ -881,54 +1011,52 @@ function SurplusListingsContent() {
                       </td>
 
                       {/* Safety Gating */}
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {isRejected ? (
-                          <div className="space-y-1">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 border border-rose-300">
-                              <AlertTriangle className="w-3 h-3 text-rose-600" />
-                              Safety Blocked
-                            </span>
-                            <div className="text-[10px] text-rose-700 font-mono leading-tight max-w-[200px]">
-                              {item.rejectionReason || "Threshold exceeded"}
-                            </div>
-                          </div>
+                          <span
+                            title={item.rejectionReason || "Threshold exceeded"}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 border border-rose-300 cursor-help"
+                          >
+                            <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                            <span>Safety Blocked</span>
+                          </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            Verified Safe
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                            <span>Verified Safe</span>
                           </span>
                         )}
                       </td>
 
                       {/* Fulfillment Status */}
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {isRejected ? (
                           <span className="text-xs font-mono text-stone-400">Non-distributable</span>
                         ) : item.status === "delivered" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                            Delivered
+                            <span>Delivered</span>
                           </span>
                         ) : item.status === "claimed" || item.status === "matched" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 border border-blue-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                            Claimed (In Transit)
+                            <span>Claimed (In Transit)</span>
                           </span>
                         ) : item.status === "expired" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-stone-500" />
-                            Window Expired
+                            <span>Window Expired</span>
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
-                            Pending Match
+                            <span>Pending Match</span>
                           </span>
                         )}
                       </td>
 
                       {/* Action */}
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
                         {!isRejected && item.status === "pending" ? (
                           <button
                             type="button"
@@ -1495,12 +1623,14 @@ function SurplusListingsContent() {
           quantity={matchmakingListing.quantity}
           unit={matchmakingListing.unit}
           urgencyTier={
-            evaluateSurplusUrgency({
-              category: matchmakingListing.category,
-              quantity: matchmakingListing.quantity,
-              unit: matchmakingListing.unit,
-              expiryDeadline: matchmakingListing.pickupWindow.end,
-            }).urgencyTier
+            matchmakingListing.urgencyTier ||
+            (() => {
+              const u = getListingUrgency(matchmakingListing);
+              if (u.tier === "critical_red" || u.tier === "urgent_yellow" || u.tier === "safe_green") {
+                return u.tier;
+              }
+              return "safe_green";
+            })()
           }
           isOpen={!!matchmakingListing}
           onClose={() => setMatchmakingListing(null)}
