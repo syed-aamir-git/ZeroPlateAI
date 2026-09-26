@@ -17,120 +17,437 @@ import {
   Building2,
   FileCheck2,
   ChevronRight,
+  ExternalLink,
   BellRing,
   QrCode,
   Zap,
+  CalendarCheck,
+  PackageCheck,
+  BadgeCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 type RoleType = "all" | "kitchens" | "ngos" | "drivers";
 
+interface StepItem {
+  num: string;
+  badge: string;
+  title: string;
+  layman: string;
+  color: string;
+  gradient: string;
+  lightBg: string;
+  borderColor: string;
+  accentText: string;
+  tag: string;
+  highlights: string[];
+  icon: React.ElementType;
+  preview: {
+    title: string;
+    item: string;
+    quantity: string;
+    status: string;
+  };
+}
+
 export function HowItWorksSection() {
   const [activeRole, setActiveRole] = useState<RoleType>("all");
   const [activeStep, setActiveStep] = useState<number>(0);
 
-  const stepsAll = [
-    {
-      num: "01",
-      badge: "Step 1 • Kitchen Prep & Logging",
-      title: "Kitchens Log Surplus in 30 Seconds",
-      layman: "When lunch or dinner ends, dining staff simply tap the extra portions into their phone or tablet. Automated AI estimates servings and logs temperatures.",
-      color: "emerald",
-      gradient: "from-emerald-500 to-teal-600",
-      lightBg: "bg-emerald-50",
-      borderColor: "border-emerald-200",
-      accentText: "text-emerald-700",
-      tag: "⚡ Fast & Effortless",
-      highlights: ["No complex paperwork", "Instant meal count & temperature check", "Supports bulk trays, kg & litres"],
-      icon: Utensils,
-      preview: {
-        title: "Chef's 1-Tap Surplus Entry",
-        item: "Steamed Rice & Lentil Dal",
-        quantity: "45.0 kg (~112 plates)",
-        status: "Logged & Safety-Checked",
+  // Dedicated Steps for each role perspective
+  const roleStepsData: Record<RoleType, StepItem[]> = {
+    // 1. Complete Overview
+    all: [
+      {
+        num: "01",
+        badge: "Step 1 • Kitchen Prep & Logging",
+        title: "Kitchens Log Surplus in 30 Seconds",
+        layman: "When lunch or dinner ends, dining staff simply tap the extra portions into their phone or tablet. Automated AI estimates servings and logs temperatures.",
+        color: "emerald",
+        gradient: "from-emerald-500 to-teal-600",
+        lightBg: "bg-emerald-50",
+        borderColor: "border-emerald-200",
+        accentText: "text-emerald-700",
+        tag: "⚡ Fast & Effortless",
+        highlights: ["No complex paperwork", "Instant meal count & temperature check", "Supports bulk trays, kg & litres"],
+        icon: Utensils,
+        preview: {
+          title: "Chef's 1-Tap Surplus Entry",
+          item: "Steamed Rice & Lentil Dal",
+          quantity: "45.0 kg (~112 plates)",
+          status: "Logged & Safety-Checked",
+        },
       },
-    },
-    {
-      num: "02",
-      badge: "Step 2 • Automated Food Safety",
-      title: "Instant Food Safety Validation",
-      layman: "Our system immediately checks the preparation time against strict food hygiene standards. Only safe, fresh food is approved — unsafe items are blocked automatically.",
-      color: "amber",
-      gradient: "from-amber-500 to-orange-600",
-      lightBg: "bg-amber-50",
-      borderColor: "border-amber-200",
-      accentText: "text-amber-700",
-      tag: "🛡️ 100% Protected",
-      highlights: ["Strict 4-hour fresh cooked window", "Zero legal liability for donors", "Tamper-proof safety audit trail"],
-      icon: ShieldCheck,
-      preview: {
-        title: "ZeroPlate Safety Gate",
-        item: "Batch Temperature: 68°C (Safe)",
-        quantity: "Time Since Cooking: 42 mins",
-        status: "APPROVED FOR DISPATCH",
+      {
+        num: "02",
+        badge: "Step 2 • Automated Food Safety",
+        title: "Instant Food Safety Validation",
+        layman: "Our system immediately checks the preparation time against strict food hygiene standards. Only safe, fresh food is approved — unsafe items are blocked automatically.",
+        color: "amber",
+        gradient: "from-amber-500 to-orange-600",
+        lightBg: "bg-amber-50",
+        borderColor: "border-amber-200",
+        accentText: "text-amber-700",
+        tag: "🛡️ 100% Protected",
+        highlights: ["Strict 4-hour fresh cooked window", "Zero legal liability for donors", "Tamper-proof safety audit trail"],
+        icon: ShieldCheck,
+        preview: {
+          title: "ZeroPlate Safety Gate",
+          item: "Batch Temperature: 68°C (Safe)",
+          quantity: "Time Since Cooking: 42 mins",
+          status: "APPROVED FOR DISPATCH",
+        },
       },
-    },
-    {
-      num: "03",
-      badge: "Step 3 • Local Charity Matching",
-      title: "Nearby Shelters Claim Free Meals",
-      layman: "Verified food banks and community shelters within 10 km receive instant smartphone notifications. The first available NGO claims the batch with one tap.",
-      color: "sky",
-      gradient: "from-sky-500 to-blue-600",
-      lightBg: "bg-sky-50",
-      borderColor: "border-sky-200",
-      accentText: "text-sky-700",
-      tag: "📍 Proximity Matched",
-      highlights: ["100% free food for non-profits", "Claimed in under 4 minutes", "Matches capacity to shelter size"],
-      icon: HeartHandshake,
-      preview: {
-        title: "Shelter Notification Alert",
-        item: "Hope Shelter (3.2 km away)",
-        quantity: "112 hot meals claimed",
-        status: "Claim Confirmed by Staff",
+      {
+        num: "03",
+        badge: "Step 3 • Local Charity Matching",
+        title: "Nearby Shelters Claim Free Meals",
+        layman: "Verified food banks and community shelters within 10 km receive instant smartphone notifications. The first available NGO claims the batch with one tap.",
+        color: "sky",
+        gradient: "from-sky-500 to-blue-600",
+        lightBg: "bg-sky-50",
+        borderColor: "border-sky-200",
+        accentText: "text-sky-700",
+        tag: "📍 Proximity Matched",
+        highlights: ["100% free food for non-profits", "Claimed in under 4 minutes", "Matches capacity to shelter size"],
+        icon: HeartHandshake,
+        preview: {
+          title: "Shelter Notification Alert",
+          item: "Hope Shelter (3.2 km away)",
+          quantity: "112 hot meals claimed",
+          status: "Claim Confirmed by Staff",
+        },
       },
-    },
-    {
-      num: "04",
-      badge: "Step 4 • Swift Pickup & Verified Impact",
-      title: "Quick Delivery & Carbon Certificates",
-      layman: "Drivers transport warm food containers directly to shelters. Once delivered, kitchens receive certified tax documents and carbon reduction certificates.",
-      color: "violet",
-      gradient: "from-violet-500 to-purple-600",
-      lightBg: "bg-violet-50",
-      borderColor: "border-violet-200",
-      accentText: "text-violet-700",
-      tag: "📜 Certified Proof",
-      highlights: ["Live route tracking to the door", "Official ESG & CSR disclosures", "Direct hunger relief impact"],
-      icon: Award,
-      preview: {
-        title: "Delivery & Impact Ledger",
-        item: "Received by Shelter Supervisor",
-        quantity: "201.6 kg CO₂e avoided",
-        status: "Impact Certificate Issued",
+      {
+        num: "04",
+        badge: "Step 4 • Swift Pickup & Verified Impact",
+        title: "Quick Delivery & Carbon Certificates",
+        layman: "Drivers transport warm food containers directly to shelters. Once delivered, kitchens receive certified tax documents and carbon reduction certificates.",
+        color: "violet",
+        gradient: "from-violet-500 to-purple-600",
+        lightBg: "bg-violet-50",
+        borderColor: "border-violet-200",
+        accentText: "text-violet-700",
+        tag: "📜 Certified Proof",
+        highlights: ["Live route tracking to the door", "Official ESG & CSR disclosures", "Direct hunger relief impact"],
+        icon: Award,
+        preview: {
+          title: "Delivery & Impact Ledger",
+          item: "Received by Shelter Supervisor",
+          quantity: "201.6 kg CO₂e avoided",
+          status: "Impact Certificate Issued",
+        },
       },
-    },
-  ];
+    ],
 
-  const roleDetails = {
+    // 2. Dedicated for Commercial Kitchens & Messes
+    kitchens: [
+      {
+        num: "01",
+        badge: "Kitchen Step 1 • AI Demand Forecasting",
+        title: "Predict Daily Demand with AI",
+        layman: "Before cooking starts, our machine learning forecasts student and staff dining turnout based on academic calendars and past consumption.",
+        color: "emerald",
+        gradient: "from-emerald-500 to-teal-600",
+        lightBg: "bg-emerald-50",
+        borderColor: "border-emerald-200",
+        accentText: "text-emerald-700",
+        tag: "📉 Stop Over-Prepping",
+        highlights: ["Reduces overcooking up to 35%", "Syncs with kitchen menu cycles", "Cuts raw ingredient procurement costs"],
+        icon: TrendingDown,
+        preview: {
+          title: "AI Headcount Forecast",
+          item: "Lunch Service: 420 expected meals",
+          quantity: "Prep Target: 65 kg Rice, 40 kg Dal",
+          status: "Forecast Confidence 96%",
+        },
+      },
+      {
+        num: "02",
+        badge: "Kitchen Step 2 • 30-Second Surplus Log",
+        title: "Log Extra Food with 1 Tap",
+        layman: "Whatever remains unserved at service close is weighed and recorded in 30 seconds on tablet or phone with automated temperature logging.",
+        color: "amber",
+        gradient: "from-amber-500 to-orange-600",
+        lightBg: "bg-amber-50",
+        borderColor: "border-amber-200",
+        accentText: "text-amber-700",
+        tag: "⏱️ Under 30 Secs",
+        highlights: ["Zero manual paperwork", "Supports bulk kilograms or plate counts", "Automated timer starts immediately"],
+        icon: Utensils,
+        preview: {
+          title: "Kitchen Surplus Log",
+          item: "Paneer Curry & Chapati Batch",
+          quantity: "28 kg (~70 meals logged)",
+          status: "Ready for NGO Match",
+        },
+      },
+      {
+        num: "03",
+        badge: "Kitchen Step 3 • 100% Legal Protection",
+        title: "Automated Safety & Liability Shield",
+        layman: "Pre-set FSSAI temperature checks ensure safe packaging. Donors are legally shielded under statutory Good Samaritan food recovery protections.",
+        color: "sky",
+        gradient: "from-sky-500 to-blue-600",
+        lightBg: "bg-sky-50",
+        borderColor: "border-sky-200",
+        accentText: "text-sky-700",
+        tag: "🛡️ Zero Liability",
+        highlights: ["Fail-closed safety threshold check", "Timestamped digital dispatch seal", "Full compliance documentation"],
+        icon: ShieldCheck,
+        preview: {
+          title: "Safety Compliance Seal",
+          item: "Donor: Nobel Stays Mess",
+          quantity: "Thermal Temp: 65°C Insulated",
+          status: "Verified Donor Protection",
+        },
+      },
+      {
+        num: "04",
+        badge: "Kitchen Step 4 • ESG & CSR Rewards",
+        title: "Download Certified Impact Reports",
+        layman: "Every kilogram of surplus rescued generates an official Scope 3 carbon reduction certificate and verified corporate CSR donation receipt.",
+        color: "violet",
+        gradient: "from-violet-500 to-purple-600",
+        lightBg: "bg-violet-50",
+        borderColor: "border-violet-200",
+        accentText: "text-violet-700",
+        tag: "🌱 ESG Audit-Ready",
+        highlights: ["Scope 3 greenhouse gas avoidance", "Direct audit PDF export for leadership", "PR and sustainability badges"],
+        icon: Award,
+        preview: {
+          title: "Annual Sustainability Credit",
+          item: "12,450 Meals Diverted to Date",
+          quantity: "22,410 kg CO₂e Offset",
+          status: "Audited & Certified",
+        },
+      },
+    ],
+
+    // 3. Dedicated for Charities & NGOs
+    ngos: [
+      {
+        num: "01",
+        badge: "NGO Step 1 • Real-Time Phone Alerts",
+        title: "Receive Instant Local Food Alerts",
+        layman: "Whenever partner dining halls within 10 km log fresh surplus, verified charities receive instant push notifications with dish details and portion sizes.",
+        color: "amber",
+        gradient: "from-amber-500 to-orange-600",
+        lightBg: "bg-amber-50",
+        borderColor: "border-amber-200",
+        accentText: "text-amber-700",
+        tag: "🔔 Instant Alert",
+        highlights: ["100% free food for non-profits", "Real-time push alerts on phone", "Shows exact dish and portion counts"],
+        icon: BellRing,
+        preview: {
+          title: "New Surplus Broadcast",
+          item: "Fresh Biryani & Veg Raita",
+          quantity: "150 plates available",
+          status: "Nearby (2.8 km away)",
+        },
+      },
+      {
+        num: "02",
+        badge: "NGO Step 2 • 1-Tap Free Claiming",
+        title: "Claim Hot Meals in 1 Tap",
+        layman: "Tap 'Claim' on your mobile dashboard to instantly reserve the batch for your shelter. Zero bidding, zero cost, and zero paperwork.",
+        color: "emerald",
+        gradient: "from-emerald-500 to-teal-600",
+        lightBg: "bg-emerald-50",
+        borderColor: "border-emerald-200",
+        accentText: "text-emerald-700",
+        tag: "✅ Claimed in 10s",
+        highlights: ["Immediate lock prevents duplicate claims", "Free meal supply for your community", "Matches your shelter's dining capacity"],
+        icon: HeartHandshake,
+        preview: {
+          title: "Claim Reservation Locked",
+          item: "Reserved for Ananda Children's Home",
+          quantity: "150 Meals Reserved",
+          status: "Driver Assigned for Pickup",
+        },
+      },
+      {
+        num: "03",
+        badge: "NGO Step 3 • Real-Time Delivery Tracking",
+        title: "Track Courier Directly to Door",
+        layman: "Watch the delivery courier move in real time on the live map. Hot food is transported in hygienic insulated thermal crates directly to your facility.",
+        color: "sky",
+        gradient: "from-sky-500 to-blue-600",
+        lightBg: "bg-sky-50",
+        borderColor: "border-sky-200",
+        accentText: "text-sky-700",
+        tag: "🚚 Live GPS Map",
+        highlights: ["Turn-by-turn ETA updates", "Direct driver phone communication", "Food arrives hot and ready to serve"],
+        icon: Truck,
+        preview: {
+          title: "Courier Dispatch Tracking",
+          item: "Driver: Rajesh K. (En Route)",
+          quantity: "Arriving in 14 minutes",
+          status: "Insulated Thermal Box",
+        },
+      },
+      {
+        num: "04",
+        badge: "NGO Step 4 • Digital Receipt Confirmation",
+        title: "Confirm Receipt & Nourish Community",
+        layman: "When the driver arrives, simply confirm receipt on your smartphone with 1 click. Serve warm, nutritious meals to families that same afternoon or evening.",
+        color: "violet",
+        gradient: "from-violet-500 to-purple-600",
+        lightBg: "bg-violet-50",
+        borderColor: "border-violet-200",
+        accentText: "text-violet-700",
+        tag: "🍲 Ready to Serve",
+        highlights: ["1-click digital receipt drop-off", "Nutritious, high-quality dining food", "Build lasting local food security"],
+        icon: CheckCircle2,
+        preview: {
+          title: "Delivery Receipt Completed",
+          item: "Received by Shelter Supervisor",
+          quantity: "150 Beneficiaries Fed",
+          status: "Verified & Closed",
+        },
+      },
+    ],
+
+    // 4. Dedicated for Volunteer Drivers & Logistics Couriers
+    drivers: [
+      {
+        num: "01",
+        badge: "Driver Step 1 • Nearby Dispatch Alert",
+        title: "Get Nearby Pickup Assignments",
+        layman: "Delivery partners receive a phone ping when a surplus package is ready for transfer between a local dining hall and nearby shelter.",
+        color: "sky",
+        gradient: "from-sky-500 to-blue-600",
+        lightBg: "bg-sky-50",
+        borderColor: "border-sky-200",
+        accentText: "text-sky-700",
+        tag: "📍 Local & Quick",
+        highlights: ["Short distance transfers (avg 4-8 km)", "Flexible schedule & volunteering", "Clear pickup and drop-off addresses"],
+        icon: MapPin,
+        preview: {
+          title: "Dispatch Request Alert",
+          item: "From: City College Mess",
+          quantity: "To: St. Jude Community Shelter",
+          status: "Distance: 4.2 km (Accept?)",
+        },
+      },
+      {
+        num: "02",
+        badge: "Driver Step 2 • Contactless Kitchen Pickup",
+        title: "Fast Pickup at the Kitchen",
+        layman: "Arrive at the kitchen dispatch door. Staff hand over pre-packed, sealed insulated boxes. Scan the digital pass and hit 'Picked Up'.",
+        color: "emerald",
+        gradient: "from-emerald-500 to-teal-600",
+        lightBg: "bg-emerald-50",
+        borderColor: "border-emerald-200",
+        accentText: "text-emerald-700",
+        tag: "📦 2-Minute Handover",
+        highlights: ["Pre-packed and labeled containers", "No waiting in lines", "Instant timestamped digital handover"],
+        icon: QrCode,
+        preview: {
+          title: "Kitchen Pickup Verified",
+          item: "3 Insulated Food Crates",
+          quantity: "Weight: 35.0 kg",
+          status: "Status: Picked Up",
+        },
+      },
+      {
+        num: "03",
+        badge: "Driver Step 3 • Turn-by-Turn GPS Guidance",
+        title: "Drive Optimized Direct Route",
+        layman: "ZeroPlate's mobile dashboard routes you straight to the recipient NGO shelter using optimal city traffic routes to keep food fresh and warm.",
+        color: "amber",
+        gradient: "from-amber-500 to-orange-600",
+        lightBg: "bg-amber-50",
+        borderColor: "border-amber-200",
+        accentText: "text-amber-700",
+        tag: "🧭 Smooth Routing",
+        highlights: ["In-app navigation to destination", "Estimated arrival time shared with NGO", "Direct support contact if needed"],
+        icon: Truck,
+        preview: {
+          title: "Transit Navigation Live",
+          item: "Destination: Hope Shelter Gate 2",
+          quantity: "ETA: 12 mins remaining",
+          status: "On Schedule",
+        },
+      },
+      {
+        num: "04",
+        badge: "Driver Step 4 • Drop-off & Volunteer Credit",
+        title: "Deliver & Earn Verified Hours",
+        layman: "Hand over the food crates to the shelter team. Tap 'Delivered' to record delivery proof, community volunteer hours, or logistics payouts.",
+        color: "violet",
+        gradient: "from-violet-500 to-purple-600",
+        lightBg: "bg-violet-50",
+        borderColor: "border-violet-200",
+        accentText: "text-violet-700",
+        tag: "⭐ Mission Completed",
+        highlights: ["Instant delivery completion stamp", "Verified community service certificates", "Logistics compensation or awards"],
+        icon: Award,
+        preview: {
+          title: "Assignment Completed",
+          item: "Delivery Dropped Off Successfully",
+          quantity: "85 Warm Meals Delivered",
+          status: "Volunteer Credit Logged",
+        },
+      },
+    ],
+  };
+
+  // Dedicated page redirect URLs
+  const dedicatedPages: Record<RoleType, { url: string; label: string; registerUrl: string; registerLabel: string }> = {
     all: {
-      headline: "The Complete Circular Food Journey",
-      subtitle: "How surplus food moves from dining halls to families in need in 4 simple steps.",
+      url: "/how-it-works",
+      label: "Open Full How It Works Guide",
+      registerUrl: "/register",
+      registerLabel: "Get Started Free",
     },
     kitchens: {
-      headline: "How It Works for Commercial Kitchens & Messes",
-      subtitle: "Turn unavoidable leftover food into hunger relief and tax-deductible ESG sustainability credits.",
+      url: "/institutions",
+      label: "Go to Dedicated Kitchens Hub",
+      registerUrl: "/register?role=institution_admin",
+      registerLabel: "Register Kitchen / Mess",
     },
     ngos: {
-      headline: "How It Works for Food Banks & Shelters",
-      subtitle: "Receive regular, high-quality, hot nutritious meals for free with zero administrative overhead.",
+      url: "/ngos",
+      label: "Go to Dedicated NGOs Hub",
+      registerUrl: "/register?role=ngo",
+      registerLabel: "Register Charity for Free Meals",
     },
     drivers: {
-      headline: "How It Works for Delivery Drivers & Volunteers",
-      subtitle: "Earn delivery payouts or volunteer hours while connecting kitchens with local community shelters.",
+      url: "/register?role=delivery_partner",
+      label: "Go to Driver Onboarding Page",
+      registerUrl: "/register?role=delivery_partner",
+      registerLabel: "Sign Up as Delivery Courier",
     },
   };
+
+  const roleMeta: Record<RoleType, { headline: string; subtitle: string; tag: string }> = {
+    all: {
+      tag: "Complete Lifecycle",
+      headline: "The 4-Step Circular Food Rescue Journey",
+      subtitle: "See how excess fresh food from college dining halls and corporate cafeterias flows directly to local shelters.",
+    },
+    kitchens: {
+      tag: "For Commercial Dining",
+      headline: "How It Works for Kitchens & College Messes",
+      subtitle: "Eliminate kitchen food waste, reduce cooking costs with AI, and receive verified Scope 3 carbon tax credits.",
+    },
+    ngos: {
+      tag: "For Charities & Shelters",
+      headline: "How It Works for Non-Profits & Food Banks",
+      subtitle: "Claim 100% free, safe, delicious surplus meals for your shelter with zero phone calls or logistical headaches.",
+    },
+    drivers: {
+      tag: "For Volunteers & Couriers",
+      headline: "How It Works for Delivery Drivers & Couriers",
+      subtitle: "Pick up packaged meals and transport them to local community shelters with step-by-step mobile GPS guidance.",
+    },
+  };
+
+  const currentSteps = roleStepsData[activeRole];
+  const currentDedicated = dedicatedPages[activeRole];
+  const currentMeta = roleMeta[activeRole];
 
   return (
     <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50/60 to-white relative overflow-hidden">
@@ -140,7 +457,7 @@ export function HowItWorksSection() {
 
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
+        <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-2xs mb-4">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Interactive Visual Guide</span>
@@ -150,71 +467,110 @@ export function HowItWorksSection() {
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
             Effortless, automated, and built for real-world chefs, volunteers, and drivers. 
-            No confusing manuals — saving food takes under 30 seconds.
+            Select your role below to explore your customized workflow or jump directly to the dedicated hub.
           </p>
 
-          {/* Interactive Role Switcher */}
-          <div className="mt-8 inline-flex p-1.5 rounded-2xl bg-slate-200/70 backdrop-blur-xs border border-slate-300/60 shadow-inner max-w-full overflow-x-auto">
+          {/* Interactive Role Switcher with direct redirect & tab switching */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2 p-2 rounded-2xl bg-slate-200/70 backdrop-blur-xs border border-slate-300/60 shadow-inner max-w-full">
             <button
               type="button"
-              onClick={() => setActiveRole("all")}
+              onClick={() => {
+                setActiveRole("all");
+                setActiveStep(0);
+              }}
               className={cn(
-                "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer",
+                "px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5",
                 activeRole === "all"
-                  ? "bg-white text-slate-900 shadow-md scale-100"
+                  ? "bg-white text-slate-900 shadow-md scale-102 ring-1 ring-slate-200"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
               )}
             >
-              🌟 Complete Journey
+              <span>🌟 Complete Journey</span>
             </button>
+
             <button
               type="button"
-              onClick={() => setActiveRole("kitchens")}
+              onClick={() => {
+                setActiveRole("kitchens");
+                setActiveStep(0);
+              }}
               className={cn(
-                "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer",
+                "px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5",
                 activeRole === "kitchens"
-                  ? "bg-white text-emerald-700 shadow-md scale-100"
+                  ? "bg-white text-emerald-700 shadow-md scale-102 ring-1 ring-emerald-200"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
               )}
             >
-              👨‍🍳 For Kitchens & Messes
+              <span>👨‍🍳 For Kitchens & Messes</span>
             </button>
+
             <button
               type="button"
-              onClick={() => setActiveRole("ngos")}
+              onClick={() => {
+                setActiveRole("ngos");
+                setActiveStep(0);
+              }}
               className={cn(
-                "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer",
+                "px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5",
                 activeRole === "ngos"
-                  ? "bg-white text-amber-700 shadow-md scale-100"
+                  ? "bg-white text-amber-700 shadow-md scale-102 ring-1 ring-amber-200"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
               )}
             >
-              🤝 For Charities & NGOs
+              <span>🤝 For Charities & NGOs</span>
             </button>
+
             <button
               type="button"
-              onClick={() => setActiveRole("drivers")}
+              onClick={() => {
+                setActiveRole("drivers");
+                setActiveStep(0);
+              }}
               className={cn(
-                "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer",
+                "px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5",
                 activeRole === "drivers"
-                  ? "bg-white text-sky-700 shadow-md scale-100"
+                  ? "bg-white text-sky-700 shadow-md scale-102 ring-1 ring-sky-200"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
               )}
             >
-              🚚 For Drivers & Couriers
+              <span>🚚 For Drivers & Couriers</span>
             </button>
+          </div>
+
+          {/* Quick Dedicated Redirect Bar */}
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Link
+              href={currentDedicated.url}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/80 px-3.5 py-1.5 rounded-full transition-all group"
+            >
+              <span>{currentDedicated.label}</span>
+              <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </Link>
           </div>
         </div>
 
-        {/* 4 Interactive Step Progression Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stepsAll.map((step, idx) => {
+        {/* Dynamic Role Headline Callout */}
+        <div className="mb-8 text-center max-w-2xl mx-auto">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-100/60 px-3 py-1 rounded-full">
+            {currentMeta.tag}
+          </span>
+          <h3 className="text-2xl font-bold text-slate-900 mt-2">
+            {currentMeta.headline}
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            {currentMeta.subtitle}
+          </p>
+        </div>
+
+        {/* 4 Interactive Step Progression Cards - Dynamically Updates on Role Change */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-300">
+          {currentSteps.map((step, idx) => {
             const Icon = step.icon;
             const isSelected = activeStep === idx;
 
             return (
               <div
-                key={step.num}
+                key={`${activeRole}-${step.num}`}
                 onClick={() => setActiveStep(idx)}
                 className={cn(
                   "relative rounded-2xl p-6 transition-all duration-300 cursor-pointer flex flex-col justify-between border bg-white shadow-xs group",
@@ -249,9 +605,9 @@ export function HowItWorksSection() {
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                     {step.badge}
                   </span>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2.5 leading-snug group-hover:text-emerald-700 transition-colors">
+                  <h4 className="text-lg font-bold text-slate-900 mb-2.5 leading-snug group-hover:text-emerald-700 transition-colors">
                     {step.title}
-                  </h3>
+                  </h4>
                   <p className="text-xs text-slate-600 leading-relaxed font-normal mb-5">
                     {step.layman}
                   </p>
@@ -294,17 +650,17 @@ export function HowItWorksSection() {
           })}
         </div>
 
-        {/* Dynamic Detail Card Based on Active Role */}
+        {/* Dynamic Action Banner with Direct Dedicated Page Redirect Button */}
         <div className="mt-12 rounded-3xl bg-white border border-slate-200/90 p-8 sm:p-10 shadow-lg shadow-slate-100 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="space-y-4 max-w-2xl text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-100/70 text-emerald-800 text-xs font-bold">
-              <span>Layman Guarantee</span>
+              <span>{currentMeta.tag}</span>
             </div>
             <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              {roleDetails[activeRole].headline}
+              {currentMeta.headline}
             </h3>
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-              {roleDetails[activeRole].subtitle}
+              {currentMeta.subtitle}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -327,15 +683,15 @@ export function HowItWorksSection() {
             </div>
           </div>
 
-          {/* Action Callout */}
+          {/* Direct Redirection Actions */}
           <div className="w-full lg:w-auto shrink-0 flex flex-col sm:flex-row lg:flex-col gap-3">
             <Button
               asChild
               size="lg"
               className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-6 px-8 rounded-xl shadow-md hover:shadow-lg transition-all text-center justify-center"
             >
-              <Link href="/register" className="flex items-center gap-2">
-                <span>Start in 2 Minutes</span>
+              <Link href={currentDedicated.url} className="flex items-center gap-2">
+                <span>{currentDedicated.label}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
@@ -345,7 +701,9 @@ export function HowItWorksSection() {
               size="lg"
               className="border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold py-6 px-6 rounded-xl text-center justify-center"
             >
-              <Link href="/how-it-works">Read Full Detailed Guide</Link>
+              <Link href={currentDedicated.registerUrl}>
+                <span>{currentDedicated.registerLabel}</span>
+              </Link>
             </Button>
           </div>
         </div>
