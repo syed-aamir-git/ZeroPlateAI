@@ -144,20 +144,24 @@ export default async function HomePage() {
       </section>
 
       {/* Colorful, High-Impact 4-Metric Grid */}
-      <section className="bg-white py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80">
+      <section id="impact-ledger" className="bg-white py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-slate-100 gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-slate-100 gap-4">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md">
                 Verified Community Impact
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">
                 Real-Time Platform Numbers
               </h2>
             </div>
-            <span className="text-xs font-medium text-slate-400">
-              Live updates directly from kitchen logs & NGO deliveries
-            </span>
+            <Link
+              href="/impact"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
+            >
+              <span>View Full Public Impact Ledger</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

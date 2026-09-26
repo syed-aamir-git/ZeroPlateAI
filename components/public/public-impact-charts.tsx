@@ -67,34 +67,34 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
   return (
     <div className={`w-full space-y-6 ${className}`}>
       {/* Header with Navigation Pills & Live DB Badge */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/90 pb-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-mono-numeral text-xs uppercase tracking-widest text-ink-soft">
+            <span className="font-mono text-xs uppercase tracking-widest text-slate-500 font-semibold">
               Verified MongoDB Platform Analytics
             </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-basil/10 text-basil border border-basil/20 font-semibold">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
               Live Database
             </span>
           </div>
-          <h3 className="font-display text-2xl sm:text-3xl font-medium text-ink mt-0.5">
+          <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-0.5">
             Real-Time Redistribution &amp; Impact Graphs
           </h3>
-          <p className="text-xs sm:text-sm text-ink-soft mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Audited visualizations calculated directly from {stats.totalListingsCount || 85} surplus listings and {stats.deliveredListingsCount || 32} verified NGO receipts.
           </p>
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center p-1 bg-[#F0EBE0] border border-line rounded-lg text-xs font-medium text-ink-soft self-start sm:self-auto overflow-x-auto max-w-full">
+        <div className="flex items-center p-1 bg-slate-100 border border-slate-200/80 rounded-xl text-xs font-medium text-slate-600 self-start sm:self-auto overflow-x-auto max-w-full">
           <button
             type="button"
             onClick={() => setActiveTab("overview")}
-            className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "overview"
-                ? "bg-white text-ink font-semibold shadow-xs"
-                : "hover:text-ink hover:bg-white/50"
+                ? "bg-white text-slate-900 font-bold shadow-xs"
+                : "hover:text-slate-900 hover:bg-white/50"
             }`}
           >
             All Graphs View
@@ -102,10 +102,10 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
           <button
             type="button"
             onClick={() => setActiveTab("categories")}
-            className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "categories"
-                ? "bg-white text-emerald-700 font-semibold shadow-xs"
-                : "hover:text-ink hover:bg-white/50"
+                ? "bg-white text-emerald-700 font-bold shadow-xs"
+                : "hover:text-slate-900 hover:bg-white/50"
             }`}
           >
             🥧 Category Breakdown ({categoryData.length})
@@ -113,10 +113,10 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
           <button
             type="button"
             onClick={() => setActiveTab("timeline")}
-            className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "timeline"
-                ? "bg-white text-blue-700 font-semibold shadow-xs"
-                : "hover:text-ink hover:bg-white/50"
+                ? "bg-white text-blue-700 font-bold shadow-xs"
+                : "hover:text-slate-900 hover:bg-white/50"
             }`}
           >
             📊 Recovery Bar Graph
@@ -124,10 +124,10 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
           <button
             type="button"
             onClick={() => setActiveTab("environmental")}
-            className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "environmental"
-                ? "bg-white text-amber-700 font-semibold shadow-xs"
-                : "hover:text-ink hover:bg-white/50"
+                ? "bg-white text-amber-700 font-bold shadow-xs"
+                : "hover:text-slate-900 hover:bg-white/50"
             }`}
           >
             🌱 Carbon &amp; Water
@@ -135,10 +135,10 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
           <button
             type="button"
             onClick={() => setActiveTab("status")}
-            className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "status"
-                ? "bg-white text-purple-700 font-semibold shadow-xs"
-                : "hover:text-ink hover:bg-white/50"
+                ? "bg-white text-purple-700 font-bold shadow-xs"
+                : "hover:text-slate-900 hover:bg-white/50"
             }`}
           >
             📋 Lifecycle Status
@@ -147,10 +147,10 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
       </div>
 
       {!hasRealData && (
-        <div className="p-8 rounded-xl border border-line bg-ledger-paper text-center space-y-2">
-          <span className="font-mono text-xs uppercase tracking-wider text-ink-soft">Honest Database Status</span>
-          <h4 className="font-display text-lg font-medium text-ink">No Surplus Batches Logged Yet</h4>
-          <p className="text-xs text-ink-soft max-w-md mx-auto">
+        <div className="p-8 rounded-2xl border border-slate-200/90 bg-slate-50/50 text-center space-y-2">
+          <span className="font-mono text-xs uppercase tracking-wider text-slate-500">Honest Database Status</span>
+          <h4 className="text-lg font-bold text-slate-900">No Surplus Batches Logged Yet</h4>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
             ZeroPlate never fabricates synthetic charts. Once institutional kitchens log food surplus and partner NGOs verify receipts, live graphs will populate automatically.
           </p>
         </div>
@@ -162,21 +162,21 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
           {/* GRAPH 1: Pie / Donut Chart - Real Category Distribution */}
           {(activeTab === "overview" || activeTab === "categories") && (
             <div
-              className={`border border-line bg-gradient-to-b from-[#FAF7F2] to-[#F5EFE4] p-5 sm:p-6 rounded-xl shadow-xs transition-all ${
+              className={`border border-slate-200/90 bg-white p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all ${
                 activeTab === "categories" ? "lg:col-span-12" : "lg:col-span-6"
               }`}
             >
-              <div className="flex items-center justify-between border-b border-line pb-3 mb-4">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
                 <div>
                   <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-700 font-semibold flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     Real Category Allocation
                   </span>
-                  <h4 className="font-display text-lg font-medium text-ink mt-0.5">
+                  <h4 className="text-lg font-bold text-slate-900 mt-0.5">
                     Redistribution by Logged Food Category
                   </h4>
                 </div>
-                <span className="text-[11px] font-mono bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full font-medium">
+                <span className="text-[11px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-semibold">
                   {totalDeliveredMeals.toLocaleString()} Meals Delivered
                 </span>
               </div>
@@ -249,7 +249,7 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                           <Cell
                             key={`cell-${entry.name}-${index}`}
                             fill={entry.color}
-                            stroke="#FAF7F2"
+                            stroke="#FFFFFF"
                             strokeWidth={hoveredCategoryIndex === index ? 3 : 1.5}
                             tabIndex={-1}
                             style={{ outline: "none" }}
@@ -275,26 +275,26 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                           transform: `translate(${isRightSide ? "calc(-100% - 14px)" : "14px"}, ${isBottomSide ? "calc(-100% - 14px)" : "14px"})`,
                         }}
                       >
-                        <div className="bg-[#1C2420] text-[#FAF7F2] px-3.5 py-2.5 rounded-lg shadow-2xl text-xs border border-white/15 min-w-[180px] pointer-events-none text-left space-y-1 backdrop-blur-xs">
-                          <div className="font-semibold flex items-center gap-1.5 pb-1 border-b border-white/10 text-stone-200">
+                        <div className="bg-slate-900 text-white px-3.5 py-2.5 rounded-xl shadow-2xl text-xs border border-slate-700 min-w-[180px] pointer-events-none text-left space-y-1 backdrop-blur-xs">
+                          <div className="font-bold flex items-center gap-1.5 pb-1 border-b border-slate-800 text-slate-200">
                             <span
                               className="w-2.5 h-2.5 rounded-full shrink-0"
                               style={{ backgroundColor: data.color }}
                             />
                             <span>{data.name}</span>
                           </div>
-                          <div className="flex items-center justify-between text-emerald-300 font-mono font-bold text-sm pt-0.5">
+                          <div className="flex items-center justify-between text-emerald-400 font-mono font-bold text-sm pt-0.5">
                             <span>{data.value?.toLocaleString()} meals</span>
-                            <span className="text-white/80 text-xs font-normal">({data.percentage}%)</span>
+                            <span className="text-slate-300 text-xs font-normal">({data.percentage}%)</span>
                           </div>
-                          <div className="flex items-center justify-between text-stone-300 font-mono text-[11px]">
+                          <div className="flex items-center justify-between text-slate-300 font-mono text-[11px]">
                             <span>Volume:</span>
                             <span className="font-semibold text-white">{data.kg} kg</span>
                           </div>
                           {data.batchesCount && (
-                            <div className="flex items-center justify-between text-stone-400 font-mono text-[10px]">
+                            <div className="flex items-center justify-between text-slate-400 font-mono text-[10px]">
                               <span>Logged batches:</span>
-                              <span className="text-stone-300">{data.batchesCount}</span>
+                              <span className="text-slate-300">{data.batchesCount}</span>
                             </div>
                           )}
                         </div>
@@ -306,19 +306,19 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center select-none">
                     <div className="flex flex-col items-center justify-center max-w-[105px] px-1 space-y-0.5">
                       <span
-                        className="text-[9px] uppercase font-mono tracking-wider text-ink-soft truncate max-w-[100px] leading-tight block text-center"
+                        className="text-[9px] uppercase font-mono tracking-wider text-slate-400 truncate max-w-[100px] leading-tight block text-center"
                         title={hoveredCategoryIndex !== null ? categoryData[hoveredCategoryIndex]?.name : "Delivered Meals"}
                       >
                         {hoveredCategoryIndex !== null
                           ? categoryData[hoveredCategoryIndex]?.name
                           : "Delivered"}
                       </span>
-                      <span className="font-display text-xl sm:text-2xl font-bold text-ink leading-tight">
+                      <span className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight">
                         {hoveredCategoryIndex !== null
                           ? `${categoryData[hoveredCategoryIndex]?.percentage}%`
                           : `${totalDeliveredMeals.toLocaleString()}`}
                       </span>
-                      <span className="text-[10px] font-mono text-emerald-700 font-semibold bg-emerald-50/90 px-2 py-0.5 rounded-full border border-emerald-200/60 leading-none">
+                      <span className="text-[10px] font-mono text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 leading-none">
                         {hoveredCategoryIndex !== null
                           ? `${categoryData[hoveredCategoryIndex]?.kg} kg vol`
                           : "meals delivered"}
@@ -334,10 +334,10 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                       key={cat.name}
                       onMouseEnter={() => setHoveredCategoryIndex(idx)}
                       onMouseLeave={() => setHoveredCategoryIndex(null)}
-                      className={`p-2.5 rounded-lg border transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                         hoveredCategoryIndex === idx
-                          ? "bg-white border-ink/40 shadow-xs translate-x-1"
-                          : "bg-white/70 border-line/70 hover:bg-white hover:border-line"
+                          ? "bg-white border-slate-400 shadow-xs translate-x-1"
+                          : "bg-slate-50/70 border-slate-200/80 hover:bg-white hover:border-slate-300"
                       }`}
                     >
                       <div className="flex items-center justify-between text-xs mb-1">
@@ -346,15 +346,15 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                             className="w-3 h-3 rounded-full shrink-0 shadow-2xs"
                             style={{ backgroundColor: cat.color }}
                           />
-                          <span className="font-medium text-ink">{cat.name}</span>
+                          <span className="font-semibold text-slate-900">{cat.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-ink-soft text-[11px]">{cat.kg} kg</span>
-                          <span className="font-mono font-bold text-ink">{cat.percentage}%</span>
+                          <span className="font-mono text-slate-500 text-[11px]">{cat.kg} kg</span>
+                          <span className="font-mono font-bold text-slate-900">{cat.percentage}%</span>
                         </div>
                       </div>
                       {/* Accurate Progress Bar */}
-                      <div className="w-full h-1.5 bg-stone-200/70 rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{
@@ -373,26 +373,26 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
           {/* GRAPH 2: Real Database Timeline Bar Chart */}
           {(activeTab === "overview" || activeTab === "timeline") && (
             <div
-              className={`border border-line bg-gradient-to-b from-[#FAF7F2] to-[#F5EFE4] p-5 sm:p-6 rounded-xl shadow-xs transition-all ${
+              className={`border border-slate-200/90 bg-white p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all ${
                 activeTab === "timeline" ? "lg:col-span-12" : "lg:col-span-6"
               }`}
             >
-              <div className="flex items-center justify-between border-b border-line pb-3 mb-4">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
                 <div>
                   <span className="text-[11px] font-mono uppercase tracking-wider text-blue-700 font-semibold flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-blue-500" />
                     Logged Progression
                   </span>
-                  <h4 className="font-display text-lg font-medium text-ink mt-0.5">
+                  <h4 className="text-lg font-bold text-slate-900 mt-0.5">
                     Daily Waste Diverted &amp; Rescued Meals
                   </h4>
                 </div>
                 <div className="flex items-center gap-3 text-[11px] font-mono">
-                  <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                  <span className="flex items-center gap-1 text-emerald-700 font-semibold">
                     <span className="w-2.5 h-2.5 rounded-xs bg-[#10B981]" />
                     Meals Rescued
                   </span>
-                  <span className="flex items-center gap-1 text-blue-700 font-medium">
+                  <span className="flex items-center gap-1 text-blue-700 font-semibold">
                     <span className="w-2.5 h-2.5 rounded-xs bg-[#3B82F6]" />
                     Kg Diverted
                   </span>
@@ -486,23 +486,23 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
 
           {/* GRAPH 3: Real Database Ecological Area Chart */}
           {(activeTab === "overview" || activeTab === "environmental") && (
-            <div className="lg:col-span-12 border border-line bg-gradient-to-b from-[#FAF7F2] via-[#F8F3EA] to-[#F5EFE4] p-5 sm:p-6 rounded-xl shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-line pb-3 mb-4 gap-2">
+            <div className="lg:col-span-12 border border-slate-200/90 bg-white p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 pb-3 mb-4 gap-2">
                 <div>
                   <span className="text-[11px] font-mono uppercase tracking-wider text-amber-700 font-semibold flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-amber-500" />
                     Audited Ecological Savings (Real DB Data)
                   </span>
-                  <h4 className="font-display text-lg font-medium text-ink mt-0.5">
+                  <h4 className="text-lg font-bold text-slate-900 mt-0.5">
                     Greenhouse Gas (CO₂e) Avoidance &amp; Virtual Water Conservation
                   </h4>
                 </div>
                 <div className="flex items-center gap-4 text-xs font-mono">
-                  <span className="flex items-center gap-1.5 text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+                  <span className="flex items-center gap-1.5 text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
                     <span className="w-2 h-2 rounded-full bg-emerald-600" />
                     CO₂e Avoided: {totalCo2e.toLocaleString()} kg
                   </span>
-                  <span className="flex items-center gap-1.5 text-cyan-700 font-semibold bg-cyan-50 px-2.5 py-1 rounded border border-cyan-200">
+                  <span className="flex items-center gap-1.5 text-cyan-700 font-semibold bg-cyan-50 px-2.5 py-1 rounded-md border border-cyan-200">
                     <span className="w-2 h-2 rounded-full bg-cyan-600" />
                     Water Saved: {Math.round(totalWastePreventedKg * 0.85).toLocaleString()} kL
                   </span>
@@ -522,15 +522,15 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                         <stop offset="95%" stopColor="#06B6D4" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E2DCD0" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                     <XAxis
                       dataKey="label"
-                      tick={{ fill: "#6B655C", fontSize: 12, fontWeight: 500 }}
-                      axisLine={{ stroke: "#D3CBBF" }}
+                      tick={{ fill: "#64748B", fontSize: 12, fontWeight: 500 }}
+                      axisLine={{ stroke: "#CBD5E1" }}
                     />
                     <YAxis
-                      tick={{ fill: "#6B655C", fontSize: 11 }}
-                      axisLine={{ stroke: "#D3CBBF" }}
+                      tick={{ fill: "#64748B", fontSize: 11 }}
+                      axisLine={{ stroke: "#CBD5E1" }}
                     />
 
                     {/* Aligned Hover Tooltip */}
@@ -545,8 +545,8 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                         if (active && payload && payload.length) {
                           const data = payload[0].payload;
                           return (
-                            <div className="bg-[#1C2420] text-[#FAF7F2] px-4 py-3 rounded-lg shadow-xl text-xs border border-white/15 min-w-[200px] text-left space-y-1.5">
-                              <div className="font-semibold text-stone-200 border-b border-white/10 pb-1 flex items-center justify-between">
+                            <div className="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs border border-slate-700 min-w-[200px] text-left space-y-1.5">
+                              <div className="font-semibold text-slate-200 border-b border-slate-800 pb-1 flex items-center justify-between">
                                 <span>{label} Verified Savings</span>
                                 <span className="font-mono text-[10px] text-emerald-400">FAO Model</span>
                               </div>
@@ -568,7 +568,7 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                                   {(data.waterSavedLitres / 1000).toFixed(1)} kL (litres)
                                 </span>
                               </div>
-                              <div className="text-[10px] text-stone-400 pt-0.5 border-t border-white/10">
+                              <div className="text-[10px] text-slate-400 pt-0.5 border-t border-slate-800">
                                 Diverted from landfill decomposition
                               </div>
                             </div>
@@ -600,27 +600,27 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
                 </ResponsiveContainer>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-4 border-t border-line/70">
-                <div className="bg-white/80 p-3 rounded-lg border border-line/60">
-                  <span className="text-[11px] font-mono text-ink-soft uppercase block">Methane Neutralization</span>
-                  <span className="font-display text-base font-bold text-emerald-700 mt-0.5 block">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-4 border-t border-slate-200/80">
+                <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+                  <span className="text-[11px] font-mono text-slate-500 uppercase block font-semibold">Methane Neutralization</span>
+                  <span className="text-base font-bold text-emerald-700 mt-0.5 block">
                     {totalCo2e.toLocaleString()} kg CO₂e avoided
                   </span>
-                  <span className="text-[11px] text-ink-soft mt-0.5 block">Directly computed from {totalWastePreventedKg} kg delivered</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5 block">Directly computed from {totalWastePreventedKg} kg delivered</span>
                 </div>
-                <div className="bg-white/80 p-3 rounded-lg border border-line/60">
-                  <span className="text-[11px] font-mono text-ink-soft uppercase block">Virtual Water Retention</span>
-                  <span className="font-display text-base font-bold text-cyan-700 mt-0.5 block">
+                <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+                  <span className="text-[11px] font-mono text-slate-500 uppercase block font-semibold">Virtual Water Retention</span>
+                  <span className="text-base font-bold text-cyan-700 mt-0.5 block">
                     {Math.round(totalWastePreventedKg * 850).toLocaleString()} Litres saved
                   </span>
-                  <span className="text-[11px] text-ink-soft mt-0.5 block">Preserves embedded agricultural irrigation</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5 block">Preserves embedded agricultural irrigation</span>
                 </div>
-                <div className="bg-white/80 p-3 rounded-lg border border-line/60">
-                  <span className="text-[11px] font-mono text-ink-soft uppercase block">ESG Compliance Audit</span>
-                  <span className="font-display text-base font-bold text-amber-700 mt-0.5 block">
+                <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+                  <span className="text-[11px] font-mono text-slate-500 uppercase block font-semibold">ESG Compliance Audit</span>
+                  <span className="text-base font-bold text-amber-700 mt-0.5 block">
                     UN SDG 2, 12, 13 Certified
                   </span>
-                  <span className="text-[11px] text-ink-soft mt-0.5 block">Back-referenced against digital recipient confirmations</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5 block">Back-referenced against digital recipient confirmations</span>
                 </div>
               </div>
             </div>
@@ -628,36 +628,36 @@ export function PublicImpactCharts({ stats, className = "" }: PublicImpactCharts
 
           {/* GRAPH 4: Real Status & Outcome Distribution */}
           {(activeTab === "overview" || activeTab === "status") && statusData.length > 0 && (
-            <div className="lg:col-span-12 border border-line bg-gradient-to-b from-[#FAF7F2] to-[#F5EFE4] p-5 sm:p-6 rounded-xl shadow-xs">
-              <div className="flex items-center justify-between border-b border-line pb-3 mb-4">
+            <div className="lg:col-span-12 border border-slate-200/90 bg-white p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
                 <div>
                   <span className="text-[11px] font-mono uppercase tracking-wider text-purple-700 font-semibold flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-purple-500" />
                     Safety &amp; Delivery Pipeline
                   </span>
-                  <h4 className="font-display text-lg font-medium text-ink mt-0.5">
+                  <h4 className="text-lg font-bold text-slate-900 mt-0.5">
                     Surplus Batch Lifecycle &amp; Safety Gating Outcomes
                   </h4>
                 </div>
-                <span className="text-[11px] font-mono bg-purple-100 text-purple-800 border border-purple-300 px-2.5 py-0.5 rounded-full font-medium">
+                <span className="text-[11px] font-mono bg-purple-50 text-purple-800 border border-purple-200 px-2.5 py-0.5 rounded-full font-semibold">
                   {statusData.reduce((a, b) => a + b.count, 0)} Total Batches Evaluated
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
                 {statusData.map((item) => (
-                  <div key={item.status} className="bg-white p-3.5 rounded-lg border border-line/80 space-y-1 text-left">
+                  <div key={item.status} className="bg-slate-50/60 p-3.5 rounded-xl border border-slate-200 space-y-1 text-left">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                      <span className="text-[11px] font-mono text-ink-soft uppercase truncate" title={item.label}>
+                      <span className="text-[11px] font-mono text-slate-500 uppercase truncate" title={item.label}>
                         {item.label}
                       </span>
                     </div>
-                    <div className="font-display text-2xl font-bold text-ink">
+                    <div className="text-2xl font-extrabold text-slate-900">
                       {item.count}
-                      <span className="text-xs font-sans font-normal text-ink-soft ml-1">batches</span>
+                      <span className="text-xs font-sans font-normal text-slate-500 ml-1">batches</span>
                     </div>
-                    <div className="text-[11px] font-mono text-stone-500">
+                    <div className="text-[11px] font-mono text-slate-500">
                       {item.totalKg} kg volume
                     </div>
                   </div>
