@@ -185,6 +185,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const autoListForNgo =
+      body.listDirectlyAsSurplus === true ||
+      body.autoListForNgo === true ||
+      body.status === "surplus";
+
     const newItem = {
       institutionId: institution._id,
       name: name.trim(),
@@ -193,16 +198,70 @@ export async function POST(request: NextRequest) {
       unit: unit || "kg",
       preparedOrReceivedAt: prepDate,
       expiryEstimateAt: expiryDate,
-      status: "in_stock",
+      status: autoListForNgo ? "listed" : "in_stock",
       createdAt: new Date(),
     };
 
     const insertResult = await db.collection("inventoryItems").insertOne(newItem);
+    const itemId = insertResult.insertedId;
+
+    let listingId: string | null = null;
+    if (autoListForNgo) {
+      const startWindow = new Date();
+      const endWindow = new Date(Date.now() + 3 * 60 * 60 * 1000);
+      const pLat = institution.location?.lat ?? 12.9716;
+      const pLng = institution.location?.lng ?? 77.5946;
+
+      const newListing = {
+        inventoryItemId: itemId,
+        institutionId: institution._id,
+        institutionName: institution.name,
+        itemName: newItem.name,
+        category: newItem.category,
+        quantity: newItem.quantity,
+        unit: newItem.unit,
+        storageCondition: "ambient",
+        pickupWindow: {
+          start: startWindow,
+          end: endWindow,
+        },
+        pickupLocation: {
+          address: institution.address || "Main Dispatch Gate",
+          lat: pLat,
+          lng: pLng,
+        },
+        safetyStatus: "verified_safe",
+        status: "pending",
+        createdAt: new Date(),
+      };
+
+      const insResult = await db.collection("surplusListings").insertOne(newListing);
+      listingId = insResult.insertedId.toString();
+
+      try {
+        const { rankAndCreateMatches } = await import("@/lib/matching");
+        await rankAndCreateMatches(db, {
+          _id: insResult.insertedId,
+          quantity: newListing.quantity,
+          itemName: newListing.itemName,
+          category: newListing.category,
+          pickupLocation: newListing.pickupLocation,
+          institutionId: institution._id,
+          institutionName: institution.name,
+        });
+      } catch (matchErr) {
+        console.error("Matchmaking error on auto-surplus listing:", matchErr);
+      }
+    }
 
     return NextResponse.json(
       {
         success: true,
-        item: { ...newItem, _id: insertResult.insertedId },
+        item: { ...newItem, _id: itemId },
+        listingId,
+        message: autoListForNgo
+          ? "Item listed directly on the NGO portal in 1 step."
+          : undefined,
       },
       { status: 201 }
     );

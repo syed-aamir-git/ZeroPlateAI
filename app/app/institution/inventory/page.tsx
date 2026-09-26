@@ -73,6 +73,9 @@ export default function InstitutionInventoryPage() {
   const [prepTimeHoursAgo, setPrepTimeHoursAgo] = React.useState("1");
   const [expiryHoursFromNow, setExpiryHoursFromNow] = React.useState("3");
 
+  const [listDirectlyForNgo, setListDirectlyForNgo] = React.useState(true);
+  const [actionItemId, setActionItemId] = React.useState<string | null>(null);
+
   const fetchInventory = React.useCallback(async () => {
     try {
       const res = await fetch("/api/v1/inventory");
@@ -115,6 +118,7 @@ export default function InstitutionInventoryPage() {
           unit,
           preparedOrReceivedAt: prepDate.toISOString(),
           expiryEstimateAt: expiryDate.toISOString(),
+          listDirectlyAsSurplus: listDirectlyForNgo,
         }),
       });
 
@@ -152,18 +156,21 @@ export default function InstitutionInventoryPage() {
     }
   };
 
-  const handleMarkSurplus = async (id: string) => {
+  const handleListForNgoDirect = async (id: string) => {
     try {
+      setActionItemId(id);
       const res = await fetch(`/api/v1/inventory/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "surplus" }),
+        body: JSON.stringify({ status: "surplus", listForNgo: true }),
       });
       if (res.ok) {
         fetchInventory();
       }
     } catch (err) {
-      console.error("Failed to mark surplus:", err);
+      console.error("Failed to list directly for NGO:", err);
+    } finally {
+      setActionItemId(null);
     }
   };
 
@@ -653,22 +660,33 @@ export default function InstitutionInventoryPage() {
                             !isDelivered &&
                             !isInProgress && (
                               <button
-                                onClick={() => handleMarkSurplus(item._id)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 text-xs font-semibold transition-all cursor-pointer"
-                                title="Mark this batch as surplus for NGO redistribution"
+                                onClick={() => handleListForNgoDirect(item._id)}
+                                disabled={actionItemId === item._id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+                                title="Directly list this item on the NGO Portal in 1 click"
                               >
-                                <Sparkles className="w-3 h-3 text-amber-600" />
-                                <span>Mark Surplus</span>
+                                {actionItemId === item._id ? (
+                                  <>
+                                    <div className="w-3 h-3 border-2 border-emerald-700 border-t-transparent rounded-full animate-spin" />
+                                    <span>Listing...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                                    <span>🚀 List for NGOs (1-Click)</span>
+                                  </>
+                                )}
                               </button>
                             )}
 
-                          {item.status === "surplus" && !isDelivered && (
+                          {(isInProgress || item.status === "surplus") && !isDelivered && (
                             <Link
-                              href={`/app/institution/surplus-listings?itemId=${item._id}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-semibold shadow-2xs transition-all"
+                              href="/app/institution/surplus-listings"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 active:scale-95 text-xs font-semibold shadow-2xs transition-all"
+                              title="Food is live on the NGO portal"
                             >
-                              <TicketIcon size={12} className="text-emerald-100" />
-                              <span>List Batch</span>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Live on NGO Portal</span>
                             </Link>
                           )}
 
@@ -842,6 +860,27 @@ export default function InstitutionInventoryPage() {
                 </div>
               </div>
 
+              {/* 1-Step NGO Broadcast Toggle */}
+              <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-300">
+                <label className="flex items-center justify-between cursor-pointer gap-2">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      Directly list on NGO Portal in 1 step
+                    </span>
+                    <p className="text-[11px] text-emerald-700">
+                      Food is immediately published to verified charities so zero meals go to waste.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={listDirectlyForNgo}
+                    onChange={(e) => setListDirectlyForNgo(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded border-stone-300 focus:ring-emerald-500 cursor-pointer"
+                  />
+                </label>
+              </div>
+
               {/* Informational Guidance Box */}
               <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80 text-[11px] text-emerald-900 flex items-start gap-2">
                 <Info className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
@@ -867,12 +906,21 @@ export default function InstitutionInventoryPage() {
                   {submitting ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Logging Batch...</span>
+                      <span>{listDirectlyForNgo ? "Publishing to NGOs..." : "Logging Batch..."}</span>
                     </>
                   ) : (
                     <>
-                      <Plus className="w-4 h-4" />
-                      <span>Log to Ledger</span>
+                      {listDirectlyForNgo ? (
+                        <>
+                          <Sparkles className="w-4 h-4 text-emerald-200" />
+                          <span>🚀 List Directly to NGO Portal</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          <span>Log to Ledger</span>
+                        </>
+                      )}
                     </>
                   )}
                 </button>

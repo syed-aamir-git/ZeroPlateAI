@@ -110,35 +110,103 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { inventoryItemId, quantity, pickupWindow, pickupLocation, storageCondition = "ambient" } = body;
+    const {
+      inventoryItemId,
+      name,
+      itemName,
+      foodName,
+      category = "cooked_food",
+      unit = "kg",
+      prepTimeHoursAgo,
+      preparedOrReceivedAt,
+      quantity,
+      pickupWindow,
+      pickupLocation,
+      storageCondition = "ambient",
+    } = body;
 
-    if (!inventoryItemId || !ObjectId.isValid(inventoryItemId)) {
-      return NextResponse.json(
-        { error: "A valid inventory item must be selected." },
-        { status: 400 }
-      );
+    let item: any = null;
+    let listingQty = Number(quantity);
+
+    if (inventoryItemId && ObjectId.isValid(inventoryItemId)) {
+      const itemObjectId = new ObjectId(inventoryItemId);
+      item = await db.collection("inventoryItems").findOne({
+        _id: itemObjectId,
+        institutionId: institution._id,
+      });
+
+      if (!item) {
+        return NextResponse.json(
+          { error: "Inventory item not found or does not belong to this institution." },
+          { status: 404 }
+        );
+      }
+    } else {
+      // 1-STEP DIRECT FOOD LISTING FROM KITCHEN TO NGO PORTAL
+      const rawName = (itemName || name || foodName || "").trim();
+      if (!rawName) {
+        return NextResponse.json(
+          { error: "Food item name is required." },
+          { status: 400 }
+        );
+      }
+
+      if (/raj\s*bhai|aadi\s*bhai|^aamir$/i.test(rawName)) {
+        return NextResponse.json(
+          { error: "Invalid food item name." },
+          { status: 400 }
+        );
+      }
+
+      const parsedQty = Number(quantity);
+      if (!parsedQty || parsedQty <= 0) {
+        return NextResponse.json(
+          { error: "Please enter a valid quantity greater than zero." },
+          { status: 400 }
+        );
+      }
+      listingQty = parsedQty;
+
+      const now = new Date();
+      let prepDate: Date;
+      if (preparedOrReceivedAt) {
+        prepDate = new Date(preparedOrReceivedAt);
+      } else if (prepTimeHoursAgo !== undefined && prepTimeHoursAgo !== null) {
+        prepDate = new Date(now.getTime() - Number(prepTimeHoursAgo) * 60 * 60 * 1000);
+      } else {
+        prepDate = now;
+      }
+
+      // Safe freshness expiration window: cooked_food = 4h, dairy/bakery = 12h, raw_produce = 24h, packaged = 48h
+      const shelfLifeHours =
+        category === "cooked_food"
+          ? 4
+          : category === "dairy" || category === "bakery"
+          ? 12
+          : category === "raw_produce"
+          ? 24
+          : 48;
+      const expiryDate = new Date(prepDate.getTime() + shelfLifeHours * 60 * 60 * 1000);
+
+      // Automatically create linked inventory record so internal reporting stays 100% accurate
+      const autoInv = {
+        institutionId: institution._id,
+        name: rawName,
+        category,
+        quantity: parsedQty,
+        unit: unit || "kg",
+        preparedOrReceivedAt: prepDate,
+        expiryEstimateAt: expiryDate,
+        status: "listed",
+        createdAt: now,
+      };
+
+      const invInsert = await db.collection("inventoryItems").insertOne(autoInv);
+      item = {
+        _id: invInsert.insertedId,
+        ...autoInv,
+      };
     }
-
-    const itemObjectId = new ObjectId(inventoryItemId);
-    const item = await db.collection("inventoryItems").findOne({
-      _id: itemObjectId,
-      institutionId: institution._id,
-    });
-
-    if (!item) {
-      return NextResponse.json(
-        { error: "Inventory item not found or does not belong to this institution." },
-        { status: 404 }
-      );
-    }
-
-    const listingQty = Number(quantity);
-    const startWindow = pickupWindow?.start
-      ? new Date(pickupWindow.start)
-      : new Date();
-    const endWindow = pickupWindow?.end
-      ? new Date(pickupWindow.end)
-      : new Date(Date.now() + 3 * 60 * 60 * 1000); // 3h default
 
     const pickupAddr = pickupLocation?.address || institution.address || "Main Dispatch Gate";
     let pLat = Number(pickupLocation?.lat) || institution.location?.lat;
@@ -157,6 +225,11 @@ export async function POST(request: NextRequest) {
       lat: pLat ?? 12.9716,
       lng: pLng ?? 77.5946,
     };
+
+    const startWindow = pickupWindow?.start ? new Date(pickupWindow.start) : new Date();
+    const endWindow = pickupWindow?.end
+      ? new Date(pickupWindow.end)
+      : new Date(Date.now() + 2 * 60 * 60 * 1000);
 
     // Run Server-Side Safety Gating Engine (Functional PRD Section 12.3)
     const gatingVerdict = await evaluateSafetyGating(db, {

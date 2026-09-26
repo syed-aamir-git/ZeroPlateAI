@@ -156,8 +156,8 @@ export default function InstitutionOverviewPage() {
             href="/app/institution/surplus-listings"
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition-all whitespace-nowrap"
           >
-            <TicketIcon size={14} className="text-emerald-100 shrink-0" />
-            <span>List surplus batch</span>
+            <Sparkles size={14} className="text-emerald-100 shrink-0" />
+            <span>⚡ 1-Step Food Listing</span>
           </Link>
           <Link
             href="/app/institution/forecast"

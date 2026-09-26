@@ -72,6 +72,15 @@ interface InventoryItem {
   rawStatus?: string;
 }
 
+const QUICK_PRESETS = [
+  { label: "🍛 Cooked Rice & Dal", name: "Cooked Rice & Dal", category: "cooked_food", unit: "kg" },
+  { label: "🫓 Roti & Chapati", name: "Fresh Rotis / Chapatis", category: "cooked_food", unit: "pcs" },
+  { label: "🍲 Mixed Veg / Curry", name: "Mixed Vegetable Curry", category: "cooked_food", unit: "kg" },
+  { label: "🥛 Fresh Milk / Paneer", name: "Fresh Milk & Paneer", category: "dairy", unit: "L" },
+  { label: "🍞 Bread & Bakery", name: "Sandwich Bread & Buns", category: "bakery", unit: "pcs" },
+  { label: "🥦 Fresh Produce", name: "Fresh Vegetables", category: "raw_produce", unit: "kg" },
+];
+
 function SurplusListingsContent() {
   const searchParams = useSearchParams();
   const preselectedItemId = searchParams.get("itemId");
@@ -82,9 +91,9 @@ function SurplusListingsContent() {
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
 
-  // Create Listing Modal
+  // Create Listing Modal - Defaults to simple 1-Step Food Listing
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [modalMode, setModalMode] = React.useState<"select" | "quick_add">("select");
+  const [modalMode, setModalMode] = React.useState<"one_step" | "select">("one_step");
   const [selectedItemId, setSelectedItemId] = React.useState<string>("");
   const [listingQty, setListingQty] = React.useState<string>("");
   const [windowStartHours, setWindowStartHours] = React.useState<string>("0"); // hours from now
@@ -98,7 +107,7 @@ function SurplusListingsContent() {
   const [matchmakingListing, setMatchmakingListing] = React.useState<SurplusListing | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Quick Add Form state
+  // Quick 1-Step Food Details state
   const [quickName, setQuickName] = React.useState("");
   const [quickCategory, setQuickCategory] = React.useState("cooked_food");
   const [quickQuantity, setQuickQuantity] = React.useState("");
@@ -166,7 +175,7 @@ function SurplusListingsContent() {
         if (paramUnit) setQuickUnit(paramUnit);
         if (paramCategory) setQuickCategory(paramCategory);
         if (paramStorage) setStorageCondition(paramStorage);
-        setModalMode("quick_add");
+        setModalMode("one_step");
         setIsCreateOpen(true);
       }
     }
@@ -186,6 +195,13 @@ function SurplusListingsContent() {
       );
     });
   }, [inventoryItems]);
+
+  const applyPreset = (preset: (typeof QUICK_PRESETS)[0]) => {
+    setQuickName(preset.name);
+    setQuickCategory(preset.category);
+    setQuickUnit(preset.unit);
+    setQuickPrepAgoHours("0");
+  };
 
   // When selected inventory item changes, auto-fill quantity
   const handleItemSelect = (itemId: string) => {
@@ -216,15 +232,18 @@ function SurplusListingsContent() {
 
     try {
       const now = new Date();
-      let targetItemId = selectedItemId;
-      let finalQty = Number(listingQty);
+      const startTime = new Date(now.getTime() + Number(windowStartHours) * 60 * 60 * 1000);
+      const endTime = new Date(startTime.getTime() + Number(windowDurationHours) * 60 * 60 * 1000);
+      const dispatchAddress = pickupAddress.trim() || "Main Kitchen Dispatch Gate";
 
-      // If in Quick Add mode, first create the inventory item
-      if (modalMode === "quick_add") {
+      let res: Response;
+
+      // 1-STEP DIRECT LISTING (No inventory prerequisite, directly live on NGO portal)
+      if (modalMode === "one_step") {
         if (!quickName.trim()) {
           setGatingResult({
             type: "error",
-            message: "Product / dish name is required.",
+            message: "Food / dish name is required. Please type or pick a food item.",
           });
           setSubmitting(false);
           return;
@@ -240,20 +259,7 @@ function SurplusListingsContent() {
           return;
         }
 
-        const prepHoursAgo = Number(quickPrepAgoHours) || 0;
-        const prepDate = new Date(now.getTime() - prepHoursAgo * 60 * 60 * 1000);
-        // Default shelf life: cooked_food = 4 hours, dairy = 12 hours, bakery = 12 hours, raw_produce = 24 hours, packaged = 48 hours
-        const shelfLifeHours =
-          quickCategory === "cooked_food"
-            ? 4
-            : quickCategory === "dairy" || quickCategory === "bakery"
-            ? 12
-            : quickCategory === "raw_produce"
-            ? 24
-            : 48;
-        const expiryDate = new Date(prepDate.getTime() + shelfLifeHours * 60 * 60 * 1000);
-
-        const invRes = await fetch("/api/v1/inventory", {
+        res = await fetch("/api/v1/surplus-listings", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -261,55 +267,59 @@ function SurplusListingsContent() {
             category: quickCategory,
             quantity: qtyNum,
             unit: quickUnit,
-            preparedOrReceivedAt: prepDate.toISOString(),
-            expiryEstimateAt: expiryDate.toISOString(),
+            prepTimeHoursAgo: Number(quickPrepAgoHours) || 0,
+            storageCondition,
+            pickupWindow: {
+              start: startTime.toISOString(),
+              end: endTime.toISOString(),
+            },
+            pickupLocation: {
+              address: dispatchAddress,
+              lat: pickupCoords.lat,
+              lng: pickupCoords.lng,
+            },
           }),
         });
-
-        const invData = await invRes.json();
-        if (!invRes.ok || !invData.item?._id) {
+      } else {
+        // SELECT FROM EXISTING INVENTORY
+        if (!selectedItemId) {
           setGatingResult({
             type: "error",
-            message: invData.error || "Failed to log new inventory item before listing.",
+            message: "Please select an inventory item to list.",
           });
           setSubmitting(false);
           return;
         }
 
-        targetItemId = invData.item._id;
-        finalQty = qtyNum;
-      }
+        const qtyNum = Number(listingQty);
+        if (!qtyNum || qtyNum <= 0) {
+          setGatingResult({
+            type: "error",
+            message: "Please enter a valid quantity.",
+          });
+          setSubmitting(false);
+          return;
+        }
 
-      if (!targetItemId) {
-        setGatingResult({
-          type: "error",
-          message: "Please select or enter an inventory item to list.",
+        res = await fetch("/api/v1/surplus-listings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            inventoryItemId: selectedItemId,
+            quantity: qtyNum,
+            storageCondition,
+            pickupWindow: {
+              start: startTime.toISOString(),
+              end: endTime.toISOString(),
+            },
+            pickupLocation: {
+              address: dispatchAddress,
+              lat: pickupCoords.lat,
+              lng: pickupCoords.lng,
+            },
+          }),
         });
-        setSubmitting(false);
-        return;
       }
-
-      const startTime = new Date(now.getTime() + Number(windowStartHours) * 60 * 60 * 1000);
-      const endTime = new Date(startTime.getTime() + Number(windowDurationHours) * 60 * 60 * 1000);
-
-      const res = await fetch("/api/v1/surplus-listings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inventoryItemId: targetItemId,
-          quantity: finalQty,
-          storageCondition,
-          pickupWindow: {
-            start: startTime.toISOString(),
-            end: endTime.toISOString(),
-          },
-          pickupLocation: {
-            address: pickupAddress.trim() || "Main Kitchen Dispatch Gate",
-            lat: pickupCoords.lat,
-            lng: pickupCoords.lng,
-          },
-        }),
-      });
 
       const data = await res.json();
 
@@ -332,10 +342,10 @@ function SurplusListingsContent() {
         return;
       }
 
-      // 201 Verified Safe
+      // 201 Verified Safe - Live on NGO portal!
       setGatingResult({
         type: "success",
-        message: "Verified Safe to List. Listing published to active NGO redistribution network.",
+        message: "Verified Safe! Your food is now LIVE on the NGO Portal and nearby verified charities have been notified for immediate pickup.",
       });
 
       // Reset form and reload
@@ -890,7 +900,7 @@ function SurplusListingsContent() {
         </div>
       )}
 
-      {/* 6. Modern Create Surplus Listing Modal / Drawer */}
+      {/* 6. Modern 1-Step Create Surplus Listing Modal */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full p-6 sm:p-7 space-y-5 text-stone-900 shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
@@ -898,14 +908,14 @@ function SurplusListingsContent() {
             <div className="flex items-start justify-between border-b border-stone-100 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shadow-2xs shrink-0">
-                  <Ticket className="w-5 h-5 text-emerald-700" />
+                  <Sparkles className="w-5 h-5 text-emerald-700" />
                 </div>
                 <div>
                   <h3 className="font-serif text-xl font-bold text-stone-900">
-                    List Surplus Food
+                    1-Step Food Listing
                   </h3>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    FSSAI food safety gating verified before NGO broadcast
+                    Direct listing: food is verified &amp; immediately published on the NGO portal
                   </p>
                 </div>
               </div>
@@ -925,6 +935,20 @@ function SurplusListingsContent() {
               <button
                 type="button"
                 onClick={() => {
+                  setModalMode("one_step");
+                  setGatingResult(null);
+                }}
+                className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  modalMode === "one_step"
+                    ? "bg-white text-stone-900 shadow-xs"
+                    : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                ⚡ 1-Step Food Listing (Direct to NGO)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   setModalMode("select");
                   setGatingResult(null);
                 }}
@@ -934,28 +958,14 @@ function SurplusListingsContent() {
                     : "text-stone-500 hover:text-stone-800"
                 }`}
               >
-                Choose from Ledger ({availableItems.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setModalMode("quick_add");
-                  setGatingResult(null);
-                }}
-                className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                  modalMode === "quick_add"
-                    ? "bg-white text-stone-900 shadow-xs"
-                    : "text-stone-500 hover:text-stone-800"
-                }`}
-              >
-                + Quick Add New Batch
+                Choose from Stock ({availableItems.length})
               </button>
             </div>
 
             {/* Gating Feedback Result Banner */}
             {gatingResult && (
               <div
-                className={`p-4 rounded-xl border text-xs leading-relaxed space-y-1 ${
+                className={`p-4 rounded-xl border text-xs leading-relaxed space-y-1.5 ${
                   gatingResult.type === "rejection"
                     ? "bg-rose-50 border-rose-200 text-rose-900"
                     : gatingResult.type === "success"
@@ -963,40 +973,153 @@ function SurplusListingsContent() {
                     : "bg-stone-50 border-stone-200 text-stone-800"
                 }`}
               >
-                <div className="font-bold flex items-center gap-1.5">
+                <div className="font-bold flex items-center gap-1.5 text-sm">
                   {gatingResult.type === "rejection" && <AlertTriangle className="w-4 h-4 text-rose-600" />}
                   {gatingResult.type === "success" && <ShieldCheck className="w-4 h-4 text-emerald-600" />}
                   {gatingResult.type === "rejection"
                     ? "Safety Gating Decision: Listing Blocked"
                     : gatingResult.type === "success"
-                    ? "Safety Gating Passed: Verified Safe"
+                    ? "🎉 Food is LIVE on the NGO Portal!"
                     : "Submission Alert"}
                 </div>
                 <div>{gatingResult.message}</div>
                 {gatingResult.ruleApplied && (
-                  <div className="font-mono text-[10px] pt-1 opacity-80">
+                  <div className="font-mono text-[10px] pt-0.5 opacity-80">
                     Rule triggered: {gatingResult.ruleApplied} (Logged to MongoDB auditLogs)
                   </div>
                 )}
                 {gatingResult.type === "success" && (
-                  <div className="pt-2">
+                  <div className="pt-2 flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         setIsCreateOpen(false);
                         setGatingResult(null);
                       }}
-                      className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold text-xs transition-colors"
+                      className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold text-xs transition-colors cursor-pointer"
                     >
                       Done &amp; View Listings
                     </button>
+                    <Link
+                      href="/app/ngo/browse"
+                      target="_blank"
+                      className="px-3.5 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 rounded-lg font-semibold text-xs transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <span>Preview NGO Portal</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 )}
               </div>
             )}
 
             <form onSubmit={handleCreateListing} className="space-y-4">
-              {/* Select Mode */}
+              {/* 1-Step Direct Listing Mode */}
+              {modalMode === "one_step" && (
+                <div className="space-y-3.5">
+                  {/* Quick-Pick Food Chips for Layman Users */}
+                  <div className="space-y-1.5 bg-stone-50/80 p-2.5 rounded-xl border border-stone-200/80">
+                    <span className="block text-[11px] font-semibold text-stone-500 uppercase tracking-wider">
+                      Quick Pick (Click to Auto-Fill):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {QUICK_PRESETS.map((preset) => (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => applyPreset(preset)}
+                          className="px-2.5 py-1 text-xs rounded-lg border border-stone-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-stone-700 hover:text-emerald-800 transition-all font-medium flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
+                        >
+                          <span>{preset.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                      Food / Dish Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={quickName}
+                      onChange={(e) => setQuickName(e.target.value)}
+                      placeholder="e.g. Fresh Cooked Rice & Dal, Roti, Paneer Sabzi"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                        Food Category *
+                      </label>
+                      <select
+                        value={quickCategory}
+                        onChange={(e) => handleQuickCategoryChange(e.target.value)}
+                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
+                      >
+                        <option value="cooked_food">🍲 Cooked Meals / Curries</option>
+                        <option value="dairy">🥛 Fresh Milk &amp; Dairy</option>
+                        <option value="bakery">🍞 Bread &amp; Bakery</option>
+                        <option value="raw_produce">🥦 Raw Produce &amp; Veggies</option>
+                        <option value="packaged">📦 Packaged Foods</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                        Prepared / Freshness
+                      </label>
+                      <select
+                        value={quickPrepAgoHours}
+                        onChange={(e) => setQuickPrepAgoHours(e.target.value)}
+                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
+                      >
+                        <option value="0">Just now (Fresh batch)</option>
+                        <option value="0.5">30 minutes ago</option>
+                        <option value="1">1 hour ago</option>
+                        <option value="2">2 hours ago</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                        Surplus Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={quickQuantity}
+                        onChange={(e) => setQuickQuantity(e.target.value)}
+                        placeholder="e.g. 20"
+                        required
+                        className="w-full px-3.5 py-2.5 text-xs font-mono bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                        Unit *
+                      </label>
+                      <select
+                        value={quickUnit}
+                        onChange={(e) => setQuickUnit(e.target.value)}
+                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
+                      >
+                        <option value="kg">kg (Kilograms)</option>
+                        <option value="pcs">pcs (Pieces / Plates)</option>
+                        <option value="L">L (Litres)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Select Mode (From Existing Logged Inventory) */}
               {modalMode === "select" && (
                 <div className="space-y-3">
                   <div>
@@ -1015,10 +1138,10 @@ function SurplusListingsContent() {
                         <div className="flex items-center gap-2 pt-1">
                           <button
                             type="button"
-                            onClick={() => setModalMode("quick_add")}
+                            onClick={() => setModalMode("one_step")}
                             className="px-3 py-1.5 text-xs bg-emerald-700 text-white rounded-lg font-semibold cursor-pointer"
                           >
-                            + Quick Add Batch Now
+                            ⚡ 1-Step Food Listing
                           </button>
                           <Link
                             href="/app/institution/inventory"
@@ -1035,7 +1158,7 @@ function SurplusListingsContent() {
                         required
                         className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
                       >
-                        <option value="">-- Choose item from ledger ({availableItems.length} available) --</option>
+                        <option value="">-- Choose item from stock ({availableItems.length} available) --</option>
                         {availableItems.map((item) => {
                           const isSurplus = item.status === "surplus" || item.rawStatus === "surplus";
                           return (
@@ -1101,97 +1224,11 @@ function SurplusListingsContent() {
                 </div>
               )}
 
-              {/* Quick Add Mode */}
-              {modalMode === "quick_add" && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                      Item / Dish Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={quickName}
-                      onChange={(e) => setQuickName(e.target.value)}
-                      placeholder="e.g. Fresh Palak Paneer & Rice"
-                      required
-                      className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                        Category *
-                      </label>
-                      <select
-                        value={quickCategory}
-                        onChange={(e) => handleQuickCategoryChange(e.target.value)}
-                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
-                      >
-                        <option value="cooked_food">🍲 Cooked Food</option>
-                        <option value="dairy">🥛 Dairy &amp; Milk</option>
-                        <option value="bakery">🍞 Bakery &amp; Bread</option>
-                        <option value="raw_produce">🥦 Raw Produce</option>
-                        <option value="packaged">📦 Packaged Goods</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                        Prepared Time
-                      </label>
-                      <select
-                        value={quickPrepAgoHours}
-                        onChange={(e) => setQuickPrepAgoHours(e.target.value)}
-                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
-                      >
-                        <option value="0">Just now (Fresh batch)</option>
-                        <option value="0.5">30 minutes ago</option>
-                        <option value="1">1 hour ago</option>
-                        <option value="2">2 hours ago</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                        Surplus Quantity *
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={quickQuantity}
-                        onChange={(e) => setQuickQuantity(e.target.value)}
-                        placeholder="e.g. 25"
-                        required
-                        className="w-full px-3.5 py-2.5 text-xs font-mono bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                        Unit *
-                      </label>
-                      <select
-                        value={quickUnit}
-                        onChange={(e) => setQuickUnit(e.target.value)}
-                        className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
-                      >
-                        <option value="kg">kg (Kilograms)</option>
-                        <option value="pcs">pcs (Pieces)</option>
-                        <option value="L">L (Litres)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Shared Dispatch Window Fields */}
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-100">
                 <div>
                   <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                    Pickup Start *
+                    Ready for Pickup *
                   </label>
                   <select
                     value={windowStartHours}
@@ -1207,7 +1244,7 @@ function SurplusListingsContent() {
 
                 <div>
                   <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                    Window Duration *
+                    Pickup Window Duration *
                   </label>
                   <select
                     value={windowDurationHours}
@@ -1215,7 +1252,7 @@ function SurplusListingsContent() {
                     className="w-full px-3.5 py-2.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 cursor-pointer transition-all"
                   >
                     <option value="1">1 hour window</option>
-                    <option value="2">2 hours window</option>
+                    <option value="2">2 hours window (Recommended)</option>
                     <option value="3">3 hours window</option>
                     <option value="4">4 hours window</option>
                   </select>
@@ -1323,19 +1360,19 @@ function SurplusListingsContent() {
                   disabled={
                     submitting ||
                     (modalMode === "select" && (!selectedItemId || !listingQty)) ||
-                    (modalMode === "quick_add" && (!quickName.trim() || !quickQuantity))
+                    (modalMode === "one_step" && (!quickName.trim() || !quickQuantity))
                   }
-                  className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 active:scale-95 disabled:opacity-60 rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 active:scale-95 disabled:opacity-60 rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
                 >
                   {submitting ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Evaluating Safety Rules...</span>
+                      <span>Verifying &amp; Publishing to NGOs...</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 text-emerald-200" />
-                      <span>Run Safety Gating &amp; Publish</span>
+                      <span>🚀 List Food Directly to NGO Portal</span>
                     </>
                   )}
                 </button>
