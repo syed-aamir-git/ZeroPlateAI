@@ -6,6 +6,7 @@ import { TicketStrip } from "@/components/public/ticket-strip";
 import { ImpactCounter } from "@/components/public/impact-counter";
 import { PublicNetworkMap } from "@/components/public/public-network-map";
 import { PublicImpactCharts } from "@/components/public/public-impact-charts";
+import { HowItWorksSection } from "@/components/public/how-it-works-section";
 import {
   getPlatformStats,
   getLiveRedistributionTickets,
@@ -240,96 +241,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* How It Works (Simple 3-Step Layman Guide) */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 bg-slate-50/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/60 px-3 py-1 rounded-full">
-              Easy 3-Step Process
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-3 tracking-tight">
-              How ZeroPlate Works in 3 Simple Steps
-            </h2>
-            <p className="mt-3 text-base text-slate-600">
-              Designed for busy chefs, staff, and volunteers — saving food takes under 30 seconds.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <div className="bg-white rounded-2xl p-7 border border-slate-200/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <span className="w-10 h-10 rounded-xl bg-emerald-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-emerald-500/20">
-                    01
-                  </span>
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <Utensils className="w-5 h-5" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  Kitchens Log Surplus
-                </h3>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  When meal service ends, kitchen staff quickly log leftover dishes on their phone or tablet. ZeroPlate records portions and cooking times automatically.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-emerald-700 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Takes less than 30 seconds</span>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="bg-white rounded-2xl p-7 border border-slate-200/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <span className="w-10 h-10 rounded-xl bg-amber-500 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-amber-500/20">
-                    02
-                  </span>
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  Safety Gate & Charity Match
-                </h3>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  Smart safety timers verify that the food is 100% fresh and safe to eat. Nearby verified charities receive instant notifications to claim the batch.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-amber-700 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>100% Verified Non-Profits Only</span>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="bg-white rounded-2xl p-7 border border-slate-200/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <span className="w-10 h-10 rounded-xl bg-sky-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-sky-500/20">
-                    03
-                  </span>
-                  <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
-                    <Truck className="w-5 h-5" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  Fast Pickup & Delivery
-                </h3>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  Designated delivery drivers and volunteers pick up hot, packaged food and deliver it right to hungry people in minutes, keeping everything warm and fresh.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-sky-700 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Tracked live from kitchen to table</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Interactive How It Works Section */}
+      <HowItWorksSection />
 
       {/* Live Regional Food Rescue Network Map */}
       <section id="network-map" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 bg-white">
