@@ -148,7 +148,7 @@ export default function DeliveryAssignmentsPage() {
         setOpenMapIds((prev) => {
           const next = { ...prev };
           for (const a of items) {
-            if (a.status === "accepted" || a.status === "picked_up") {
+            if (a.status === "accepted" || a.status === "picked_up" || a.status === "delivered") {
               if (next[a._id] === undefined) {
                 next[a._id] = true;
               }
@@ -166,7 +166,7 @@ export default function DeliveryAssignmentsPage() {
     }
   }, []);
 
-  // Poll assignments every 6 seconds if an active delivery is running, else 25 seconds
+  // Poll assignments every 4 seconds if an active delivery is running, else 20 seconds
   React.useEffect(() => {
     let isMounted = true;
     const abortController = new AbortController();
@@ -174,9 +174,9 @@ export default function DeliveryAssignmentsPage() {
     fetchAssignments(abortController.signal);
 
     const hasActiveMission = assignments.some(
-      (a) => a.isAssignedToMe && (a.status === "accepted" || a.status === "picked_up")
+      (a) => a.isAssignedToMe && (a.status === "accepted" || a.status === "picked_up" || a.status === "delivered")
     );
-    const pollInterval = hasActiveMission ? 6000 : 25000;
+    const pollInterval = hasActiveMission ? 4000 : 20000;
 
     const interval = setInterval(() => {
       if (isMounted) {
@@ -319,16 +319,22 @@ export default function DeliveryAssignmentsPage() {
     }).length;
   }, [sortedAssignments]);
 
+  const activeMission = React.useMemo(() => {
+    return assignments.find(
+      (a) => a.isAssignedToMe && ["accepted", "picked_up", "delivered"].includes(a.status)
+    );
+  }, [assignments]);
+
   return (
     <div className="space-y-4 text-left">
       {/* Page Title & Status */}
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-[#3B362E] pb-3 gap-2">
         <div>
           <span className="font-mono-numeral text-[11px] uppercase tracking-wider text-[#9E9587]">
-            Active Logistics Route
+            {activeMission ? "Active Delivery Route (Locked to You)" : "Accepted by NGOs · Open to Deliver"}
           </span>
           <h1 className="font-display text-xl font-bold text-[#F3EEE2] mt-0.5">
-            Delivery Dispatches
+            {activeMission ? "Active Delivery Mission" : "Available Delivery Dispatches"}
           </h1>
         </div>
 
@@ -373,6 +379,33 @@ export default function DeliveryAssignmentsPage() {
           }`}
         >
           {feedback.message}
+        </div>
+      )}
+
+      {/* Active Mission Locking Banner */}
+      {activeMission && (
+        <div className="p-3.5 rounded-[6px] border border-emerald-500/50 bg-emerald-950/30 text-xs text-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <div>
+              <span className="font-bold text-emerald-300 block text-xs">
+                ACTIVE DELIVERY IN PROGRESS · ORDER LOCKED TO YOU
+              </span>
+              <span className="text-[#D4CBBF] text-[11px]">
+                {activeMission.status === "accepted"
+                  ? "Navigate to donor kitchen to pick up food. All other orders are hidden until this trip finishes."
+                  : activeMission.status === "picked_up"
+                  ? "Food collected! En route to recipient NGO shelter. Hand over and wait for receipt confirmation."
+                  : "Food dropped off at NGO! Waiting for NGO to verify receipt on their portal to finish this trip."}
+              </span>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded bg-emerald-800 text-white font-mono text-[10px] font-bold uppercase tracking-wider self-start sm:self-auto shrink-0 border border-emerald-600">
+            {activeMission.status.replace("_", " ")}
+          </span>
         </div>
       )}
 
@@ -832,7 +865,7 @@ export default function DeliveryAssignmentsPage() {
                       disabled={isUpdating}
                       className="w-full min-h-[48px] py-3 px-4 rounded-[6px] bg-[#2F4B3A] hover:bg-[#3D614B] text-[#F3EEE2] font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99]"
                     >
-                      <span>✓ Accept Delivery Order</span>
+                      <span>✓ Accept Delivery Order (Lock to You)</span>
                     </button>
                   )}
 
@@ -840,10 +873,10 @@ export default function DeliveryAssignmentsPage() {
                     <button
                       onClick={() => handleAdvanceStatus(assignment._id, "picked_up")}
                       disabled={isUpdating}
-                      className="w-full min-h-[48px] py-3 px-4 rounded-[6px] bg-[#D9A441] hover:bg-[#E2B359] text-[#24211C] font-bold text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full min-h-[48px] py-3 px-4 rounded-[6px] bg-[#D9A441] hover:bg-[#E2B359] text-[#24211C] font-bold text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-md"
                     >
                       <StampIcon size={18} />
-                      <span>Confirm Food Picked Up from Kitchen</span>
+                      <span>Confirm Food Picked Up from Kitchen ➔</span>
                     </button>
                   )}
 
@@ -851,22 +884,42 @@ export default function DeliveryAssignmentsPage() {
                     <button
                       onClick={() => handleAdvanceStatus(assignment._id, "delivered")}
                       disabled={isUpdating}
-                      className="w-full min-h-[48px] py-3 px-4 rounded-[6px] bg-[#2F4B3A] hover:bg-[#3D614B] text-[#F3EEE2] font-semibold text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full min-h-[48px] py-3 px-4 rounded-[6px] bg-[#2F4B3A] hover:bg-[#3D614B] text-[#F3EEE2] font-semibold text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-md"
                     >
                       <ShieldCheckIcon size={18} />
-                      <span>Confirm Handover to Recipient NGO</span>
+                      <span>Confirm Handover to Recipient NGO ➔</span>
                     </button>
                   )}
 
                   {assignment.status === "delivered" && (
-                    <div className="p-3 rounded-[6px] bg-[#24211C] border border-[#3B362E] text-center text-xs text-[#9E9587]">
-                      ✓ Handed over to recipient — awaiting NGO receipt confirmation tap
+                    <div className="p-4 rounded-[6px] bg-amber-950/40 border border-amber-500/50 text-center space-y-2">
+                      <div className="flex items-center justify-center gap-2 text-amber-300 font-bold text-sm">
+                        <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                        <span>Food Dropped Off at Recipient Shelter</span>
+                      </div>
+                      <p className="text-xs text-[#D4CBBF] max-w-md mx-auto leading-relaxed">
+                        Awaiting recipient NGO coordinator to verify and accept the delivery receipt on their portal. Once accepted, this order will finish and you will be free to take new orders!
+                      </p>
                     </div>
                   )}
 
                   {assignment.status === "confirmed" && (
-                    <div className="p-3 rounded-[6px] bg-[#2F4B3A]/20 border border-[#2F4B3A] text-center text-xs text-[#86C29B] font-medium">
-                      ✓ Distribution run complete & confirmed
+                    <div className="p-4 rounded-[6px] bg-[#2F4B3A]/30 border border-emerald-500/50 text-center space-y-2.5">
+                      <div className="flex items-center justify-center gap-2 text-emerald-400 font-bold text-sm">
+                        <span>🎉 Order Finished &amp; Receipt Confirmed by NGO!</span>
+                      </div>
+                      <p className="text-xs text-[#D4CBBF]">
+                        The recipient NGO has confirmed safe handover. You are now free to take new delivery orders!
+                      </p>
+                      <button
+                        onClick={() => {
+                          setLoading(true);
+                          fetchAssignments();
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[4px] bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                      >
+                        <span>View Available Orders ➔</span>
+                      </button>
                     </div>
                   )}
                 </div>
