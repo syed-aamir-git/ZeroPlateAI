@@ -58,6 +58,29 @@ export async function POST(
       );
     }
 
+    // Verify that if a delivery assignment exists, the delivery partner has already dropped off the food (status is "delivered")
+    const assignment = await db.collection("deliveryAssignments").findOne({
+      $or: [
+        { surplusListingId: listingObjectId },
+        { listingId: listingObjectId },
+      ],
+    });
+
+    if (assignment && assignment.status !== "delivered" && assignment.status !== "confirmed") {
+      const statusLabels: Record<string, string> = {
+        assigned: "awaiting courier assignment",
+        accepted: "driver en route to donor kitchen",
+        picked_up: "food picked up and in transit",
+      };
+      const currentDesc = statusLabels[assignment.status] || assignment.status;
+      return NextResponse.json(
+        {
+          error: `The delivery partner has not dropped off the food yet (currently: ${currentDesc}). The receipt can only be accepted once the delivery partner drops off the food at your center.`,
+        },
+        { status: 400 }
+      );
+    }
+
     const now = new Date();
 
     // Update DeliveryAssignment status to 'confirmed' (Functional PRD Section 12.5)
@@ -148,7 +171,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: "Delivery receipt confirmed successfully. Impact metrics updated.",
+      message: "Delivery receipt accepted! Food has been successfully delivered and impact metrics updated.",
     });
   } catch (error: unknown) {
     console.error("Error confirming delivery receipt:", error);

@@ -21,6 +21,7 @@ import {
   Route,
   Info,
   Package,
+  PackageCheck,
   BarChart3,
   Sparkles,
 } from "lucide-react";
@@ -90,11 +91,11 @@ export default function NgoMyClaimsPage() {
         const items: ClaimRecord[] = json.claims || [];
         setClaims(items);
 
-        // Auto-expand route map for any active in-transit deliveries
+        // Auto-expand route map for any active in-transit or dropped deliveries
         setOpenMapIds((prev) => {
           const next = { ...prev };
           for (const c of items) {
-            if (c.deliveryStatus === "accepted" || c.deliveryStatus === "picked_up") {
+            if (c.deliveryStatus === "accepted" || c.deliveryStatus === "picked_up" || c.deliveryStatus === "delivered") {
               if (next[c._id] === undefined) {
                 next[c._id] = true;
               }
@@ -111,12 +112,12 @@ export default function NgoMyClaimsPage() {
     }
   }, []);
 
-  // Poll faster (every 5s) if there is an in-transit delivery to show live vehicle movement
+  // Poll faster (every 5s) if there is an in-transit delivery or food dropped awaiting receipt
   React.useEffect(() => {
     fetchClaims();
 
     const hasActiveDelivery = claims.some(
-      (c) => c.deliveryStatus === "accepted" || c.deliveryStatus === "picked_up"
+      (c) => c.deliveryStatus === "accepted" || c.deliveryStatus === "picked_up" || c.deliveryStatus === "delivered"
     );
     const pollInterval = hasActiveDelivery ? 5000 : 20000;
 
@@ -166,6 +167,9 @@ export default function NgoMyClaimsPage() {
   const confirmedCount = claims.filter(
     (c) => c.isConfirmed || c.deliveryStatus === "confirmed"
   ).length;
+  const awaitingReceiptBatches = claims.filter(
+    (c) => !c.isConfirmed && c.deliveryStatus === "delivered"
+  );
   const inTransitCount = totalClaimedBatches - confirmedCount;
   const totalVolumeKg = claims.reduce((acc, c) => acc + (c.quantity || 0), 0);
   const totalMealsRescued = Math.round(totalVolumeKg * 2.5);
@@ -281,6 +285,31 @@ export default function NgoMyClaimsPage() {
         </div>
       )}
 
+      {/* Food Dropped Off / Awaiting Receipt Action Banner */}
+      {awaitingReceiptBatches.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/80 bg-gradient-to-r from-emerald-50 via-emerald-50/50 to-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-stone-900">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <PackageCheck className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-serif font-bold text-base sm:text-lg text-emerald-950">
+                  Food Dropped Off by Delivery Partner!
+                </h3>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-700 text-white shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                  Receipt Available Now ({awaitingReceiptBatches.length})
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl leading-relaxed">
+                The delivery partner has arrived and dropped off the food at your center. Please inspect the items and click <strong>&quot;Accept Delivery Receipt&quot;</strong> in the table below to mark the food as successfully delivered.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 2. 4 Vibrant Theme KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Emerald Theme - Confirmed Delivered */}
@@ -308,7 +337,7 @@ export default function NgoMyClaimsPage() {
         <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 border border-amber-200/80 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-[11px] uppercase tracking-wider text-amber-800 font-mono font-bold">
-              In Transit / Pending
+              {awaitingReceiptBatches.length > 0 ? "Awaiting Receipt / Active" : "In Transit / En Route"}
             </span>
             <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shadow-2xs">
               <Truck className="w-4 h-4" />
@@ -320,7 +349,9 @@ export default function NgoMyClaimsPage() {
           </div>
           <div className="mt-2.5 flex items-center gap-1.5">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100/90 text-amber-900 border border-amber-200">
-              Awaiting Handoff
+              {awaitingReceiptBatches.length > 0
+                ? `${awaitingReceiptBatches.length} Dropped (Accept Receipt)`
+                : "Awaiting Handoff"}
             </span>
           </div>
         </div>
@@ -560,22 +591,22 @@ export default function NgoMyClaimsPage() {
                           {isConfirmed ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              Confirmed Received
+                              Delivered &amp; Receipt Accepted
                             </span>
                           ) : claim.deliveryStatus === "delivered" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Delivered — Tap Confirm
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-400 shadow-2xs">
+                              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+                              Food Dropped Off — Accept Receipt Below
                             </span>
                           ) : claim.deliveryStatus === "picked_up" ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 border border-blue-300">
                               <Truck className="w-3.5 h-3.5 text-blue-600" />
-                              In Transit
+                              In Transit to Your Center
                             </span>
                           ) : claim.deliveryStatus === "accepted" ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
                               <Clock className="w-3.5 h-3.5 text-amber-600" />
-                              Driver Assigned
+                              Driver Assigned (En Route to Kitchen)
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-300">
@@ -608,16 +639,17 @@ export default function NgoMyClaimsPage() {
                         {/* 6. Receipt Confirmation Action */}
                         <td className="py-3 px-4 text-right">
                           {isConfirmed ? (
-                            <div className="text-xs text-emerald-800 font-semibold flex items-center justify-end gap-1">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                              <span>Verified Handoff</span>
+                            <div className="text-xs text-emerald-800 font-semibold flex items-center justify-end gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span>Successfully Delivered &amp; Verified</span>
                               {claim.confirmedAt && (
                                 <span className="text-[10px] text-stone-400 font-mono block ml-1">
                                   ({new Date(claim.confirmedAt).toLocaleDateString()})
                                 </span>
                               )}
                             </div>
-                          ) : (
+                          ) : claim.deliveryStatus === "delivered" ? (
+                            /* RECEIPT OPTION AVAILABLE ONLY AFTER DELIVERY PARTNER DROPS THE FOOD */
                             <div className="flex items-center justify-end gap-2 flex-wrap">
                               <button
                                 type="button"
@@ -635,20 +667,44 @@ export default function NgoMyClaimsPage() {
                               <button
                                 onClick={() => handleConfirmReceipt(claim._id)}
                                 disabled={isConfirming}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] disabled:opacity-60 text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] disabled:opacity-60 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer whitespace-nowrap ring-2 ring-emerald-500/40"
                               >
                                 {isConfirming ? (
                                   <>
-                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    <span>Confirming...</span>
+                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    <span>Accepting Receipt...</span>
                                   </>
                                 ) : (
                                   <>
                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-100" />
-                                    <span>Confirm Receipt</span>
+                                    <span>Accept Delivery Receipt ✓</span>
                                   </>
                                 )}
                               </button>
+                            </div>
+                          ) : (
+                            /* BEFORE FOOD IS DROPPED OFF: RECEIPT BUTTON IS NOT AVAILABLE YET */
+                            <div className="flex items-center justify-end gap-2 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => toggleMap(claim._id)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:text-emerald-700 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition-all cursor-pointer shadow-2xs"
+                              >
+                                <Route className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>{isMapOpen ? "Hide Map" : "View Map 🗺️"}</span>
+                                {isMapOpen ? (
+                                  <ChevronUp className="w-3 h-3 text-stone-400" />
+                                ) : (
+                                  <ChevronDown className="w-3 h-3 text-stone-400" />
+                                )}
+                              </button>
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-stone-100/90 border border-stone-200 text-stone-500 text-[11px] font-mono whitespace-nowrap"
+                                title="Receipt button will become available once the delivery partner drops off the food at your center"
+                              >
+                                <Clock className="w-3 h-3 text-stone-400" />
+                                <span>Receipt opens after drop-off</span>
+                              </span>
                             </div>
                           )}
                         </td>
@@ -686,12 +742,17 @@ export default function NgoMyClaimsPage() {
                                 </span>
                               </div>
                               {/* Live Food Delivery Tracking Alert (Zomato/Swiggy style for NGO) */}
-                              {(claim.deliveryStatus === "accepted" || claim.deliveryStatus === "picked_up") && (() => {
+                              {(claim.deliveryStatus === "accepted" || claim.deliveryStatus === "picked_up" || claim.deliveryStatus === "delivered") && (() => {
                                 const vConfig = getVehicleConfig(claim.courier?.vehicleType);
                                 const etas = calculateDeliveryEtas(claim.deliveryStatus, 18);
+                                const isDelivered = claim.deliveryStatus === "delivered";
 
                                 return (
-                                  <div className="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-xs space-y-2.5 shadow-2xs">
+                                  <div className={`p-3.5 rounded-xl border text-xs space-y-2.5 shadow-2xs ${
+                                    isDelivered
+                                      ? "bg-emerald-50/95 border-emerald-300 text-stone-900"
+                                      : "bg-emerald-50/90 border-emerald-200 text-stone-900"
+                                  }`}>
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                       <div className="flex items-center gap-2.5">
                                         <span className="relative flex h-3 w-3 shrink-0">
@@ -700,9 +761,11 @@ export default function NgoMyClaimsPage() {
                                         </span>
                                         <div>
                                           <div className="font-bold text-stone-900 text-sm flex items-center gap-2">
-                                            <span>{vConfig.emoji}</span>
+                                            <span>{isDelivered ? "📦" : vConfig.emoji}</span>
                                             <span>
-                                              {claim.deliveryStatus === "accepted"
+                                              {isDelivered
+                                                ? "Food Dropped Off at Your Center! Ready for Receipt Acceptance"
+                                                : claim.deliveryStatus === "accepted"
                                                 ? `Driver En Route to Donor Kitchen (${vConfig.label})`
                                                 : `Food En Route to Your Shelter! (${vConfig.label})`}
                                             </span>
@@ -716,28 +779,39 @@ export default function NgoMyClaimsPage() {
                                         </div>
                                       </div>
 
-                                      {claim.courier?.phone && (
-                                        <a
-                                          href={`tel:${claim.courier.phone}`}
-                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto shrink-0"
-                                        >
-                                          📞 Call Driver: {claim.courier.phone}
-                                        </a>
-                                      )}
+                                      <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto shrink-0">
+                                        {claim.courier?.phone && (
+                                          <a
+                                            href={`tel:${claim.courier.phone}`}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-xs font-semibold shadow-xs transition-colors"
+                                          >
+                                            📞 Call Driver: {claim.courier.phone}
+                                          </a>
+                                        )}
+                                        {isDelivered && !isConfirmed && (
+                                          <button
+                                            onClick={() => handleConfirmReceipt(claim._id)}
+                                            disabled={isConfirming}
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-mono text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                                          >
+                                            {isConfirming ? "Accepting..." : "Accept Receipt Now ✓"}
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
 
                                     {/* Estimated Timings of Pickup & Drop-Off */}
                                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-emerald-200/80 font-mono text-[11px]">
                                       <div className="bg-white/90 p-2 rounded border border-emerald-100">
                                         <div className="text-stone-500 text-[10px]">📍 Pickup from Kitchen:</div>
-                                        <div className="font-bold text-amber-700 text-xs">
-                                          {etas.isPickupDone ? "Collected from Kitchen ✓" : `${etas.pickupClockTime} (~${etas.pickupMins}m away)`}
+                                        <div className="font-bold text-emerald-800 text-xs">
+                                          Collected from Kitchen ✓
                                         </div>
                                       </div>
                                       <div className="bg-white/90 p-2 rounded border border-emerald-100">
-                                        <div className="text-stone-500 text-[10px]">🎯 Est. Arrival at Shelter:</div>
-                                        <div className="font-bold text-emerald-700 text-xs">
-                                          {etas.isDropDone ? "Delivered ✓" : `${etas.dropClockTime} (~${etas.dropMins}m away)`}
+                                        <div className="text-stone-500 text-[10px]">🎯 Arrival at Shelter:</div>
+                                        <div className={`font-bold text-xs ${isDelivered ? "text-emerald-800 font-extrabold" : "text-emerald-700"}`}>
+                                          {isDelivered ? "Delivered at Shelter ✓ (Accept Receipt)" : `${etas.dropClockTime} (~${etas.dropMins}m away)`}
                                         </div>
                                       </div>
                                     </div>
