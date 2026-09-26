@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Utensils,
   ShieldCheck,
@@ -17,6 +18,7 @@ import {
   Building2,
   FileCheck2,
   ChevronRight,
+  ChevronDown,
   ExternalLink,
   BellRing,
   QrCode,
@@ -27,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+
 
 type RoleType = "all" | "kitchens" | "ngos" | "drivers";
 
@@ -394,11 +397,26 @@ export function HowItWorksSection() {
     ],
   };
 
+  const pathname = usePathname();
+  const isHowItWorksPage = pathname === "/how-it-works";
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, targetUrl: string) => {
+    if (targetUrl === "#faqs" || (targetUrl === "/how-it-works" && isHowItWorksPage)) {
+      e.preventDefault();
+      const target = document.getElementById("faqs") || document.getElementById("faqs-section");
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: window.innerHeight * 0.8, behavior: "smooth" });
+      }
+    }
+  };
+
   // Dedicated page redirect URLs
   const dedicatedPages: Record<RoleType, { url: string; label: string; registerUrl: string; registerLabel: string }> = {
     all: {
-      url: "/how-it-works",
-      label: "Open Full How It Works Guide",
+      url: isHowItWorksPage ? "#faqs" : "/how-it-works",
+      label: isHowItWorksPage ? "View Common Questions & FAQs" : "Open Full How It Works Guide",
       registerUrl: "/register",
       registerLabel: "Get Started Free",
     },
@@ -543,10 +561,15 @@ export function HowItWorksSection() {
           <div className="mt-3.5 flex items-center justify-center">
             <Link
               href={currentDedicated.url}
+              onClick={(e) => handleLinkClick(e, currentDedicated.url)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100/90 border border-emerald-200/80 px-3.5 py-1.5 rounded-full transition-all group shadow-2xs"
             >
               <span>{currentDedicated.label}</span>
-              <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              {activeRole === "all" && isHowItWorksPage ? (
+                <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
+              ) : (
+                <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              )}
             </Link>
           </div>
         </div>
@@ -692,9 +715,17 @@ export function HowItWorksSection() {
               size="lg"
               className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-6 px-8 rounded-xl shadow-md hover:shadow-lg transition-all text-center justify-center"
             >
-              <Link href={currentDedicated.url} className="flex items-center gap-2">
+              <Link
+                href={currentDedicated.url}
+                onClick={(e) => handleLinkClick(e, currentDedicated.url)}
+                className="flex items-center gap-2"
+              >
                 <span>{currentDedicated.label}</span>
-                <ArrowRight className="w-4 h-4" />
+                {activeRole === "all" && isHowItWorksPage ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ArrowRight className="w-4 h-4" />
+                )}
               </Link>
             </Button>
             <Button
