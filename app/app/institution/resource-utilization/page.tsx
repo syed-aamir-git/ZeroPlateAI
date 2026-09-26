@@ -100,7 +100,7 @@ export default function InstitutionResourceUtilizationPage() {
             </h1>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
               <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-              NVIDIA NIM &amp; FEFO Engine Active
+              Smart FEFO Engine Active
             </span>
           </div>
           <p className="text-xs sm:text-sm text-stone-500 mt-1.5 max-w-2xl leading-relaxed">
@@ -139,7 +139,7 @@ export default function InstitutionResourceUtilizationPage() {
         <div className="py-24 text-center space-y-3 bg-white border border-stone-200/80 rounded-2xl">
           <div className="w-9 h-9 mx-auto border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
           <p className="font-mono text-xs uppercase tracking-wider text-stone-500">
-            NVIDIA NIM analyzing raw materials database and calculating procurement advisory...
+            Smart FEFO Engine analyzing raw materials database and calculating procurement advisory...
           </p>
         </div>
       ) : (
