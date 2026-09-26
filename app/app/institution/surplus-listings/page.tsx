@@ -20,6 +20,8 @@ import {
   Info,
   Calendar,
   Sparkles,
+  Minus,
+  Maximize2,
 } from "lucide-react";
 import LocationPickerMap from "@/components/maps/location-picker-map";
 import {
@@ -113,6 +115,12 @@ function SurplusListingsContent() {
   const [quickQuantity, setQuickQuantity] = React.useState("");
   const [quickUnit, setQuickUnit] = React.useState("kg");
   const [quickPrepAgoHours, setQuickPrepAgoHours] = React.useState("0");
+  const [isMinimized, setIsMinimized] = React.useState(false);
+  const [pageNotification, setPageNotification] = React.useState<{
+    type: "success" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Safety Gating Alert state
   const [gatingResult, setGatingResult] = React.useState<{
@@ -343,9 +351,23 @@ function SurplusListingsContent() {
       }
 
       // 201 Verified Safe - Live on NGO portal!
-      setGatingResult({
+      const listedFoodName =
+        (modalMode === "one_step" ? quickName.trim() : selectedItem?.name) ||
+        "Food item";
+      const listedQty = modalMode === "one_step" ? quickQuantity : listingQty;
+      const listedUnit =
+        modalMode === "one_step" ? quickUnit : (selectedItem?.unit || "kg");
+
+      // Auto-minimize / close the modal window immediately!
+      setIsCreateOpen(false);
+      setIsMinimized(false);
+      setGatingResult(null);
+
+      // Show high-visibility confirmation banner on the main page
+      setPageNotification({
         type: "success",
-        message: "Verified Safe! Your food is now LIVE on the NGO Portal and nearby verified charities have been notified for immediate pickup.",
+        title: "🎉 Food Listed Successfully on NGO Portal!",
+        message: `${listedFoodName} (${listedQty} ${listedUnit}) is now LIVE on the NGO Portal and nearby verified charities have been notified for immediate pickup.`,
       });
 
       // Reset form and reload
@@ -478,6 +500,7 @@ function SurplusListingsContent() {
           <button
             onClick={() => {
               setGatingResult(null);
+              setIsMinimized(false);
               setIsCreateOpen(true);
             }}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition-all whitespace-nowrap cursor-pointer"
@@ -487,6 +510,48 @@ function SurplusListingsContent() {
           </button>
         </div>
       </div>
+
+      {/* Real-time Confirmation Alert Banner after Listing Food */}
+      {pageNotification && (
+        <div
+          className={`p-4 rounded-2xl border text-xs flex items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200 ${
+            pageNotification.type === "success"
+              ? "bg-gradient-to-r from-emerald-50 via-emerald-50/50 to-white border-emerald-300 text-emerald-950"
+              : "bg-rose-50 border-rose-200 text-rose-950"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="font-bold text-sm text-emerald-950 flex items-center gap-2">
+                <span>{pageNotification.title}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Live on NGO Marketplace
+                </span>
+              </div>
+              <p className="text-stone-600 mt-0.5 text-xs">{pageNotification.message}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/app/ngo/browse"
+              target="_blank"
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1"
+            >
+              <span>Preview NGO View</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <button
+              onClick={() => setPageNotification(null)}
+              className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-100 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. 4 Vibrant Theme KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -901,7 +966,7 @@ function SurplusListingsContent() {
       )}
 
       {/* 6. Modern 1-Step Create Surplus Listing Modal */}
-      {isCreateOpen && (
+      {isCreateOpen && !isMinimized && (
         <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full p-6 sm:p-7 space-y-5 text-stone-900 shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
@@ -919,15 +984,28 @@ function SurplusListingsContent() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  setIsCreateOpen(false);
-                  setGatingResult(null);
-                }}
-                className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsMinimized(true)}
+                  className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
+                  title="Minimize window"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    setIsMinimized(false);
+                    setGatingResult(null);
+                  }}
+                  className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
+                  title="Close window"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Mode Switcher Tabs */}
@@ -1378,6 +1456,33 @@ function SurplusListingsContent() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Minimized Docked Widget (Allows restoring the window at any time) */}
+      {isCreateOpen && isMinimized && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-200">
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-emerald-900/95 border border-emerald-600/80 shadow-2xl backdrop-blur-md">
+            <button
+              onClick={() => setIsMinimized(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs transition-all cursor-pointer shadow-xs hover:scale-102 active:scale-98"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-200 animate-spin" style={{ animationDuration: "4s" }} />
+              <span>⚡ Food Listing Window Minimized</span>
+              <Maximize2 className="w-3.5 h-3.5 text-emerald-200 ml-1" />
+            </button>
+            <button
+              onClick={() => {
+                setIsCreateOpen(false);
+                setIsMinimized(false);
+                setGatingResult(null);
+              }}
+              className="p-2 text-emerald-200 hover:text-white hover:bg-emerald-800/80 rounded-xl transition-colors cursor-pointer"
+              title="Close window"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
