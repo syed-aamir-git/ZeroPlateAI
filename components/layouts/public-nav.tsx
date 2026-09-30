@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Menu, X, ArrowRight, ShieldCheck } from "lucide-react";
+import { Menu, X, ArrowRight, ShieldCheck, Home } from "lucide-react";
 import { ZeroPlateLogo } from "@/components/brand/zero-plate-logo";
 
 interface PublicNavProps {
@@ -31,6 +32,7 @@ function getDashboardUrl(user?: Record<string, unknown> | null) {
 export function PublicNav({ hideAuthButtons = false }: PublicNavProps) {
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     await signOut();
@@ -38,12 +40,20 @@ export function PublicNav({ hideAuthButtons = false }: PublicNavProps) {
   };
 
   const navLinks = [
+    { label: "Home", href: "/" },
     { label: "How It Works", href: "/how-it-works" },
     { label: "For Kitchens", href: "/institutions" },
     { label: "For NGOs", href: "/ngos" },
     { label: "Impact Ledger", href: "/impact" },
     { label: "About", href: "/about" },
   ];
+
+  const isLinkActive = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs transition-all">
@@ -52,18 +62,25 @@ export function PublicNav({ hideAuthButtons = false }: PublicNavProps) {
         <div className="flex items-center gap-8">
           <ZeroPlateLogo size="md" href="/" />
 
-
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-slate-600 hover:text-emerald-700 hover:bg-emerald-50/80 rounded-lg px-3.5 py-2 transition-all"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = isLinkActive(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium rounded-lg px-3.5 py-2 transition-all flex items-center gap-1.5 ${
+                    active
+                      ? "text-emerald-700 bg-emerald-50/90 font-semibold"
+                      : "text-slate-600 hover:text-emerald-700 hover:bg-emerald-50/80"
+                  }`}
+                >
+                  {link.label === "Home" && <Home className="w-3.5 h-3.5 shrink-0" />}
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
@@ -150,16 +167,24 @@ export function PublicNav({ hideAuthButtons = false }: PublicNavProps) {
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-slate-200 bg-white/98 backdrop-blur-lg px-4 py-4 space-y-2 shadow-lg animate-in fade-in slide-in-from-top-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const active = isLinkActive(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? "text-emerald-700 bg-emerald-50 font-semibold"
+                    : "text-slate-700 hover:text-emerald-700 hover:bg-emerald-50"
+                }`}
+              >
+                {link.label === "Home" && <Home className="w-4 h-4 text-emerald-600 shrink-0" />}
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             {session?.user ? (
               <>

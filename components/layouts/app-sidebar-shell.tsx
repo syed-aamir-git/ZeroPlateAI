@@ -25,6 +25,7 @@ import {
   LogOut,
   User,
   Boxes,
+  Home,
 } from "lucide-react";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { ZeroPlateLogo } from "@/components/brand/zero-plate-logo";
@@ -389,6 +390,20 @@ export function AppSidebarShell({
                 </div>
               </div>
 
+              {/* Main Public Home Link */}
+              <Link
+                href="/"
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer text-left mb-1",
+                  isAdmin
+                    ? "text-slate-700 hover:text-emerald-700 hover:bg-slate-100"
+                    : "text-ink hover:text-basil hover:bg-[#EAE3D4]"
+                )}
+              >
+                <Home className="w-4 h-4 shrink-0 text-slate-500" />
+                <span>ZeroPlate Home</span>
+              </Link>
+
               {/* Sign Out Action Button */}
               <button
                 type="button"
@@ -514,8 +529,22 @@ export function AppSidebarShell({
             )}
           </div>
 
-          {/* Top-Right: Notifications Bell + Role Badge */}
+          {/* Top-Right: Home Link + Notifications Bell + Role Badge */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/"
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-medium transition-colors shadow-2xs",
+                isAdmin
+                  ? "border-slate-200 text-slate-700 hover:text-emerald-700 hover:bg-slate-100 bg-white"
+                  : "border-line text-ink-soft hover:text-ink hover:bg-[#EAE3D4] bg-white"
+              )}
+              title="Go to ZeroPlate Home Page"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
+
             <NotificationBell
               isAdmin={isAdmin}
               notificationsHref={
