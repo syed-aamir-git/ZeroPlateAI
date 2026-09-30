@@ -3,7 +3,7 @@ import { ZeroPlateLogo } from "@/components/brand/zero-plate-logo";
 
 export function PublicFooter() {
   return (
-    <footer className="bg-[#1C2420] text-[#E0DACE] border-t border-[#2D3933] py-14 px-4 sm:px-6 lg:px-8">
+    <footer className="bg-[#1C2420] text-[#E0DACE] border-t border-[#2D3933] py-14 px-4 sm:px-6 lg:px-8 relative z-20">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-10">
         {/* Col 1: Brand & Positioning */}
         <div className="md:col-span-1 space-y-3">

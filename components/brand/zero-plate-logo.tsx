@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface ZeroPlateLogoProps {
@@ -11,6 +12,7 @@ interface ZeroPlateLogoProps {
   showTagline?: boolean;
   href?: string;
   variant?: "default" | "dark";
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 export function ZeroPlateLogoIcon({
@@ -195,7 +197,30 @@ export function ZeroPlateLogo({
   showTagline = true,
   href = "/",
   variant = "default",
+  onClick,
 }: ZeroPlateLogoProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (onClick) {
+      onClick(e);
+    }
+
+    if (!href) return;
+
+    const isCurrentPage = pathname === href || (href === "/" && (pathname === "/" || pathname === ""));
+
+    if (isCurrentPage) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "instant" });
+      router.push(href);
+    }
+  };
+
   const sizeMap = {
     sm: { icon: 34, text: "text-lg", tagline: "text-[8px] tracking-[0.18em]", gap: "gap-2.5" },
     md: { icon: 42, text: "text-xl", tagline: "text-[9px] tracking-[0.2em]", gap: "gap-3" },
@@ -265,7 +290,10 @@ export function ZeroPlateLogo({
       <Link
         href={href}
         prefetch={true}
-        className="inline-flex focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg group"
+        onClick={handleClick}
+        aria-label="ZeroPlate.ai Home"
+        title="Go to ZeroPlate Home"
+        className="inline-flex focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg group cursor-pointer transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98]"
       >
         {content}
       </Link>
