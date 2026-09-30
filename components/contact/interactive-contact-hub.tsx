@@ -210,29 +210,31 @@ export function InteractiveContactHub() {
           </p>
         </div>
 
-        {/* Tab Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 p-1.5 max-w-4xl mx-auto bg-slate-100/80 rounded-2xl border border-slate-200/80">
-          {categories.map((cat) => {
-            const Icon = cat.icon;
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setSelectedCategory(cat.id as any);
-                  setFormSubmitted(false);
-                }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                  isSelected
-                    ? `${cat.activeTab} shadow-md scale-102`
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isSelected ? "text-white" : "text-slate-500"}`} />
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
+        {/* Tab Pills in a Single Straight Line */}
+        <div className="w-full flex items-center justify-center overflow-x-auto py-2 px-2">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 shadow-xs shrink-0 flex-nowrap">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setSelectedCategory(cat.id as any);
+                    setFormSubmitted(false);
+                  }}
+                  className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
+                    isSelected
+                      ? `${cat.activeTab} shadow-md scale-102`
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${isSelected ? "text-white" : "text-slate-500"}`} />
+                  <span>{cat.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
