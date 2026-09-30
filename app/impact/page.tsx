@@ -36,7 +36,7 @@ import {
   Car,
 } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata = {
   title: "Public Impact Ledger | ZeroPlate.ai",

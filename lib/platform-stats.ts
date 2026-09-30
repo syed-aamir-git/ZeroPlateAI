@@ -68,7 +68,22 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   expired: { label: "Expired / Blocked", color: "#EF4444" },
 };
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+let platformStatsCache: CacheEntry<PlatformStats> | null = null;
+let ticketsCache: CacheEntry<LiveRedistributionTicket[]> | null = null;
+let networkDataCache: CacheEntry<{ nodes: PublicNetworkNode[]; routes: PublicNetworkRoute[] }> | null = null;
+
+const STATS_CACHE_TTL_MS = 60 * 1000; // 60s cache
+
 export async function getPlatformStats(): Promise<PlatformStats> {
+  if (platformStatsCache && Date.now() - platformStatsCache.timestamp < STATS_CACHE_TTL_MS) {
+    return platformStatsCache.data;
+  }
+
   try {
     const db = await getDb();
 
@@ -244,7 +259,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       };
     });
 
-    return {
+    const result: PlatformStats = {
       institutionCount,
       ngoCount,
       deliveryPartnerCount,
@@ -259,8 +274,12 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       timelineData,
       statusBreakdown,
     };
+
+    platformStatsCache = { data: result, timestamp: Date.now() };
+    return result;
   } catch (err) {
     console.error("Error reading real platform stats from MongoDB:", err);
+    if (platformStatsCache) return platformStatsCache.data;
     return {
       institutionCount: 0,
       ngoCount: 0,
@@ -295,6 +314,10 @@ export interface LiveRedistributionTicket {
 }
 
 export async function getLiveRedistributionTickets(): Promise<LiveRedistributionTicket[]> {
+  if (ticketsCache && Date.now() - ticketsCache.timestamp < STATS_CACHE_TTL_MS) {
+    return ticketsCache.data;
+  }
+
   try {
     const db = await getDb();
 
@@ -332,7 +355,7 @@ export async function getLiveRedistributionTickets(): Promise<LiveRedistribution
       return map[type] || type.replace(/_/g, " ");
     };
 
-    return rawListings.map((l) => {
+    const result: LiveRedistributionTicket[] = rawListings.map((l) => {
       const inst = l.institutionId ? instMap.get(l.institutionId.toString()) : null;
       const instTypeName = inst?.type ? formatType(inst.type) : "";
       const institutionType = l.institutionName
@@ -405,8 +428,12 @@ export async function getLiveRedistributionTickets(): Promise<LiveRedistribution
         isClaimed,
       };
     });
+
+    ticketsCache = { data: result, timestamp: Date.now() };
+    return result;
   } catch (err) {
     console.error("Error reading live redistribution tickets from MongoDB:", err);
+    if (ticketsCache) return ticketsCache.data;
     return [];
   }
 }
@@ -434,6 +461,10 @@ export async function getPublicNetworkData(): Promise<{
   nodes: PublicNetworkNode[];
   routes: PublicNetworkRoute[];
 }> {
+  if (networkDataCache && Date.now() - networkDataCache.timestamp < STATS_CACHE_TTL_MS) {
+    return networkDataCache.data;
+  }
+
   try {
     const db = await getDb();
 
@@ -522,12 +553,16 @@ export async function getPublicNetworkData(): Promise<{
       });
     }
 
-    return {
+    const result = {
       nodes: dbNodes,
       routes,
     };
+
+    networkDataCache = { data: result, timestamp: Date.now() };
+    return result;
   } catch (err) {
     console.error("Error generating public network map data:", err);
+    if (networkDataCache) return networkDataCache.data;
     return {
       nodes: [],
       routes: [],

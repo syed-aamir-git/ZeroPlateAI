@@ -264,6 +264,7 @@ export function ZeroPlateLogo({
     return (
       <Link
         href={href}
+        prefetch={true}
         className="inline-flex focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg group"
       >
         {content}

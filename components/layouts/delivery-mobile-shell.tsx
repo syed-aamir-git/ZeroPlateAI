@@ -62,6 +62,7 @@ export function DeliveryMobileShell({
         <div className="flex items-center gap-2">
           <Link
             href="/"
+            prefetch={true}
             className="p-2 rounded-[6px] border border-[#3B362E] text-[#D4CBBF] hover:text-[#F3EEE2] focus:outline-none focus:ring-2 focus:ring-ring"
             title="Go to main home page"
             aria-label="Go to main home page"

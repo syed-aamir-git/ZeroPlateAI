@@ -393,6 +393,7 @@ export function AppSidebarShell({
               {/* Main Public Home Link */}
               <Link
                 href="/"
+                prefetch={true}
                 className={cn(
                   "w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer text-left mb-1",
                   isAdmin
@@ -533,6 +534,7 @@ export function AppSidebarShell({
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/"
+              prefetch={true}
               className={cn(
                 "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-medium transition-colors shadow-2xs",
                 isAdmin

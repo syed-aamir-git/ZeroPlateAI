@@ -70,6 +70,7 @@ export function PublicNav({ hideAuthButtons = false }: PublicNavProps) {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={true}
                   className={`text-sm font-medium rounded-lg px-3.5 py-2 transition-all flex items-center gap-1.5 ${
                     active
                       ? "text-emerald-700 bg-emerald-50/90 font-semibold"
@@ -173,6 +174,7 @@ export function PublicNav({ hideAuthButtons = false }: PublicNavProps) {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={true}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   active
