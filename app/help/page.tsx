@@ -280,9 +280,12 @@ export default function HelpPage() {
               Our food safety and technical operations team provides direct support to institutional kitchen administrators, NGOs, and delivery coordinators.
             </p>
             <div className="pt-2">
-              <span className="font-mono text-xs sm:text-sm text-basil font-semibold block">
-                operations@zeroplate.ai · +91 11 4092 8800
-              </span>
+              <a
+                href="mailto:aerska06@gmail.com"
+                className="font-mono text-xs sm:text-sm text-basil font-semibold block hover:underline"
+              >
+                aerska06@gmail.com
+              </a>
               <span className="text-[11px] text-ink-soft mt-0.5 block">
                 Operational Support Hours: Monday – Saturday, 06:00 – 22:00 IST
               </span>

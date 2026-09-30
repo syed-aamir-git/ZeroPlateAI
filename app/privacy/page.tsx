@@ -57,7 +57,7 @@ export default function PrivacyPage() {
         </section>
 
         <div className="pt-6 border-t border-[#DCD3BE] flex items-center justify-between text-xs text-[#5A5548]">
-          <span>Data Protection Officer: privacy@zeroplate.ai</span>
+          <span>Data Protection Officer: <a href="mailto:aerska06@gmail.com" className="hover:underline">aerska06@gmail.com</a></span>
           <Link href="/terms" className="text-[#2F4B3A] font-semibold hover:underline">
             Terms of Service →
           </Link>

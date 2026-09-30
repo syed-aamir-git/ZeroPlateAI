@@ -35,7 +35,7 @@ export default function ContactPage() {
               Connect with our solutions engineers to integrate ZeroPlate.ai with your SAP/Oracle kitchen ERP, bulk procurement systems, or corporate ESG reporting.
             </p>
             <div className="font-mono text-xs text-[#2F4B3A] font-medium pt-2">
-              institutions@zeroplate.ai
+              <a href="mailto:aerska06@gmail.com" className="hover:underline">aerska06@gmail.com</a>
             </div>
           </div>
 
@@ -47,7 +47,7 @@ export default function ContactPage() {
               Need help verifying your 12A/80G status, expanding service areas, or scheduling bulk refrigerated pickup logistics?
             </p>
             <div className="font-mono text-xs text-[#2F4B3A] font-medium pt-2">
-              ngos@zeroplate.ai
+              <a href="mailto:aerska06@gmail.com" className="hover:underline">aerska06@gmail.com</a>
             </div>
           </div>
 
@@ -59,7 +59,7 @@ export default function ContactPage() {
               For active dispatch issues, transit temperature inquiries, or vehicle assignment queries.
             </p>
             <div className="font-mono text-xs text-[#2F4B3A] font-medium pt-2">
-              dispatch@zeroplate.ai
+              <a href="mailto:aerska06@gmail.com" className="hover:underline">aerska06@gmail.com</a>
             </div>
           </div>
 
@@ -71,7 +71,7 @@ export default function ContactPage() {
               Urgent inquiries regarding batch recalls, cold-chain deviations, or safety gating audits.
             </p>
             <div className="font-mono text-xs text-clay-rust font-medium pt-2">
-              safety@zeroplate.ai · 24/7 Monitored
+              <a href="mailto:aerska06@gmail.com" className="hover:underline">aerska06@gmail.com</a> · 24/7 Monitored
             </div>
           </div>
         </div>
