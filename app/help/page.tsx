@@ -20,6 +20,7 @@ import {
   Zap,
   Building2,
   ThumbsUp,
+  ThumbsDown,
   BookOpen,
   Award,
   Layers,
@@ -238,16 +239,24 @@ export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [openFaqId, setOpenFaqId] = useState<string | null>("safety-4-hour");
-  const [helpfulFeedback, setHelpfulFeedback] = useState<Record<string, boolean>>({});
+  const [helpfulFeedback, setHelpfulFeedback] = useState<Record<string, "yes" | "no">>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const toggleAccordion = (id: string) => {
     setOpenFaqId((prev) => (prev === id ? null : id));
   };
 
-  const handleVoteHelpful = (id: string, e: React.MouseEvent) => {
+  const handleVoteHelpful = (id: string, vote: "yes" | "no", e: React.MouseEvent) => {
     e.stopPropagation();
-    setHelpfulFeedback((prev) => ({ ...prev, [id]: !prev[id] }));
+    setHelpfulFeedback((prev) => {
+      const next = { ...prev };
+      if (next[id] === vote) {
+        delete next[id];
+      } else {
+        next[id] = vote;
+      }
+      return next;
+    });
   };
 
   const handleShareQuestion = (faq: FAQItem, e: React.MouseEvent) => {
@@ -456,7 +465,7 @@ export default function HelpPage() {
             <div className="space-y-3">
               {filteredFaqs.map((faq) => {
                 const isOpen = openFaqId === faq.id;
-                const isVoted = helpfulFeedback[faq.id];
+                const currentVote = helpfulFeedback[faq.id];
                 return (
                   <div
                     key={faq.id}
@@ -509,19 +518,31 @@ export default function HelpPage() {
 
                         {/* Interactive Helpful & Share Footer */}
                         <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             <span className="font-medium text-slate-600">Was this helpful?</span>
                             <button
                               type="button"
-                              onClick={(e) => handleVoteHelpful(faq.id, e)}
+                              onClick={(e) => handleVoteHelpful(faq.id, "yes", e)}
                               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
-                                isVoted
+                                currentVote === "yes"
                                   ? "bg-emerald-50 text-emerald-800 border-emerald-300"
                                   : "border-slate-200 hover:bg-slate-100 text-slate-600"
                               }`}
                             >
-                              <ThumbsUp className={`w-3.5 h-3.5 ${isVoted ? "fill-emerald-600 text-emerald-600" : ""}`} />
-                              <span>{isVoted ? "Helpful!" : "Yes"}</span>
+                              <ThumbsUp className={`w-3.5 h-3.5 ${currentVote === "yes" ? "fill-emerald-600 text-emerald-600" : ""}`} />
+                              <span>{currentVote === "yes" ? "Helpful!" : "Yes"}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleVoteHelpful(faq.id, "no", e)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                                currentVote === "no"
+                                  ? "bg-rose-50 text-rose-800 border-rose-300"
+                                  : "border-slate-200 hover:bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              <ThumbsDown className={`w-3.5 h-3.5 ${currentVote === "no" ? "fill-rose-600 text-rose-600" : ""}`} />
+                              <span>{currentVote === "no" ? "Not helpful" : "No"}</span>
                             </button>
                           </div>
 
