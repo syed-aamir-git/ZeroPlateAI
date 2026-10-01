@@ -15,6 +15,7 @@ import {
   Clock,
   CheckCircle2,
   ChevronDown,
+  ChevronUp,
   ArrowRight,
   Mail,
   Zap,
@@ -423,12 +424,67 @@ export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedAudience, setSelectedAudience] = useState<string>("all");
-  const [openFaqId, setOpenFaqId] = useState<string | null>("safety-4-hour");
+  // Multi-open accordion support
+  const [openFaqIds, setOpenFaqIds] = useState<string[]>(["safety-4-hour"]);
   const [helpfulFeedback, setHelpfulFeedback] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Toggle individual question accordion
   const toggleAccordion = (id: string) => {
-    setOpenFaqId((prev) => (prev === id ? null : id));
+    setOpenFaqIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // Toggle Collapse All / Expand All for current visible items
+  const handleToggleAll = (visibleFaqs: FAQItem[]) => {
+    if (openFaqIds.length > 0) {
+      setOpenFaqIds([]);
+    } else {
+      setOpenFaqIds(visibleFaqs.map((f) => f.id));
+    }
+  };
+
+  // Select category and clear audience to prevent empty intersections
+  const handleSelectCategory = (catId: string) => {
+    const nextCategory = selectedCategory === catId && catId !== "all" ? "all" : catId;
+    setSelectedCategory(nextCategory);
+    setSelectedAudience("all");
+    
+    // Automatically open the first matching question
+    const firstMatch = FAQS.find((f) => nextCategory === "all" || f.category === nextCategory);
+    if (firstMatch) {
+      setOpenFaqIds([firstMatch.id]);
+    }
+  };
+
+  // Select audience role and clear category to prevent empty intersections
+  const handleSelectAudience = (roleId: string) => {
+    const nextAudience = selectedAudience === roleId && roleId !== "all" ? "all" : roleId;
+    setSelectedAudience(nextAudience);
+    setSelectedCategory("all");
+
+    // Automatically open the first matching question
+    const firstMatch = FAQS.find(
+      (f) => nextAudience === "all" || f.audience === nextAudience || f.audience === "Everyone"
+    );
+    if (firstMatch) {
+      setOpenFaqIds([firstMatch.id]);
+    }
+  };
+
+  // Click suggestion chip in hero
+  const handleChipClick = (chip: string) => {
+    setSearchQuery(chip);
+    setSelectedCategory("all");
+    setSelectedAudience("all");
+    const matched = FAQS.find((f) =>
+      f.question.toLowerCase().includes(chip.toLowerCase()) ||
+      f.tags.some((t) => t.toLowerCase().includes(chip.toLowerCase()))
+    );
+    if (matched) {
+      setOpenFaqIds([matched.id]);
+    }
   };
 
   const handleVoteHelpful = (id: string, e: React.MouseEvent) => {
@@ -545,7 +601,7 @@ export default function HelpPage() {
                   <button
                     key={chip}
                     type="button"
-                    onClick={() => setSearchQuery(chip)}
+                    onClick={() => handleChipClick(chip)}
                     className="px-2.5 py-1 rounded-lg bg-slate-100/80 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200/70 transition-colors cursor-pointer font-medium"
                   >
                     {chip}
@@ -576,7 +632,10 @@ export default function HelpPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-white to-slate-50/30 border border-emerald-100 relative space-y-3">
+            <div 
+              onClick={() => handleSelectCategory("safety")}
+              className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-white to-slate-50/30 border border-emerald-100 relative space-y-3 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all"
+            >
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
                   <Utensils className="w-5 h-5" />
@@ -593,7 +652,10 @@ export default function HelpPage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/50 via-white to-slate-50/30 border border-amber-100 relative space-y-3">
+            <div 
+              onClick={() => handleSelectCategory("claiming")}
+              className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/50 via-white to-slate-50/30 border border-amber-100 relative space-y-3 cursor-pointer hover:shadow-md hover:border-amber-300 transition-all"
+            >
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
                   <Zap className="w-5 h-5" />
@@ -610,7 +672,10 @@ export default function HelpPage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-50/50 via-white to-slate-50/30 border border-teal-100 relative space-y-3">
+            <div 
+              onClick={() => handleSelectCategory("logistics")}
+              className="p-5 rounded-2xl bg-gradient-to-br from-teal-50/50 via-white to-slate-50/30 border border-teal-100 relative space-y-3 cursor-pointer hover:shadow-md hover:border-teal-300 transition-all"
+            >
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
                   <Truck className="w-5 h-5" />
@@ -650,7 +715,7 @@ export default function HelpPage() {
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => handleSelectCategory(cat.id)}
                   className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
                     isSelected
                       ? "bg-white border-emerald-500 shadow-lg shadow-emerald-500/10 ring-2 ring-emerald-500/20 scale-[1.02]"
@@ -690,7 +755,7 @@ export default function HelpPage() {
         </section>
 
         {/* FAQs Results Accordion */}
-        <section className="space-y-6">
+        <section id="faq-results-section" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
             <div>
               <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
@@ -705,8 +770,8 @@ export default function HelpPage() {
               </p>
             </div>
 
-            {/* Role Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {/* Role Filter Tabs & Expand/Collapse Toggle */}
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-slate-400 shrink-0 hidden sm:inline">
                 Role:
               </span>
@@ -715,28 +780,41 @@ export default function HelpPage() {
                 { id: "Kitchens & Donors", label: "👨‍🍳 Kitchens" },
                 { id: "NGOs & Shelters", label: "🤝 Shelters" },
                 { id: "Delivery & Drivers", label: "🚚 Drivers" },
-              ].map((role) => (
-                <button
-                  key={role.id}
-                  type="button"
-                  onClick={() => setSelectedAudience(role.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    selectedAudience === role.id
-                      ? "bg-slate-900 text-white shadow-xs"
-                      : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-                  }`}
-                >
-                  {role.label}
-                </button>
-              ))}
+              ].map((role) => {
+                const isActive = selectedAudience === role.id && selectedCategory === "all";
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => handleSelectAudience(role.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    {role.label}
+                  </button>
+                );
+              })}
 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setOpenFaqId(null)}
-                className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 ml-1 shrink-0"
+                onClick={() => handleToggleAll(filteredFaqs)}
+                className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 ml-1 shrink-0 flex items-center gap-1.5 cursor-pointer"
               >
-                Collapse All
+                {openFaqIds.length > 0 ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    <span>Collapse All</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Expand All</span>
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -761,8 +839,9 @@ export default function HelpPage() {
                   setSearchQuery("");
                   setSelectedCategory("all");
                   setSelectedAudience("all");
+                  setOpenFaqIds(["safety-4-hour"]);
                 }}
-                className="rounded-xl text-xs"
+                className="rounded-xl text-xs cursor-pointer"
               >
                 Reset All Filters
               </Button>
@@ -770,7 +849,7 @@ export default function HelpPage() {
           ) : (
             <div className="space-y-4">
               {filteredFaqs.map((faq) => {
-                const isOpen = openFaqId === faq.id;
+                const isOpen = openFaqIds.includes(faq.id);
                 const isVoted = helpfulFeedback[faq.id];
                 return (
                   <div
