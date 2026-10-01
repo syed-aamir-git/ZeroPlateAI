@@ -449,19 +449,6 @@ export default function HelpPage() {
                 {searchQuery ? ` matching "${searchQuery}"` : ""}
               </p>
             </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setOpenFaqId((prev) => (prev ? null : filteredFaqs[0]?.id || null))
-                }
-                className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 cursor-pointer"
-              >
-                {openFaqId ? "Collapse All" : "Expand All"}
-              </Button>
-            </div>
           </div>
 
           {filteredFaqs.length === 0 ? (
