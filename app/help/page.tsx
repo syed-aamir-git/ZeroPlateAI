@@ -41,18 +41,18 @@ interface FAQItem {
 }
 
 const INITIAL_FEEDBACK_COUNTS: Record<string, { helpful: number; unhelpful: number }> = {
-  "safety-4-hour": { helpful: 48, unhelpful: 2 },
-  "safety-fail-closed": { helpful: 34, unhelpful: 1 },
-  "safety-legal-protection": { helpful: 41, unhelpful: 0 },
-  "kyc-free-meals": { helpful: 56, unhelpful: 1 },
-  "kyc-approval-process": { helpful: 39, unhelpful: 2 },
-  "kyc-unapproved-claim": { helpful: 27, unhelpful: 1 },
-  "claims-race-condition": { helpful: 45, unhelpful: 1 },
-  "claims-smart-matching": { helpful: 32, unhelpful: 0 },
-  "logistics-courier-pickup": { helpful: 38, unhelpful: 2 },
-  "logistics-recipient-confirm": { helpful: 29, unhelpful: 1 },
-  "reports-co2-formula": { helpful: 43, unhelpful: 2 },
-  "reports-free-export": { helpful: 37, unhelpful: 0 },
+  "safety-4-hour": { helpful: 0, unhelpful: 0 },
+  "safety-fail-closed": { helpful: 0, unhelpful: 0 },
+  "safety-legal-protection": { helpful: 0, unhelpful: 0 },
+  "kyc-free-meals": { helpful: 0, unhelpful: 0 },
+  "kyc-approval-process": { helpful: 0, unhelpful: 0 },
+  "kyc-unapproved-claim": { helpful: 0, unhelpful: 0 },
+  "claims-race-condition": { helpful: 0, unhelpful: 0 },
+  "claims-smart-matching": { helpful: 0, unhelpful: 0 },
+  "logistics-courier-pickup": { helpful: 0, unhelpful: 0 },
+  "logistics-recipient-confirm": { helpful: 0, unhelpful: 0 },
+  "reports-co2-formula": { helpful: 0, unhelpful: 0 },
+  "reports-free-export": { helpful: 0, unhelpful: 0 },
 };
 
 const FAQS: FAQItem[] = [
