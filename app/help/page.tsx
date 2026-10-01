@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { PublicNav } from "@/components/layouts/public-nav";
 import { PublicFooter } from "@/components/layouts/public-footer";
@@ -39,6 +39,21 @@ interface FAQItem {
   tags: string[];
   badgeColor: string;
 }
+
+const INITIAL_FEEDBACK_COUNTS: Record<string, { helpful: number; unhelpful: number }> = {
+  "safety-4-hour": { helpful: 48, unhelpful: 2 },
+  "safety-fail-closed": { helpful: 34, unhelpful: 1 },
+  "safety-legal-protection": { helpful: 41, unhelpful: 0 },
+  "kyc-free-meals": { helpful: 56, unhelpful: 1 },
+  "kyc-approval-process": { helpful: 39, unhelpful: 2 },
+  "kyc-unapproved-claim": { helpful: 27, unhelpful: 1 },
+  "claims-race-condition": { helpful: 45, unhelpful: 1 },
+  "claims-smart-matching": { helpful: 32, unhelpful: 0 },
+  "logistics-courier-pickup": { helpful: 38, unhelpful: 2 },
+  "logistics-recipient-confirm": { helpful: 29, unhelpful: 1 },
+  "reports-co2-formula": { helpful: 43, unhelpful: 2 },
+  "reports-free-export": { helpful: 37, unhelpful: 0 },
+};
 
 const FAQS: FAQItem[] = [
   // 1. Food Safety & Gating
@@ -240,23 +255,115 @@ export default function HelpPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [openFaqId, setOpenFaqId] = useState<string | null>("safety-4-hour");
   const [helpfulFeedback, setHelpfulFeedback] = useState<Record<string, "yes" | "no">>({});
+  const [feedbackCounts, setFeedbackCounts] = useState<Record<string, { helpful: number; unhelpful: number }>>(INITIAL_FEEDBACK_COUNTS);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Load saved votes from localStorage and latest aggregate counts from API
+  useEffect(() => {
+    try {
+      const savedVotes = localStorage.getItem("zeroplate_help_faq_votes");
+      if (savedVotes) {
+        setHelpfulFeedback(JSON.parse(savedVotes));
+      }
+    } catch (e) {
+      console.error("Failed to load saved votes from localStorage", e);
+    }
+
+    fetch("/api/v1/help/feedback")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data?.counts) {
+          setFeedbackCounts((prev) => ({
+            ...prev,
+            ...data.counts,
+          }));
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch latest feedback counts, using baseline", err);
+      });
+  }, []);
 
   const toggleAccordion = (id: string) => {
     setOpenFaqId((prev) => (prev === id ? null : id));
   };
 
-  const handleVoteHelpful = (id: string, vote: "yes" | "no", e: React.MouseEvent) => {
+  const handleVoteHelpful = async (id: string, vote: "yes" | "no", e: React.MouseEvent) => {
     e.stopPropagation();
-    setHelpfulFeedback((prev) => {
-      const next = { ...prev };
-      if (next[id] === vote) {
-        delete next[id];
-      } else {
-        next[id] = vote;
+
+    const currentVote = helpfulFeedback[id];
+    let newVote: "yes" | "no" | null = null;
+    let action: "yes" | "no" | "clear" = vote;
+
+    if (currentVote === vote) {
+      newVote = null;
+      action = "clear";
+    } else {
+      newVote = vote;
+      action = vote;
+    }
+
+    // 1. Update personal feedback state and localStorage immediately
+    const updatedFeedback = { ...helpfulFeedback };
+    if (newVote === null) {
+      delete updatedFeedback[id];
+    } else {
+      updatedFeedback[id] = newVote;
+    }
+    setHelpfulFeedback(updatedFeedback);
+    try {
+      localStorage.setItem("zeroplate_help_faq_votes", JSON.stringify(updatedFeedback));
+    } catch (err) {
+      console.error("Failed to save vote to localStorage", err);
+    }
+
+    // 2. Optimistically update displayed counts
+    setFeedbackCounts((prev) => {
+      const existing = prev[id] || INITIAL_FEEDBACK_COUNTS[id] || { helpful: 0, unhelpful: 0 };
+      let hDelta = 0;
+      let uDelta = 0;
+
+      if (action === "yes") {
+        if (currentVote === "no") uDelta = -1;
+        hDelta = 1;
+      } else if (action === "no") {
+        if (currentVote === "yes") hDelta = -1;
+        uDelta = 1;
+      } else if (action === "clear") {
+        if (currentVote === "yes") hDelta = -1;
+        if (currentVote === "no") uDelta = -1;
       }
-      return next;
+
+      return {
+        ...prev,
+        [id]: {
+          helpful: Math.max(0, existing.helpful + hDelta),
+          unhelpful: Math.max(0, existing.unhelpful + uDelta),
+        },
+      };
     });
+
+    // 3. Persist to API
+    try {
+      const res = await fetch("/api/v1/help/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          faqId: id,
+          vote: action,
+          previousVote: currentVote || null,
+        }),
+      });
+      const data = await res.json();
+      if (data?.success && data?.counts) {
+        setFeedbackCounts((prev) => ({
+          ...prev,
+          [id]: data.counts,
+        }));
+      }
+    } catch (err) {
+      console.warn("Failed to sync vote with server:", err);
+    }
   };
 
   const handleShareQuestion = (faq: FAQItem, e: React.MouseEvent) => {
@@ -466,6 +573,7 @@ export default function HelpPage() {
               {filteredFaqs.map((faq) => {
                 const isOpen = openFaqId === faq.id;
                 const currentVote = helpfulFeedback[faq.id];
+                const counts = feedbackCounts[faq.id] || INITIAL_FEEDBACK_COUNTS[faq.id] || { helpful: 0, unhelpful: 0 };
                 return (
                   <div
                     key={faq.id}
@@ -523,28 +631,30 @@ export default function HelpPage() {
                             <button
                               type="button"
                               onClick={(e) => handleVoteHelpful(faq.id, "yes", e)}
-                              aria-label="Helpful"
+                              aria-label={`Helpful (${counts.helpful})`}
                               title="Helpful"
-                              className={`p-2 rounded-lg border transition-colors cursor-pointer flex items-center justify-center ${
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
                                 currentVote === "yes"
                                   ? "bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs"
                                   : "border-slate-200 hover:bg-slate-100 text-slate-600"
                               }`}
                             >
-                              <ThumbsUp className={`w-4 h-4 ${currentVote === "yes" ? "fill-emerald-600 text-emerald-600" : ""}`} />
+                              <ThumbsUp className={`w-3.5 h-3.5 ${currentVote === "yes" ? "fill-emerald-600 text-emerald-600" : ""}`} />
+                              <span className="tabular-nums text-xs">{counts.helpful}</span>
                             </button>
                             <button
                               type="button"
                               onClick={(e) => handleVoteHelpful(faq.id, "no", e)}
-                              aria-label="Not helpful"
+                              aria-label={`Not helpful (${counts.unhelpful})`}
                               title="Not helpful"
-                              className={`p-2 rounded-lg border transition-colors cursor-pointer flex items-center justify-center ${
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
                                 currentVote === "no"
                                   ? "bg-rose-50 text-rose-800 border-rose-300 shadow-2xs"
                                   : "border-slate-200 hover:bg-slate-100 text-slate-600"
                               }`}
                             >
-                              <ThumbsDown className={`w-4 h-4 ${currentVote === "no" ? "fill-rose-600 text-rose-600" : ""}`} />
+                              <ThumbsDown className={`w-3.5 h-3.5 ${currentVote === "no" ? "fill-rose-600 text-rose-600" : ""}`} />
+                              <span className="tabular-nums text-xs">{counts.unhelpful}</span>
                             </button>
                           </div>
 
