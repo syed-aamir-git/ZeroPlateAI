@@ -20,7 +20,6 @@ import {
   Zap,
   Building2,
   ThumbsUp,
-  RotateCcw,
   BookOpen,
   Award,
   Layers,
@@ -373,17 +372,6 @@ export default function HelpPage() {
                 Explore Topic Categories
               </h2>
             </div>
-            {selectedCategory !== "all" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedCategory("all")}
-                className="text-xs text-emerald-700 hover:bg-emerald-50 rounded-xl flex items-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Show All Topics</span>
-              </Button>
-            )}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
