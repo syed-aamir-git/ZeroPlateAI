@@ -343,7 +343,7 @@ export default function HelpPage() {
               {/* Quick Suggestion Chips */}
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
                 <span className="font-medium text-slate-400">Popular searches:</span>
-                {["4-Hour Rule", "Free Meals", "Good Samaritan", "Pickup Time", "ESG Report"].map((chip) => (
+                {["4-Hour Rule", "Good Samaritan", "Pickup Time", "ESG Report"].map((chip) => (
                   <button
                     key={chip}
                     type="button"
