@@ -523,26 +523,28 @@ export default function HelpPage() {
                             <button
                               type="button"
                               onClick={(e) => handleVoteHelpful(faq.id, "yes", e)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                              aria-label="Helpful"
+                              title="Helpful"
+                              className={`p-2 rounded-lg border transition-colors cursor-pointer flex items-center justify-center ${
                                 currentVote === "yes"
-                                  ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs"
                                   : "border-slate-200 hover:bg-slate-100 text-slate-600"
                               }`}
                             >
-                              <ThumbsUp className={`w-3.5 h-3.5 ${currentVote === "yes" ? "fill-emerald-600 text-emerald-600" : ""}`} />
-                              <span>{currentVote === "yes" ? "Helpful!" : "Yes"}</span>
+                              <ThumbsUp className={`w-4 h-4 ${currentVote === "yes" ? "fill-emerald-600 text-emerald-600" : ""}`} />
                             </button>
                             <button
                               type="button"
                               onClick={(e) => handleVoteHelpful(faq.id, "no", e)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                              aria-label="Not helpful"
+                              title="Not helpful"
+                              className={`p-2 rounded-lg border transition-colors cursor-pointer flex items-center justify-center ${
                                 currentVote === "no"
-                                  ? "bg-rose-50 text-rose-800 border-rose-300"
+                                  ? "bg-rose-50 text-rose-800 border-rose-300 shadow-2xs"
                                   : "border-slate-200 hover:bg-slate-100 text-slate-600"
                               }`}
                             >
-                              <ThumbsDown className={`w-3.5 h-3.5 ${currentVote === "no" ? "fill-rose-600 text-rose-600" : ""}`} />
-                              <span>{currentVote === "no" ? "Not helpful" : "No"}</span>
+                              <ThumbsDown className={`w-4 h-4 ${currentVote === "no" ? "fill-rose-600 text-rose-600" : ""}`} />
                             </button>
                           </div>
 
