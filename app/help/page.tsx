@@ -258,25 +258,48 @@ export default function HelpPage() {
   const [feedbackCounts, setFeedbackCounts] = useState<Record<string, { helpful: number; unhelpful: number }>>(INITIAL_FEEDBACK_COUNTS);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Load saved votes from localStorage and latest aggregate counts from API
+  // Load saved votes and counts from localStorage immediately, then sync with API
   useEffect(() => {
     try {
       const savedVotes = localStorage.getItem("zeroplate_help_faq_votes");
       if (savedVotes) {
         setHelpfulFeedback(JSON.parse(savedVotes));
       }
+
+      const savedCounts = localStorage.getItem("zeroplate_help_faq_counts");
+      if (savedCounts) {
+        const parsed = JSON.parse(savedCounts);
+        // Ensure no legacy dummy numbers (> 25) are preserved
+        let hasDummy = false;
+        Object.values(parsed).forEach((c: any) => {
+          if (c && (c.helpful > 20 || c.unhelpful > 20)) hasDummy = true;
+        });
+        if (!hasDummy) {
+          setFeedbackCounts(parsed);
+        } else {
+          localStorage.removeItem("zeroplate_help_faq_counts");
+        }
+      }
     } catch (e) {
-      console.error("Failed to load saved votes from localStorage", e);
+      console.error("Failed to load saved votes/counts from localStorage", e);
     }
 
     fetch("/api/v1/help/feedback")
       .then((res) => res.json())
       .then((data) => {
         if (data?.success && data?.counts) {
-          setFeedbackCounts((prev) => ({
-            ...prev,
-            ...data.counts,
-          }));
+          setFeedbackCounts((prev) => {
+            const next = {
+              ...prev,
+              ...data.counts,
+            };
+            try {
+              localStorage.setItem("zeroplate_help_faq_counts", JSON.stringify(next));
+            } catch (err) {
+              // ignore
+            }
+            return next;
+          });
         }
       })
       .catch((err) => {
@@ -334,13 +357,19 @@ export default function HelpPage() {
         if (currentVote === "no") uDelta = -1;
       }
 
-      return {
+      const next = {
         ...prev,
         [id]: {
           helpful: Math.max(0, existing.helpful + hDelta),
           unhelpful: Math.max(0, existing.unhelpful + uDelta),
         },
       };
+      try {
+        localStorage.setItem("zeroplate_help_faq_counts", JSON.stringify(next));
+      } catch (err) {
+        // ignore
+      }
+      return next;
     });
 
     // 3. Persist to API
@@ -356,10 +385,18 @@ export default function HelpPage() {
       });
       const data = await res.json();
       if (data?.success && data?.counts) {
-        setFeedbackCounts((prev) => ({
-          ...prev,
-          [id]: data.counts,
-        }));
+        setFeedbackCounts((prev) => {
+          const next = {
+            ...prev,
+            [id]: data.counts,
+          };
+          try {
+            localStorage.setItem("zeroplate_help_faq_counts", JSON.stringify(next));
+          } catch (err) {
+            // ignore
+          }
+          return next;
+        });
       }
     } catch (err) {
       console.warn("Failed to sync vote with server:", err);
