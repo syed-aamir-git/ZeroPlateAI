@@ -339,30 +339,6 @@ export default function HelpPage() {
                   )}
                 </div>
               </div>
-
-              {/* Quick Suggestion Chips */}
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
-                <span className="font-medium text-slate-400">Popular searches:</span>
-                {["4-Hour Rule", "Good Samaritan", "ESG Report"].map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery(chip);
-                      setSelectedCategory("all");
-                      const matched = FAQS.find(
-                        (f) =>
-                          f.question.toLowerCase().includes(chip.toLowerCase()) ||
-                          f.tags.some((t) => t.toLowerCase().includes(chip.toLowerCase()))
-                      );
-                      if (matched) setOpenFaqId(matched.id);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100/80 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200/70 transition-colors cursor-pointer font-medium"
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         </div>
