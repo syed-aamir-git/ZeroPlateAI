@@ -15,141 +15,75 @@ import {
   Clock,
   CheckCircle2,
   ChevronDown,
-  ChevronUp,
   ArrowRight,
   Mail,
   Zap,
   Building2,
   ThumbsUp,
   BookOpen,
+  Award,
   Layers,
   HelpCircle,
   Share2,
   Check,
-  Lightbulb,
-  Utensils,
-  Users,
 } from "lucide-react";
 
 interface FAQItem {
   id: string;
   category: "safety" | "kyc" | "claiming" | "logistics" | "sustainability";
   categoryLabel: string;
-  audience: "Kitchens & Donors" | "NGOs & Shelters" | "Delivery & Drivers" | "Everyone";
   question: string;
   summary: string;
-  takeaway: string;
-  keyPoints: { title: string; detail: string }[];
-  laymanTip: string;
+  answer: string;
   tags: string[];
   badgeColor: string;
 }
 
 const FAQS: FAQItem[] = [
-  // 1. Food Safety & Freshness
+  // 1. Food Safety & Gating
   {
     id: "safety-4-hour",
     category: "safety",
     categoryLabel: "Food Safety",
-    audience: "Kitchens & Donors",
-    question: "What is the 4-Hour Rule for cooked food?",
-    summary: "All cooked meals must be picked up within 4 hours of cooking to stay 100% fresh and safe.",
-    takeaway: "Cooked meals are automatically locked out if 4 hours pass from cooking time, ensuring community safety.",
-    keyPoints: [
-      {
-        title: "Automated Timer",
-        detail: "When a kitchen logs surplus rice, lentils, or curries, our system records the exact preparation time and starts a live 4-hour countdown.",
-      },
-      {
-        title: "Auto-Lock Protection",
-        detail: "If the 4-hour safety window expires before collection, the batch is automatically locked and cannot be claimed.",
-      },
-      {
-        title: "FSSAI Aligned",
-        detail: "Strictly adheres to national food safety guidelines so meals reach people at peak hygiene.",
-      },
-    ],
-    laymanTip: "Example: Food finished cooking at 12:00 PM must be picked up and dispatched before 4:00 PM.",
-    tags: ["4-hour", "freshness", "cooked food", "fssai", "safety", "timer"],
+    question: "What is the 4-Hour Rule for cooked surplus food?",
+    summary: "Cooked meals must be picked up within 4 hours of cooking to guarantee safety and freshness.",
+    answer:
+      "Under national FSSAI food-safety standards and ZeroPlate rules, all freshly cooked meals (rice, curries, lentils, rotis) must be collected and dispatched within 4 hours of cooking completion. Our system automatically checks the preparation timestamp when a kitchen logs surplus — if the 4-hour window has passed, the listing is automatically locked out to protect community health.",
+    tags: ["safety", "4-hour", "freshness", "cooked food", "fssai", "temperature"],
     badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
   },
   {
     id: "safety-fail-closed",
     category: "safety",
     categoryLabel: "Food Safety",
-    audience: "Kitchens & Donors",
-    question: "What happens if a safety check is missing information?",
-    summary: "ZeroPlate operates on a zero-tolerance policy — unverified food is never listed or distributed.",
-    takeaway: "If any detail is incomplete or unverified, the listing is automatically rejected immediately.",
-    keyPoints: [
-      {
-        title: "Zero Guesswork",
-        detail: "Missing preparation time, incomplete food name, or unverified temperature logs prevent the food from going live.",
-      },
-      {
-        title: "Strict Screening",
-        detail: "Food must pass 100% of our automated verification criteria before any charity can see or claim it.",
-      },
-      {
-        title: "Total Protection",
-        detail: "Shelters and hungry families receive only certified, freshly checked meals with full transparency.",
-      },
-    ],
-    laymanTip: "We never take chances with food hygiene. If there is any doubt, the food is not shared.",
-    tags: ["safety check", "zero tolerance", "quality", "rejection", "hygiene"],
+    question: "What happens if a safety check encounters an error or missing detail?",
+    summary: "Our system operates on a zero-tolerance 'fail-closed' policy — unverified food is never listed.",
+    answer:
+      "Safety is never treated as an afterthought. If an ingredient list is incomplete, a cooking timestamp cannot be confirmed, or a network glitch occurs, ZeroPlate automatically rejects the listing. We never allow unverified surplus to go live. Food must pass 100% of safety criteria before any charity can claim it.",
+    tags: ["fail-closed", "zero-tolerance", "safety check", "rejection", "quality"],
     badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
   },
   {
     id: "safety-legal-protection",
     category: "safety",
     categoryLabel: "Food Safety",
-    audience: "Kitchens & Donors",
-    question: "Are restaurants and kitchens legally protected when donating?",
-    summary: "Yes. Food donors who donate wholesome surplus in good faith are fully protected by law.",
-    takeaway: "Good Samaritan norms protect commercial kitchens from liability when donating safe surplus food.",
-    keyPoints: [
-      {
-        title: "Good Samaritan Shield",
-        detail: "Statutory Good Samaritan guidelines protect dining halls, hotels, and caterers who donate edible food in good faith.",
-      },
-      {
-        title: "Digital Proof of Hygiene",
-        detail: "Every donation creates an immutable digital record with cooking time, temperature, and donor ID as verification.",
-      },
-      {
-        title: "Donate With Confidence",
-        detail: "Kitchen managers can prevent food waste without worrying about unnecessary legal exposure.",
-      },
-    ],
-    laymanTip: "When you follow standard kitchen hygiene rules, you can donate with complete peace of mind.",
+    question: "Are commercial kitchens and food donors legally protected when donating?",
+    summary: "Yes. Donors who donate safe surplus in good faith are fully shielded under Good Samaritan legal norms.",
+    answer:
+      "Many kitchens used to discard wholesome food out of liability fears. Under official Food Safety regulations and statutory Good Samaritan guidelines, commercial donors who donate surplus food in good faith through certified audit checkpoints are shielded from civil liability. Every donation creates a digital chain-of-custody timestamp proving proper hygiene.",
     tags: ["legal", "good samaritan", "liability", "donor protection", "law"],
     badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
   },
 
-  // 2. NGO Access & Verification
+  // 2. NGO Verification & Free Food Access
   {
     id: "kyc-free-meals",
     category: "kyc",
     categoryLabel: "NGO Access",
-    audience: "NGOs & Shelters",
-    question: "Do charities, orphanages, or shelters have to pay anything?",
-    summary: "100% Free forever. Charities and non-profits never pay for food or delivery.",
-    takeaway: "Zero food cost, zero delivery fees, zero platform charges for all verified non-profits.",
-    keyPoints: [
-      {
-        title: "Zero Food Cost",
-        detail: "All meals are donated free by partner university dining halls, hospital cafeterias, and caterers.",
-      },
-      {
-        title: "Free Delivery Support",
-        detail: "Deliveries are handled by partner couriers or self-pickup, with zero delivery fees charged to the shelter.",
-      },
-      {
-        title: "No Hidden Fees",
-        detail: "No sign-up fee, no monthly subscription, and no hidden commission ever.",
-      },
-    ],
-    laymanTip: "Every rupee your NGO saves on grocery costs can be redirected towards education and healthcare.",
+    question: "Is there any cost for charities and shelters to receive food?",
+    summary: "100% Free forever. Charities and non-profits never pay a single rupee for food or delivery.",
+    answer:
+      "Food rescue should never be an administrative burden for non-profits. Verified charities, orphanages, homeless shelters, and community kitchens receive fresh hot meals delivered directly to their facilities with zero subscription, food, or delivery charges.",
     tags: ["free", "cost", "charity", "shelters", "zero fee", "non-profit"],
     badgeColor: "bg-blue-50 text-blue-800 border-blue-200",
   },
@@ -157,25 +91,10 @@ const FAQS: FAQItem[] = [
     id: "kyc-approval-process",
     category: "kyc",
     categoryLabel: "NGO Access",
-    audience: "NGOs & Shelters",
-    question: "How does a non-profit or shelter get approved to receive food?",
-    summary: "A quick 1-time verification validates your non-profit registration within 24 hours.",
-    takeaway: "Submit your basic NGO registration and daily capacity once for permanent instant access.",
-    keyPoints: [
-      {
-        title: "Simple Documents",
-        detail: "Upload your NGO registration certificate (such as 12A/80G, DARPAN ID, or Trust Deed) and contact info.",
-      },
-      {
-        title: "Set Capacity",
-        detail: "Indicate how many people you can serve daily (e.g. 50, 200, 500 plates) so you only get matched with the right quantities.",
-      },
-      {
-        title: "24-Hour Approval",
-        detail: "Our team reviews your submission within 24 hours. Once verified, you can claim meals with a single tap.",
-      },
-    ],
-    laymanTip: "Verification takes only 5 minutes to submit online and gives your organization lifetime access.",
+    question: "How does a non-profit or shelter get approved to claim food?",
+    summary: "A quick 1-time verification validates your non-profit registration (12A/80G) and capacity.",
+    answer:
+      "To protect donor kitchens and ensure wholesome distribution, every receiving organization undergoes a quick KYC check. Non-profits provide their NGO registration details (e.g. 12A/80G, DARPAN ID), primary location, daily plate capacity, and an emergency contact. Verification is typically reviewed and completed by our team within 24 hours.",
     tags: ["kyc", "approval", "verification", "registration", "12a", "80g"],
     badgeColor: "bg-blue-50 text-blue-800 border-blue-200",
   },
@@ -183,53 +102,23 @@ const FAQS: FAQItem[] = [
     id: "kyc-unapproved-claim",
     category: "kyc",
     categoryLabel: "NGO Access",
-    audience: "Everyone",
-    question: "Can private individuals or commercial businesses claim food?",
+    question: "Can an unverified organization or private individual claim food?",
     summary: "No. Surplus food is reserved exclusively for officially verified non-profit shelters.",
-    takeaway: "Food is strictly protected for verified charities to prevent commercial resale and misuse.",
-    keyPoints: [
-      {
-        title: "No Resale or Abuse",
-        detail: "Surplus meals are never made accessible to commercial buyers or unverified private individuals.",
-      },
-      {
-        title: "Direct Beneficiaries",
-        detail: "Only verified orphanages, homeless shelters, old-age homes, and community kitchens can view and claim food.",
-      },
-      {
-        title: "Community First",
-        detail: "If you are an individual in need, you can visit any of our registered partner community kitchens for hot meals.",
-      },
-    ],
-    laymanTip: "This rule guarantees that wholesome meals go directly to hungry families, not for commercial profit.",
+    answer:
+      "Surplus food is never made public to unverified individuals or commercial entities. Only registered charities that have successfully completed hygiene and identity verification can view and claim available batches. This prevents resale and ensures food reaches genuinely hungry families.",
     tags: ["unverified", "security", "exclusive", "shelter", "eligibility"],
     badgeColor: "bg-blue-50 text-blue-800 border-blue-200",
   },
 
-  // 3. Instant Claiming & Reservations
+  // 3. Instant Claiming & Redistribution
   {
     id: "claims-race-condition",
     category: "claiming",
     categoryLabel: "Instant Claims",
-    audience: "NGOs & Shelters",
-    question: "How does ZeroPlate prevent two charities from claiming the same food?",
-    summary: "Instant 1-tap exclusive locking reserves the food immediately so no two charities get the same batch.",
-    takeaway: "The millisecond you click 'Claim', the batch is digitally locked exclusively to your shelter.",
-    keyPoints: [
-      {
-        title: "Instant Digital Lock",
-        detail: "Our database places a millisecond-level lock on the surplus batch the moment you click Claim.",
-      },
-      {
-        title: "No Double Booking",
-        detail: "Other organizations instantly see the batch as reserved. Shelters never travel across town to an empty kitchen.",
-      },
-      {
-        title: "Smart Alternatives",
-        detail: "If someone claimed a batch a split-second before you, the system instantly suggests the nearest available match.",
-      },
-    ],
-    laymanTip: "When you tap Claim, the batch is 100% yours. You never arrive to find another charity took the food.",
+    question: "How does ZeroPlate prevent two charities from claiming the same batch?",
+    summary: "With 1-tap exclusive digital locking. Once claimed, a batch is immediately locked to that shelter.",
+    answer:
+      "Shelters should never travel across the city only to find someone else took the food. The exact millisecond an approved NGO clicks 'Claim Food', the database places an exclusive atomic lock on that surplus ticket. If another non-profit clicks at the same time, the system alerts them that the batch is already assigned and suggests nearby alternatives.",
     tags: ["exclusive lock", "duplicate claims", "atomic lock", "instant reservation"],
     badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
   },
@@ -237,133 +126,58 @@ const FAQS: FAQItem[] = [
     id: "claims-smart-matching",
     category: "claiming",
     categoryLabel: "Instant Claims",
-    audience: "Kitchens & Donors",
-    question: "How does the system match food donations with the right shelter?",
-    summary: "Our smart proximity engine pairs donations based on travel distance and shelter plate capacity.",
-    takeaway: "We match the closest verified shelter that can handle the exact meal count within minutes.",
-    keyPoints: [
-      {
-        title: "Shortest Travel Time",
-        detail: "Pairs the closest verified shelter to ensure food travels quickly and stays piping hot.",
-      },
-      {
-        title: "Capacity Fit",
-        detail: "A 200-meal donation goes to a shelter equipped for 200 meals, preventing over-delivery or waste.",
-      },
-      {
-        title: "Dietary Preferences",
-        detail: "Accounts for vegetarian, Jain, or specific dietary requirements requested by each shelter.",
-      },
-    ],
-    laymanTip: "Food reaches people while it is fresh, hot, and delicious — usually within 30 to 45 minutes.",
+    question: "How does ZeroPlate match which shelter receives which food batch?",
+    summary: "Our smart proximity engine pairs donations based on travel distance and shelter capacity.",
+    answer:
+      "Our automated matching engine evaluates three primary factors: distance (pairing the closest verified shelter to keep travel time minimal), capacity fit (ensuring a 200-meal donation goes to a shelter that can actually distribute 200 meals), and reliable past receipt history. This ensures hot food arrives fresh without delay.",
     tags: ["smart match", "algorithm", "proximity", "distance", "capacity"],
     badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
   },
 
-  // 4. Delivery & Logistics
+  // 4. Logistics & Delivery Fleet
   {
     id: "logistics-courier-pickup",
     category: "logistics",
-    categoryLabel: "Delivery Fleet",
-    audience: "Delivery & Drivers",
-    question: "Who delivers the food from the kitchen to the shelter?",
-    summary: "Deliveries are handled by the shelter's own vehicles or ZeroPlate's verified courier partners.",
-    takeaway: "Flexible transport using insulated thermal carriers keeps food fresh and hot during transit.",
-    keyPoints: [
-      {
-        title: "Insulated Carriers",
-        detail: "Couriers use food-grade insulated bags that maintain proper temperatures throughout the journey.",
-      },
-      {
-        title: "Live Milestone Tracking",
-        detail: "Track the journey from Assigned → Picked Up → On The Way → Delivered in real time on your screen.",
-      },
-      {
-        title: "Flexible Options",
-        detail: "NGOs can choose to pick up with their own van or request an automated courier pickup.",
-      },
-    ],
-    laymanTip: "You can watch the driver's progress on your phone just like tracking a standard food delivery order.",
+    categoryLabel: "Logistics",
+    question: "Who delivers the food from the donor kitchen to the shelter?",
+    summary: "Deliveries are handled by the shelter's own vehicles or our verified partner courier fleet.",
+    answer:
+      "Depending on the batch size and distance, redistributions are handled either by the non-profit's dedicated vans or by registered ZeroPlate delivery partners equipped with insulated thermal carriers. The delivery status is tracked live through every milestone: Assigned → Accepted → Picked Up → Delivered → Confirmed.",
     tags: ["delivery", "driver", "transport", "courier", "logistics", "thermal bag"],
     badgeColor: "bg-teal-50 text-teal-800 border-teal-200",
   },
   {
     id: "logistics-recipient-confirm",
     category: "logistics",
-    categoryLabel: "Delivery Fleet",
-    audience: "NGOs & Shelters",
+    categoryLabel: "Logistics",
     question: "Why must the shelter confirm receipt on their phone upon delivery?",
-    summary: "A 1-tap digital receipt verifies safe handover and closes the chain of custody.",
-    takeaway: "Tapping 'Confirm' provides instant proof of safe delivery and unlocks sustainability credits for the donor.",
-    keyPoints: [
-      {
-        title: "Visual Seal Check",
-        detail: "The shelter coordinator inspects the tamper-evident packaging and confirms condition with one tap.",
-      },
-      {
-        title: "Digital Receipt",
-        detail: "Generates an automatic digital receipt so both the donor kitchen and the shelter have an audit trail.",
-      },
-      {
-        title: "Unlocks Carbon Savings",
-        detail: "Officially logs the rescued kilograms into the donor kitchen's environmental dashboard.",
-      },
-    ],
-    laymanTip: "One quick tap on your phone confirms the food arrived safely and thanks the kitchen team.",
+    summary: "Recipient confirmation provides digital proof of hygiene and closes the loop.",
+    answer:
+      "When the courier reaches the shelter, the NGO coordinator inspects the sealed containers and taps 'Confirm Delivery' on their dashboard. This single step confirms the food arrived safely, releases carbon reduction credits to the donor kitchen, and logs an immutable audit receipt.",
     tags: ["confirmation", "receipt", "audit", "delivery closure", "handover"],
     badgeColor: "bg-teal-50 text-teal-800 border-teal-200",
   },
 
-  // 5. Environmental & Carbon Reports
+  // 5. Carbon Savings & ESG Reports
   {
     id: "reports-co2-formula",
     category: "sustainability",
     categoryLabel: "ESG & Carbon",
-    audience: "Everyone",
-    question: "How are meal counts and carbon (CO2) reduction numbers calculated?",
-    summary: "Using official United Nations & FAO environmental standards: 2.5 meals/kg and 1.8 kg CO2 saved/kg.",
-    takeaway: "Every kilogram of food saved equals 2.5 nutritious meals and avoids 1.8 kg of greenhouse emissions.",
-    keyPoints: [
-      {
-        title: "Meal Formula",
-        detail: "Calculated at 2.5 meals per kilogram based on standard 400g nutritious portions defined by the FAO.",
-      },
-      {
-        title: "Landfill Methane Avoided",
-        detail: "Avoids 1.8 kg CO2-equivalent emissions for every 1 kg of organic food diverted from municipal landfills.",
-      },
-      {
-        title: "Water Conservation",
-        detail: "Conserves approximately 850 liters of agricultural fresh water for every kilogram of food rescued.",
-      },
-    ],
-    laymanTip: "Donating 40 kg of surplus food feeds 100 people and keeps 72 kg of harmful greenhouse gas out of the atmosphere.",
-    tags: ["co2", "carbon", "metrics", "formula", "meals rescued", "fao", "unep"],
+    question: "How are meal counts and carbon (CO2e) reduction numbers calculated?",
+    summary: "Using official FAO and UNEP environmental benchmarks: 2.5 meals/kg and 1.8 kg CO2e saved/kg.",
+    answer:
+      "Every diverted kilogram is tracked transparently: meals rescued are calculated at 2.5 meals per kilogram (standard 400g nutritious portion based on FAO standards). Greenhouse gas emissions avoided are calculated at 1.8 kg CO2e avoided per kilogram of organic waste diverted from municipal landfills. Water conservation is estimated at 850 liters per kilogram.",
+    tags: ["co2e", "carbon", "metrics", "formula", "meals rescued", "fao", "unep"],
     badgeColor: "bg-purple-50 text-purple-800 border-purple-200",
   },
   {
     id: "reports-free-export",
     category: "sustainability",
     categoryLabel: "ESG & Carbon",
-    audience: "Kitchens & Donors",
-    question: "Can commercial kitchens download certified ESG and tax reports for free?",
-    summary: "Yes. All kitchens receive free downloadable audit reports, CSV logs, and CSR certificates.",
-    takeaway: "Download professional ESG and CSR compliance reports with 1 click from your Kitchen Dashboard.",
-    keyPoints: [
-      {
-        title: "1-Click Download",
-        detail: "Export monthly PDF audit summaries and Excel data logs ready for corporate filings.",
-      },
-      {
-        title: "CSR & ESG Ready",
-        detail: "Pre-formatted for corporate sustainability reporting, Scope 3 emission accounting, and board presentations.",
-      },
-      {
-        title: "100% Free",
-        detail: "No hidden charges or upgrade fees to access, generate, or export your facility's verified impact data.",
-      },
-    ],
-    laymanTip: "You can directly attach our downloadable PDF reports to your company's annual CSR and tax filings.",
+    question: "Can commercial kitchens download certified ESG and CSR reports for free?",
+    summary: "Yes. All kitchens receive free downloadable audit reports, CSV logs, and tax relief records.",
+    answer:
+      "Every registered facility can download Scope 3 Category 5 GHG accounting logs, monthly waste diversion metrics, and FSSAI hygiene audit summaries in 1 click from their Kitchen Console. These documents provide verifiable proof for CSR spending and corporate sustainability disclosures.",
     tags: ["esg report", "csv export", "tax deduction", "csr", "scope-3"],
     badgeColor: "bg-purple-50 text-purple-800 border-purple-200",
   },
@@ -388,7 +202,7 @@ const CATEGORY_CARDS = [
   },
   {
     id: "kyc",
-    label: "NGO Access",
+    label: "NGO Verification",
     icon: HeartHandshake,
     color: "blue",
     accentBg: "bg-blue-600 text-white",
@@ -423,68 +237,12 @@ const CATEGORY_CARDS = [
 export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedAudience, setSelectedAudience] = useState<string>("all");
-  // Multi-open accordion support
-  const [openFaqIds, setOpenFaqIds] = useState<string[]>(["safety-4-hour"]);
+  const [openFaqId, setOpenFaqId] = useState<string | null>("safety-4-hour");
   const [helpfulFeedback, setHelpfulFeedback] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Toggle individual question accordion
   const toggleAccordion = (id: string) => {
-    setOpenFaqIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  // Toggle Collapse All / Expand All for current visible items
-  const handleToggleAll = (visibleFaqs: FAQItem[]) => {
-    if (openFaqIds.length > 0) {
-      setOpenFaqIds([]);
-    } else {
-      setOpenFaqIds(visibleFaqs.map((f) => f.id));
-    }
-  };
-
-  // Select category and clear audience to prevent empty intersections
-  const handleSelectCategory = (catId: string) => {
-    const nextCategory = selectedCategory === catId && catId !== "all" ? "all" : catId;
-    setSelectedCategory(nextCategory);
-    setSelectedAudience("all");
-    
-    // Automatically open the first matching question
-    const firstMatch = FAQS.find((f) => nextCategory === "all" || f.category === nextCategory);
-    if (firstMatch) {
-      setOpenFaqIds([firstMatch.id]);
-    }
-  };
-
-  // Select audience role and clear category to prevent empty intersections
-  const handleSelectAudience = (roleId: string) => {
-    const nextAudience = selectedAudience === roleId && roleId !== "all" ? "all" : roleId;
-    setSelectedAudience(nextAudience);
-    setSelectedCategory("all");
-
-    // Automatically open the first matching question
-    const firstMatch = FAQS.find(
-      (f) => nextAudience === "all" || f.audience === nextAudience || f.audience === "Everyone"
-    );
-    if (firstMatch) {
-      setOpenFaqIds([firstMatch.id]);
-    }
-  };
-
-  // Click suggestion chip in hero
-  const handleChipClick = (chip: string) => {
-    setSearchQuery(chip);
-    setSelectedCategory("all");
-    setSelectedAudience("all");
-    const matched = FAQS.find((f) =>
-      f.question.toLowerCase().includes(chip.toLowerCase()) ||
-      f.tags.some((t) => t.toLowerCase().includes(chip.toLowerCase()))
-    );
-    if (matched) {
-      setOpenFaqIds([matched.id]);
-    }
+    setOpenFaqId((prev) => (prev === id ? null : id));
   };
 
   const handleVoteHelpful = (id: string, e: React.MouseEvent) => {
@@ -502,18 +260,13 @@ export default function HelpPage() {
     }
   };
 
-  // Filter FAQs based on search, selected category, and audience role
+  // Filter FAQs based on search and selected category
   const filteredFaqs = useMemo(() => {
     return FAQS.filter((faq) => {
       const matchesCategory =
         selectedCategory === "all" || faq.category === selectedCategory;
-      if (!matchesCategory) return false;
 
-      const matchesAudience =
-        selectedAudience === "all" ||
-        faq.audience === selectedAudience ||
-        faq.audience === "Everyone";
-      if (!matchesAudience) return false;
+      if (!matchesCategory) return false;
 
       if (!searchQuery.trim()) return true;
 
@@ -521,19 +274,12 @@ export default function HelpPage() {
       return (
         faq.question.toLowerCase().includes(q) ||
         faq.summary.toLowerCase().includes(q) ||
-        faq.takeaway.toLowerCase().includes(q) ||
-        faq.laymanTip.toLowerCase().includes(q) ||
+        faq.answer.toLowerCase().includes(q) ||
         faq.categoryLabel.toLowerCase().includes(q) ||
-        faq.audience.toLowerCase().includes(q) ||
-        faq.keyPoints.some(
-          (p) =>
-            p.title.toLowerCase().includes(q) ||
-            p.detail.toLowerCase().includes(q)
-        ) ||
         faq.tags.some((tag) => tag.toLowerCase().includes(q))
       );
     });
-  }, [searchQuery, selectedCategory, selectedAudience]);
+  }, [searchQuery, selectedCategory]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFCFB] text-slate-900 font-sans selection:bg-emerald-100 selection:text-emerald-900">
@@ -564,7 +310,7 @@ export default function HelpPage() {
 
             {/* Layman Subtitle */}
             <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed font-normal max-w-2xl mx-auto">
-              Simple, clear answers for kitchens, charities, and drivers. Learn how meals are safely saved, claimed for free, and delivered on time.
+              Clear, friendly answers to common questions about safe food donations, shelter meal pickups, Good Samaritan laws, and carbon ledger reports.
             </p>
 
             {/* Interactive Luxury Search Bar */}
@@ -601,7 +347,16 @@ export default function HelpPage() {
                   <button
                     key={chip}
                     type="button"
-                    onClick={() => handleChipClick(chip)}
+                    onClick={() => {
+                      setSearchQuery(chip);
+                      setSelectedCategory("all");
+                      const matched = FAQS.find(
+                        (f) =>
+                          f.question.toLowerCase().includes(chip.toLowerCase()) ||
+                          f.tags.some((t) => t.toLowerCase().includes(chip.toLowerCase()))
+                      );
+                      if (matched) setOpenFaqId(matched.id);
+                    }}
                     className="px-2.5 py-1 rounded-lg bg-slate-100/80 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200/70 transition-colors cursor-pointer font-medium"
                   >
                     {chip}
@@ -615,85 +370,6 @@ export default function HelpPage() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-16">
-        {/* Quick Layman Guide: How ZeroPlate Works */}
-        <section className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                Layman Overview
-              </span>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mt-1.5">
-                How ZeroPlate Works in 3 Simple Steps
-              </h2>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-md">
-              A seamless, zero-waste cycle connecting university &amp; hospital kitchens directly to local charities.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <div 
-              onClick={() => handleSelectCategory("safety")}
-              className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-white to-slate-50/30 border border-emerald-100 relative space-y-3 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                  <Utensils className="w-5 h-5" />
-                </div>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
-                  Step 01
-                </span>
-              </div>
-              <h3 className="font-extrabold text-base text-slate-900">
-                1. Kitchen Logs Surplus
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Dining halls log wholesome extra food with preparation time. An automatic 4-hour countdown starts to ensure freshness.
-              </p>
-            </div>
-
-            <div 
-              onClick={() => handleSelectCategory("claiming")}
-              className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/50 via-white to-slate-50/30 border border-amber-100 relative space-y-3 cursor-pointer hover:shadow-md hover:border-amber-300 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                  <Zap className="w-5 h-5" />
-                </div>
-                <span className="text-xs font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md">
-                  Step 02
-                </span>
-              </div>
-              <h3 className="font-extrabold text-base text-slate-900">
-                2. Shelter Claims in 1 Tap
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Verified charities get instant alerts. When an NGO taps Claim, the batch is instantly locked exclusively — zero cost, no duplicate trips.
-              </p>
-            </div>
-
-            <div 
-              onClick={() => handleSelectCategory("logistics")}
-              className="p-5 rounded-2xl bg-gradient-to-br from-teal-50/50 via-white to-slate-50/30 border border-teal-100 relative space-y-3 cursor-pointer hover:shadow-md hover:border-teal-300 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <span className="text-xs font-bold text-teal-700 bg-teal-100/70 px-2 py-0.5 rounded-md">
-                  Step 03
-                </span>
-              </div>
-              <h3 className="font-extrabold text-base text-slate-900">
-                3. Fast Pickup &amp; Impact
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Food travels in insulated bags and reaches hungry families hot and fresh. Kitchens get certified carbon and ESG reports for free.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* 6 Category Bento Cards */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -715,7 +391,12 @@ export default function HelpPage() {
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => handleSelectCategory(cat.id)}
+                  onClick={() => {
+                    const next = selectedCategory === cat.id && cat.id !== "all" ? "all" : cat.id;
+                    setSelectedCategory(next);
+                    const first = FAQS.find((f) => next === "all" || f.category === next);
+                    if (first) setOpenFaqId(first.id);
+                  }}
                   className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
                     isSelected
                       ? "bg-white border-emerald-500 shadow-lg shadow-emerald-500/10 ring-2 ring-emerald-500/20 scale-[1.02]"
@@ -755,66 +436,30 @@ export default function HelpPage() {
         </section>
 
         {/* FAQs Results Accordion */}
-        <section id="faq-results-section" className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+        <section className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80">
             <div>
               <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                 {selectedCategory === "all"
-                  ? "Frequently Asked Questions"
+                  ? "All Frequently Asked Questions"
                   : `${CATEGORY_CARDS.find((c) => c.id === selectedCategory)?.label} Guidance`}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                 Showing {filteredFaqs.length} guide{filteredFaqs.length === 1 ? "" : "s"}
-                {selectedAudience !== "all" ? ` for ${selectedAudience}` : ""}
                 {searchQuery ? ` matching "${searchQuery}"` : ""}
               </p>
             </div>
 
-            {/* Role Filter Tabs & Expand/Collapse Toggle */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-slate-400 shrink-0 hidden sm:inline">
-                Role:
-              </span>
-              {[
-                { id: "all", label: "All Roles" },
-                { id: "Kitchens & Donors", label: "👨‍🍳 Kitchens" },
-                { id: "NGOs & Shelters", label: "🤝 Shelters" },
-                { id: "Delivery & Drivers", label: "🚚 Drivers" },
-              ].map((role) => {
-                const isActive = selectedAudience === role.id && selectedCategory === "all";
-                return (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => handleSelectAudience(role.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-slate-900 text-white shadow-xs"
-                        : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    {role.label}
-                  </button>
-                );
-              })}
-
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleToggleAll(filteredFaqs)}
-                className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 ml-1 shrink-0 flex items-center gap-1.5 cursor-pointer"
+                onClick={() =>
+                  setOpenFaqId((prev) => (prev ? null : filteredFaqs[0]?.id || null))
+                }
+                className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 cursor-pointer"
               >
-                {openFaqIds.length > 0 ? (
-                  <>
-                    <ChevronUp className="w-3.5 h-3.5" />
-                    <span>Collapse All</span>
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-3.5 h-3.5" />
-                    <span>Expand All</span>
-                  </>
-                )}
+                {openFaqId ? "Collapse All" : "Expand All"}
               </Button>
             </div>
           </div>
@@ -826,10 +471,10 @@ export default function HelpPage() {
               </div>
               <div className="space-y-1">
                 <h4 className="text-base font-bold text-slate-900">
-                  No matching guidance found
+                  No matching guidance found for &quot;{searchQuery}&quot;
                 </h4>
                 <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                  Try adjusting your search terms or switch roles above to browse all available guides.
+                  Try searching with terms like &quot;4-hour&quot;, &quot;NGO&quot;, &quot;delivery&quot;, &quot;free&quot;, or browse our categories above.
                 </p>
               </div>
               <Button
@@ -838,18 +483,16 @@ export default function HelpPage() {
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedCategory("all");
-                  setSelectedAudience("all");
-                  setOpenFaqIds(["safety-4-hour"]);
                 }}
-                className="rounded-xl text-xs cursor-pointer"
+                className="rounded-xl text-xs"
               >
-                Reset All Filters
+                Reset Search Filters
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredFaqs.map((faq) => {
-                const isOpen = openFaqIds.includes(faq.id);
+                const isOpen = openFaqId === faq.id;
                 const isVoted = helpfulFeedback[faq.id];
                 return (
                   <div
@@ -857,8 +500,8 @@ export default function HelpPage() {
                     id={faq.id}
                     className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                       isOpen
-                        ? "bg-white border-emerald-400/80 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/20"
-                        : "bg-white hover:bg-slate-50/80 border-slate-200/90 hover:border-slate-300"
+                        ? "bg-white border-emerald-300 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/20"
+                        : "bg-white hover:bg-slate-50/80 border-slate-200/90"
                     }`}
                   >
                     {/* Accordion Question Header */}
@@ -867,15 +510,12 @@ export default function HelpPage() {
                       onClick={() => toggleAccordion(faq.id)}
                       className="w-full p-5 sm:p-6 text-left flex items-start justify-between gap-4 cursor-pointer"
                     >
-                      <div className="space-y-2 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center gap-2">
                           <span
                             className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${faq.badgeColor}`}
                           >
                             {faq.categoryLabel}
-                          </span>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                            {faq.audience}
                           </span>
                         </div>
                         <h4 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
@@ -899,60 +539,15 @@ export default function HelpPage() {
 
                     {/* Accordion Answer Body */}
                     {isOpen && (
-                      <div className="px-5 pb-6 sm:px-6 pt-3 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-150 space-y-4">
-                        {/* 1. Quick Takeaway Banner */}
-                        <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/60 flex items-start gap-3">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                            <Sparkles className="w-4 h-4" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-                              Quick Summary
-                            </span>
-                            <p className="text-xs sm:text-sm font-semibold text-emerald-950 leading-relaxed">
-                              {faq.takeaway}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* 2. Structured Key Highlights */}
-                        <div className="space-y-2">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                            Key Details &amp; Operational Rules
-                          </span>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {faq.keyPoints.map((point, idx) => (
-                              <div
-                                key={idx}
-                                className="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/70 space-y-1.5"
-                              >
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                  <span>{point.title}</span>
-                                </div>
-                                <p className="text-xs text-slate-600 leading-relaxed">
-                                  {point.detail}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* 3. Layman Tip Callout */}
-                        <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200/80 flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5">
-                            <Lightbulb className="w-3.5 h-3.5" />
-                          </div>
-                          <p className="text-xs text-amber-950 leading-relaxed">
-                            <span className="font-bold text-amber-900">Layman Tip: </span>
-                            {faq.laymanTip}
-                          </p>
-                        </div>
+                      <div className="px-5 pb-6 sm:px-6 pt-1 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-150 space-y-4">
+                        <p className="text-sm text-slate-700 leading-relaxed font-normal">
+                          {faq.answer}
+                        </p>
 
                         {/* Interactive Helpful & Share Footer */}
                         <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
                           <div className="flex items-center gap-3">
-                            <span className="font-medium text-slate-600">Was this clear &amp; helpful?</span>
+                            <span className="font-medium text-slate-600">Was this helpful?</span>
                             <button
                               type="button"
                               onClick={(e) => handleVoteHelpful(faq.id, e)}
@@ -963,7 +558,7 @@ export default function HelpPage() {
                               }`}
                             >
                               <ThumbsUp className={`w-3.5 h-3.5 ${isVoted ? "fill-emerald-600 text-emerald-600" : ""}`} />
-                              <span>{isVoted ? "Helpful!" : "Yes, helpful"}</span>
+                              <span>{isVoted ? "Helpful!" : "Yes"}</span>
                             </button>
                           </div>
 
